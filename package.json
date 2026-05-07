@@ -1,0 +1,59 @@
+{
+  "name": "skvisor",
+  "version": "0.1.0",
+  "description": "Audit and manage AI agent skills for Claude Code and Codex",
+  "license": "MIT",
+  "author": "ihororlovskyi",
+  "homepage": "https://github.com/ihororlovskyi/skvisor#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ihororlovskyi/skvisor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ihororlovskyi/skvisor/issues"
+  },
+  "keywords": [
+    "ai",
+    "agent",
+    "skills",
+    "claude",
+    "codex",
+    "audit",
+    "cli"
+  ],
+  "type": "module",
+  "bin": {
+    "skvisor": "dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "~/.bun/bin/bun run node_modules/.bin/bunup",
+    "lint": "biome check src/",
+    "format": "biome format --write src/",
+    "test": "vitest run",
+    "test:e2e": "vitest run --config vitest.e2e.config.ts",
+    "release": "changeset publish",
+    "prepublishOnly": "biome check src/ && vitest run && ~/.bun/bin/bun run node_modules/.bin/bunup && vitest run --config vitest.e2e.config.ts"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@changesets/cli": "^2.27.0",
+    "bunup": "^0.9.0",
+    "citty": "^0.1.6",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}

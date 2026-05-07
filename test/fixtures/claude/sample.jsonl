@@ -1,0 +1,8 @@
+{"timestamp":"2026-05-06T10:00:00Z","attributionSkill":"brainstorming","type":"summary"}
+{"timestamp":"2026-05-06T11:00:00Z","attributionSkill":"writing-plans","type":"summary"}
+{"timestamp":"2026-05-06T12:00:00Z","attributionSkill":"brainstorming","type":"summary"}
+{"timestamp":"2026-05-06T10:00:00Z","type":"assistant","message":{"content":[{"type":"tool_use","name":"Skill","input":{"skill":"simplify"}}]}}
+{"timestamp":"2026-05-06T10:00:00Z","type":"assistant","message":{"content":[{"type":"tool_use","name":"Skill","input":{"skill":"brainstorming"}}]}}
+{"timestamp":"2026-05-06T10:00:00Z","type":"system","content":"loading brainstorming/SKILL.md for context"}
+{"timestamp":"2026-05-06T10:00:00Z","type":"system","content":"superpowers:writing-plans is active now"}
+{"timestamp":"2020-01-01T00:00:00Z","attributionSkill":"old-skill","type":"summary"}
