@@ -1,0 +1,4 @@
+{"type":"event_msg","ts":1778025600,"payload":{"type":"exec_command_end","parsed_cmd":[{"path":"/home/user/.agents/skills/brainstorming/SKILL.md"}]}}
+{"type":"response_item","ts":1778025601,"payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"<skill>\n<name>writing-plans</name>\n</skill>"}]}}
+{"type":"event_msg","ts":1778025602,"payload":{"type":"exec_command_end","parsed_cmd":[{"path":"/home/user/.agents/skills/brainstorming/SKILL.md"}]}}
+{"type":"event_msg","ts":1000000,"payload":{"type":"exec_command_end","parsed_cmd":[{"path":"/skills/old-skill/SKILL.md"}]}}
