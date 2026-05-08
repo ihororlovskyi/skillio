@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Purpose
 
-`skcl` is a TypeScript npm CLI + library for auditing AI agent skill usage (Claude Code and Codex). It parses session logs and manages a skills lock file.
+`sklio` is a TypeScript npm CLI + library for auditing AI agent skill usage (Claude Code and Codex). It parses session logs and manages a skills lock file.
 
 ## Commands
 
@@ -71,5 +71,5 @@ Dual-output build via `bunup.config.ts` (two entries):
 ## Gotchas
 
 - **bun path**: `npm run build` intentionally calls `~/.bun/bin/bun run node_modules/.bin/bunup`; keep that full path unless Bun is guaranteed to be in PATH.
-- **citty default subcommand**: `skcl` without a subcommand invokes `audit`. Citty doesn't support this natively — `src/cli.ts` preprocesses `process.argv` and splices `'audit'` at index 2 when the first arg is not a known subcommand or help flag.
+- **citty default subcommand**: `sklio` without a subcommand invokes `audit`. Citty doesn't support this natively — `src/cli.ts` preprocesses `process.argv` and splices `'audit'` at index 2 when the first arg is not a known subcommand or help flag.
 - **e2e tests require a fresh build**: `npm run test:e2e` spawns `dist/cli.js` — stale build = wrong behavior.

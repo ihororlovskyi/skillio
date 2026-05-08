@@ -1,5 +1,5 @@
 {
-  "name": "skcl",
+  "name": "sklio",
   "version": "0.1.3",
   "description": "Audit and manage AI agent skills for Claude Code and Codex",
   "license": "MIT",
@@ -23,7 +23,7 @@
   ],
   "type": "module",
   "bin": {
-    "skcl": "dist/cli.js"
+    "sklio": "dist/cli.js"
   },
   "exports": {
     ".": {
