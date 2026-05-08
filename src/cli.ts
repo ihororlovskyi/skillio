@@ -17,7 +17,7 @@ if (firstArg === undefined || (!SUBCOMMANDS.has(firstArg) && !HELP_FLAGS.has(fir
 
 const main = defineCommand({
   meta: {
-    name: 'skls',
+    name: 'skcl',
     version,
     description: 'Audit and manage AI agent skills',
   },

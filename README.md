@@ -1,6 +1,6 @@
-# skls
+# skcl
 
-[![npm version](https://img.shields.io/npm/v/skls)](https://www.npmjs.com/package/skls)
+[![npm version](https://img.shields.io/npm/v/skcl)](https://www.npmjs.com/package/skcl)
 [![CI](https://github.com/ihororlovskyi/skls/actions/workflows/ci.yml/badge.svg)](https://github.com/ihororlovskyi/skls/actions/workflows/ci.yml)
 
 Audit and manage AI agent skills for Claude Code and OpenAI Codex.
@@ -9,27 +9,27 @@ Audit and manage AI agent skills for Claude Code and OpenAI Codex.
 
 ```sh
 # one-off (no install needed)
-npx skls audit --agent claude --period 7d
-pnpm dlx skls audit --agent codex --period 2w
+npx skcl audit --agent claude --period 7d
+pnpm dlx skcl audit --agent codex --period 2w
 
 # global install
-npm install -g skls
-pnpm add -g skls
+npm install -g skcl
+pnpm add -g skcl
 ```
 
 ## Usage
 
 ```sh
-skls --agent claude --period 7d         # audit last 7 days (default subcommand)
-skls audit --agent claude --period 7d   # audit last 7 days (attributed mode)
-skls audit --agent codex --mode activations  # codex activations
-skls audit -a claude codex --period 2w  # both agents, space-separated
-skls audit -a claude,codex --period 2w  # both agents, comma-separated
-skls list                                # list skills in local skills-lock.json
-skls list --global                       # list from ~/.agents/.skill-lock.json
-skls remove brainstorming               # remove skill from lock
-skls remove brainstorming writing-plans  # remove multiple skills
-skls remove --dry-run brainstorming     # preview removal
+skcl --agent claude --period 7d         # audit last 7 days (default subcommand)
+skcl audit --agent claude --period 7d   # audit last 7 days (attributed mode)
+skcl audit --agent codex --mode activations  # codex activations
+skcl audit -a claude codex --period 2w  # both agents, space-separated
+skcl audit -a claude,codex --period 2w  # both agents, comma-separated
+skcl list                                # list skills in local skills-lock.json
+skcl list --global                       # list from ~/.agents/.skill-lock.json
+skcl remove brainstorming               # remove skill from lock
+skcl remove brainstorming writing-plans  # remove multiple skills
+skcl remove --dry-run brainstorming     # preview removal
 ```
 
 ## What it does
@@ -39,13 +39,13 @@ skls remove --dry-run brainstorming     # preview removal
 
 ## Options
 
-### `skls` / `skls audit`
+### `skcl` / `skcl audit`
 
 Audits skill usage from agent session logs. `audit` is the default subcommand when the first argument is an audit flag.
 
 ```sh
-skls --agent claude --period 7d
-skls audit --agent codex --mode activations
+skcl --agent claude --period 7d
+skcl audit --agent codex --mode activations
 ```
 
 | Flag | Default | Description |
@@ -64,20 +64,20 @@ skls audit --agent codex --mode activations
 - **`activations`** — explicit `Skill` tool invocations found anywhere in the entry tree (Claude) or `exec_command_end` events / `<skill>` XML (Codex). This is the default and most reliable Codex mode.
 - **`mentions`** — skill paths (`foo/SKILL.md`) or `superpowers:name` strings found in any string value. This is a broad search mode and can include examples from prompts, specs, or documentation.
 
-### `skls list` / `ls`
+### `skcl list` / `ls`
 
 ```sh
-skls list            # local skills-lock.json
-skls list --global   # ~/.agents/.skill-lock.json
+skcl list            # local skills-lock.json
+skcl list --global   # ~/.agents/.skill-lock.json
 ```
 
-### `skls remove` / `rm`
+### `skcl remove` / `rm`
 
 ```sh
-skls remove <skill-name>
-skls remove <skill-one> <skill-two>
-skls remove --global <skill-name>
-skls remove --dry-run <skill-name>
+skcl remove <skill-name>
+skcl remove <skill-one> <skill-two>
+skcl remove --global <skill-name>
+skcl remove --dry-run <skill-name>
 ```
 
 ## Requirements
