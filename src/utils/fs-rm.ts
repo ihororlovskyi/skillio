@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, rmSync, statSync } from 'node:fs';
+import { existsSync, lstatSync, readdirSync, rmSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 export interface RmOptions {
@@ -18,7 +18,7 @@ function isInside(target: string, root: string): boolean {
 
 function countFiles(path: string): number {
   if (!existsSync(path)) return 0;
-  const stat = statSync(path);
+  const stat = lstatSync(path);
   if (stat.isFile()) return 1;
   if (!stat.isDirectory()) return 0;
   let n = 0;
