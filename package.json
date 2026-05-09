@@ -1,6 +1,6 @@
 {
   "name": "skillio",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Audit and manage AI agent skills for Claude Code and Codex",
   "license": "MIT",
   "author": "ihororlovskyi",
@@ -23,7 +23,8 @@
   ],
   "type": "module",
   "bin": {
-    "skillio": "dist/cli.js"
+    "skillio": "dist/cli.js",
+    "skl": "dist/cli.js"
   },
   "exports": {
     ".": {

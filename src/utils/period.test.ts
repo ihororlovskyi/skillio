@@ -6,6 +6,7 @@ describe('parsePeriod', () => {
   it('parses weeks', () => expect(parsePeriod('2w')).toBe(14));
   it('parses months', () => expect(parsePeriod('1m')).toBe(30));
   it('parses years', () => expect(parsePeriod('1y')).toBe(365));
+  it('parses "all" as infinity', () => expect(parsePeriod('all')).toBe(Number.POSITIVE_INFINITY));
   it('throws on invalid format', () => expect(() => parsePeriod('foo')).toThrow('Invalid period'));
   it('throws on unknown unit', () => expect(() => parsePeriod('5x')).toThrow('Invalid period'));
 });
@@ -16,4 +17,5 @@ describe('periodToDate', () => {
     expect(d.getTime()).toBeLessThan(Date.now());
     expect(d.getTime()).toBeGreaterThan(Date.now() - 8 * 24 * 60 * 60 * 1000);
   });
+  it('"all" returns epoch', () => expect(periodToDate('all').getTime()).toBe(0));
 });

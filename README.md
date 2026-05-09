@@ -9,28 +9,92 @@ Audit and manage AI agent skills for Claude Code and OpenAI Codex.
 
 ```sh
 # one-off (no install needed)
-npx skillio audit --agent claude --period 7d
-pnpm dlx skillio audit --agent codex --period 2w
+npx skillio --agent claude --period 7d
+pnpm dlx skillio --agent codex --period 2w
 
-# global install
-npm install -g skillio
+# global install — provides both `skillio` and `skl` commands in $PATH
+npm install -g skillio       # recommended
 pnpm add -g skillio
 ```
+
+### Local install (per-project)
+
+If you'd rather pin `skillio` to a single project (e.g. for CI) instead of
+installing globally:
+
+```sh
+npm install -D skillio       # adds to devDependencies
+pnpm add -D skillio
+yarn add -D skillio
+bun add -d skillio
+```
+
+Then run via your package manager — both `skillio` and `skl` are exposed:
+
+```sh
+npx skillio                  # works from any subdir of the project
+pnpm exec skl                # short alias
+yarn skl
+bun x skillio
+```
+
+You can also wire it into `package.json` scripts:
+
+```json
+{
+  "scripts": {
+    "audit:skills": "skl"
+  }
+}
+```
+
+…then `npm run audit:skills`.
+
+## Updating
+
+> Already have `skillio` installed? Get the latest version:
+
+```sh
+npm install -g skillio@latest        # recommended
+pnpm add -g skillio@latest
+```
+
+If you're on `0.1.3` or older — please upgrade. Newer versions add per-repo
+scoping, the `skl` short alias, and saner defaults (`skillio` with no flags now
+audits both Claude Code and Codex over all time).
 
 ## Usage
 
 ```sh
-skillio --agent claude --period 7d         # audit last 7 days (default subcommand)
-skillio audit --agent claude --period 7d   # audit last 7 days (attributed mode)
-skillio audit --agent codex --mode activations  # codex activations
-skillio audit -a claude codex --period 2w  # both agents, space-separated
-skillio audit -a claude,codex --period 2w  # both agents, comma-separated
-skillio list                                # list skills in local skills-lock.json
-skillio list --global                       # list from ~/.agents/.skill-lock.json
-skillio remove brainstorming               # remove skill from lock
+# from any repo: scoped to that repo
+skl                                    # both agents, all-time, this repo only
+skl -a claude --period 7d              # claude only, last 7 days, this repo
+
+# from $HOME (or anywhere with -g): global, all repos on this machine
+cd ~ && skl                            # auto-global when cwd === $HOME
+skl -g                                 # force global from any repo
+skl --global --period 1m               # global, last 30 days
+
+skillio …                              # same binary, longer alias
+skillio -a claude-code codex           # both agents (space-separated)
+skillio -a claude -a codex             # equivalent: repeated --agent flag
+skillio list                           # list skills in local skills-lock.json
+skillio list --global                  # list from ~/.agents/.skill-lock.json
+skillio remove brainstorming           # remove skill from lock
 skillio remove brainstorming writing-plans  # remove multiple skills
-skillio remove --dry-run brainstorming     # preview removal
+skillio remove --dry-run brainstorming # preview removal
 ```
+
+### Scope (per-repo vs global)
+
+`skillio` / `skl` automatically picks a scope based on your current directory:
+
+| where you run it | scope |
+|------------------|-------|
+| inside a git repo | that repo only (data filtered to its path) |
+| in `$HOME` exactly | global — all repos on this machine |
+| anywhere with `-g` / `--global` | global override |
+| with `--root <dir>` | that exact dir, treated as global |
 
 ## What it does
 
@@ -39,23 +103,25 @@ skillio remove --dry-run brainstorming     # preview removal
 
 ## Options
 
-### `skillio` / `skillio audit`
+### `skillio` (audit)
 
-Audits skill usage from agent session logs. `audit` is the default subcommand when the first argument is an audit flag.
+Audits skill usage from agent session logs. This is the default operation —
+no subcommand keyword is needed.
 
 ```sh
 skillio --agent claude --period 7d
-skillio audit --agent codex --mode activations
+skillio --agent codex --mode activations
 ```
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `-a, --agent` | required | `claude-code`/`claude`, `codex`, comma- or space-separated |
-| `-p, --period` | `7d` | `7d`, `2w`, `1m`, `1y` |
+| `-a, --agent` | both | `claude-code`/`claude`, `codex` — pass both space-separated (`-a claude-code codex`) or repeat the flag (`-a claude -a codex`) |
+| `-p, --period` | `all` | `7d`, `2w`, `1m`, `1y`, `all` |
 | `--since` | — | `yyyy-mm-dd`, overrides `--period` |
-| `--mode` | `attributed` | `attributed` \| `activations` \| `mentions` |
+| `--mode` | `attributed` (claude) / `activations` (codex) | `attributed` \| `activations` \| `mentions` |
 | `--format` | `text` | `text` \| `json` |
-| `--root` | — | Override agent sessions directory |
+| `-g, --global` | `false` | Force global scope (ignore current directory) |
+| `--root` | — | Override agent sessions directory; implies global |
 | `--scan-all-files` | — | Ignore file mtime, read everything |
 
 ### Modes

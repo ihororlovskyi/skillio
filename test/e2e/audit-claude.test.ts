@@ -59,12 +59,57 @@ describe('skvisor audit claude', () => {
     expect(parsed.skills[0]?.count).toBe(2);
   });
 
-  it('exits non-zero when --agent is missing', () => {
-    const { exitCode } = run(['--root', FIXTURES]);
-    expect(exitCode).not.toBe(0);
+  it('audits both agents and all-time when --agent is missing', () => {
+    const { stdout, exitCode } = run(['--root', FIXTURES]);
+    expect(exitCode).toBe(0);
+    expect(stdout).toContain('claude-code skill usage all-time');
+    expect(stdout).toContain('codex skill usage all-time');
   });
 
-  it('filters out old entries by default', () => {
+  it('accepts space-separated agents (-a claude-code codex)', () => {
+    const { stdout, exitCode } = run([
+      '--root',
+      FIXTURES,
+      '--scan-all-files',
+      '-a',
+      'claude-code',
+      'codex',
+    ]);
+    expect(exitCode).toBe(0);
+    expect(stdout).toContain('claude-code skill usage');
+    expect(stdout).toContain('codex skill usage');
+  });
+
+  it('accepts legacy "audit" keyword as no-op prefix', () => {
+    const { stdout, exitCode } = run([
+      'audit',
+      '--root',
+      FIXTURES,
+      '--scan-all-files',
+      '-a',
+      'claude-code',
+    ]);
+    expect(exitCode).toBe(0);
+    expect(stdout).toContain('claude-code skill usage');
+    expect(stdout).toMatch(/2\s+brainstorming/);
+  });
+
+  it('accepts repeated --agent flag (-a claude -a codex)', () => {
+    const { stdout, exitCode } = run([
+      '--root',
+      FIXTURES,
+      '--scan-all-files',
+      '-a',
+      'claude',
+      '-a',
+      'codex',
+    ]);
+    expect(exitCode).toBe(0);
+    expect(stdout).toContain('claude-code skill usage');
+    expect(stdout).toContain('codex skill usage');
+  });
+
+  it('filters out old entries with --period 7d', () => {
     const { stdout, exitCode } = run([
       '--agent',
       'claude-code',
