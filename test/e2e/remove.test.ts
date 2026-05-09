@@ -54,7 +54,7 @@ describe('skvisor remove', () => {
     const { stdout, exitCode } = run(['remove', '--dry-run', 'brainstorming'], TMP);
     expect(exitCode).toBe(0);
     expect(stdout).toContain('Would remove');
-    const { stdout: listOut } = run(['list'], TMP);
+    const { stdout: listOut } = run(['list', '--json'], TMP);
     expect(JSON.parse(listOut) as string[]).toContain('brainstorming');
   });
 });

@@ -2,8 +2,10 @@
 import { createRequire } from 'node:module';
 import { defineCommand, runMain } from 'citty';
 import { type AuditArgs, auditArgs, runAudit } from './commands/audit';
+import { costCommand } from './commands/cost';
 import { listCommand } from './commands/list';
 import { removeCommand } from './commands/remove';
+import { maybePrintUpdateNotice } from './utils/update-check';
 
 const { version } = createRequire(import.meta.url)('../package.json') as { version: string };
 
@@ -43,7 +45,7 @@ function mergeAgentArgs(argv: string[]): string[] {
 
 process.argv = mergeAgentArgs(process.argv);
 
-const SUBCOMMAND_NAMES = new Set(['list', 'ls', 'remove', 'rm']);
+const SUBCOMMAND_NAMES = new Set(['list', 'ls', 'remove', 'rm', 'cost']);
 
 const main = defineCommand({
   meta: {
@@ -66,7 +68,11 @@ const main = defineCommand({
     ls: listCommand,
     remove: removeCommand,
     rm: removeCommand,
+    cost: costCommand,
   },
 });
 
-runMain(main);
+(async () => {
+  await maybePrintUpdateNotice(version);
+  runMain(main);
+})();

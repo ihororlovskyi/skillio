@@ -6,7 +6,12 @@ import { parsePeriod } from '../utils/period';
 export const summaryCommand = defineCommand({
   meta: { description: 'Show session counts for all agents' },
   args: {
-    period: { type: 'string', alias: 'p', default: '7d', description: '7d, 2w, 1m, 1y' },
+    period: {
+      type: 'string',
+      alias: 'p',
+      default: '7d',
+      description: '30sec, 5min, 12h, 7d, 2w, 1m, 1y',
+    },
     since: { type: 'string', description: 'yyyy-mm-dd, overrides --period' },
     root: { type: 'string', description: 'Override agent sessions directory' },
     'scan-all-files': { type: 'boolean', default: false, description: 'Ignore file mtime' },
@@ -14,7 +19,7 @@ export const summaryCommand = defineCommand({
   async run({ args }) {
     const since = args.since
       ? new Date(`${args.since}T00:00:00`)
-      : new Date(Date.now() - parsePeriod(args.period) * 24 * 60 * 60 * 1000);
+      : new Date(Date.now() - parsePeriod(args.period));
 
     if (Number.isNaN(since.getTime())) {
       console.error(`Invalid --since value: ${args.since}`);

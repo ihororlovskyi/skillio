@@ -7,6 +7,7 @@ Thumbs.db
 
 /.agents
 /.claude
-/skills-lock.json
-/.tmp
+skills-lock.json
 /docs
+CLAUDE.md
+TODO.md

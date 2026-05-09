@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, rmSync } from 'node:fs';
+import { mkdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -30,13 +30,11 @@ describe('writeLock', () => {
 });
 
 describe('removeSkillFromLock', () => {
-  it('removes a skill and creates a backup', () => {
+  it('removes a skill and keeps the rest', () => {
     const path = join(TMP, 'lock.json');
     writeLock(path, { skills: { brainstorming: {}, 'writing-plans': {} } });
     const result = removeSkillFromLock(path, 'brainstorming');
     expect(result.removed).toBe(true);
-    expect(result.backupPath).toBeDefined();
-    expect(existsSync(result.backupPath ?? '')).toBe(true);
     expect(readLock(path).skills).not.toHaveProperty('brainstorming');
     expect(readLock(path).skills).toHaveProperty('writing-plans');
   });

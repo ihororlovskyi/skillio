@@ -50,7 +50,7 @@ export async function runAudit(args: AuditArgs): Promise<void> {
     ? new Date(`${args.since}T00:00:00`)
     : args.period === 'all'
       ? new Date(0)
-      : new Date(Date.now() - parsePeriod(args.period) * 24 * 60 * 60 * 1000);
+      : new Date(Date.now() - parsePeriod(args.period));
   const scanAllFiles = allTime || args['scan-all-files'];
 
   if (Number.isNaN(since.getTime())) {
@@ -140,7 +140,12 @@ export const auditArgs = {
     alias: 'a',
     description: 'claude-code, codex (default: both; pass space-separated for both)',
   },
-  period: { type: 'string', alias: 'p', default: 'all', description: '7d, 2w, 1m, 1y, all' },
+  period: {
+    type: 'string',
+    alias: 'p',
+    default: 'all',
+    description: '30sec, 5min, 12h, 7d, 2w, 1m, 1y, all',
+  },
   since: { type: 'string', description: 'yyyy-mm-dd, overrides --period' },
   mode: { type: 'string', description: 'attributed | activations | mentions' },
   format: { type: 'string', default: 'text', description: 'text | json' },
