@@ -55,6 +55,7 @@ describe('skvisor remove', () => {
     expect(exitCode).toBe(0);
     expect(stdout).toContain('Would remove');
     const { stdout: listOut } = run(['list', '--json'], TMP);
-    expect(JSON.parse(listOut) as string[]).toContain('brainstorming');
+    const parsed = JSON.parse(listOut) as { 'skills-lock.json': string[] };
+    expect(parsed['skills-lock.json']).toContain('brainstorming');
   });
 });
