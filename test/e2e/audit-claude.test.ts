@@ -7,6 +7,7 @@ const FIXTURES = join(process.cwd(), 'test', 'fixtures', 'claude');
 describe('skvisor audit claude', () => {
   it('counts attributed skills from fixtures', () => {
     const { stdout, exitCode } = run([
+      'audit',
       '--agent',
       'claude-code',
       '--mode',
@@ -24,6 +25,7 @@ describe('skvisor audit claude', () => {
 
   it('counts activations mode', () => {
     const { stdout, exitCode } = run([
+      'audit',
       '--agent',
       'claude-code',
       '--mode',
@@ -39,6 +41,7 @@ describe('skvisor audit claude', () => {
 
   it('outputs valid JSON with --format json', () => {
     const { stdout, exitCode } = run([
+      'audit',
       '--agent',
       'claude-code',
       '--mode',
@@ -60,7 +63,7 @@ describe('skvisor audit claude', () => {
   });
 
   it('audits both agents and all-time when --agent is missing', () => {
-    const { stdout, exitCode } = run(['--root', FIXTURES]);
+    const { stdout, exitCode } = run(['audit', '--root', FIXTURES]);
     expect(exitCode).toBe(0);
     expect(stdout).toContain('claude-code skill usage all-time');
     expect(stdout).toContain('codex skill usage all-time');
@@ -68,6 +71,7 @@ describe('skvisor audit claude', () => {
 
   it('accepts space-separated agents (-a claude-code codex)', () => {
     const { stdout, exitCode } = run([
+      'audit',
       '--root',
       FIXTURES,
       '--scan-all-files',
@@ -96,6 +100,7 @@ describe('skvisor audit claude', () => {
 
   it('accepts repeated --agent flag (-a claude -a codex)', () => {
     const { stdout, exitCode } = run([
+      'audit',
       '--root',
       FIXTURES,
       '--scan-all-files',
@@ -111,6 +116,7 @@ describe('skvisor audit claude', () => {
 
   it('filters out old entries with --period 7d', () => {
     const { stdout, exitCode } = run([
+      'audit',
       '--agent',
       'claude-code',
       '--mode',

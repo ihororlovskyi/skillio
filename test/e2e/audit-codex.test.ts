@@ -7,6 +7,7 @@ const FIXTURES = join(process.cwd(), 'test', 'fixtures', 'codex');
 describe('skvisor audit codex', () => {
   it('counts activations from exec_command_end entries', () => {
     const { stdout, exitCode } = run([
+      'audit',
       '--agent',
       'codex',
       '--mode',
@@ -23,6 +24,7 @@ describe('skvisor audit codex', () => {
 
   it('outputs valid JSON', () => {
     const { stdout, exitCode } = run([
+      'audit',
       '--agent',
       'codex',
       '--mode',

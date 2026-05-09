@@ -9,10 +9,6 @@ import { maybePrintUpdateNotice } from './utils/update-check';
 
 const { version } = createRequire(import.meta.url)('../package.json') as { version: string };
 
-if (process.argv[2] === 'audit') {
-  process.argv.splice(2, 1);
-}
-
 function mergeAgentArgs(argv: string[]): string[] {
   const out: string[] = [];
   const values: string[] = [];
@@ -45,17 +41,12 @@ function mergeAgentArgs(argv: string[]): string[] {
 
 process.argv = mergeAgentArgs(process.argv);
 
-const SUBCOMMAND_NAMES = new Set(['list', 'ls', 'remove', 'rm', 'cost']);
+const SUBCOMMAND_NAMES = new Set(['list', 'ls', 'remove', 'rm', 'cost', 'co', 'audit']);
 
-const main = defineCommand({
-  meta: {
-    name: 'skillio',
-    version,
-    description: 'Audit and manage AI agent skills',
-  },
+const auditCommand = defineCommand({
+  meta: { description: 'Audit skill usage' },
   args: auditArgs,
   async run({ args }) {
-    if (SUBCOMMAND_NAMES.has(process.argv[2] ?? '')) return;
     try {
       await runAudit(args as unknown as AuditArgs);
     } catch (e) {
@@ -63,12 +54,27 @@ const main = defineCommand({
       process.exit(1);
     }
   },
+});
+
+const main = defineCommand({
+  meta: {
+    name: 'skillio',
+    version,
+    description: 'Audit and manage AI agent skills',
+  },
+  args: costCommand.args,
+  async run({ args }) {
+    if (SUBCOMMAND_NAMES.has(process.argv[2] ?? '')) return;
+    await costCommand.run?.({ args, cmd: costCommand, rawArgs: process.argv.slice(2) } as never);
+  },
   subCommands: {
     list: listCommand,
     ls: listCommand,
     remove: removeCommand,
     rm: removeCommand,
     cost: costCommand,
+    co: costCommand,
+    audit: auditCommand,
   },
 });
 
