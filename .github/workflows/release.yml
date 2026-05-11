@@ -25,8 +25,11 @@ jobs:
           node-version: 22
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Upgrade npm (Trusted Publishing requires >= 11.5.1)
-        run: npm install -g npm@latest
+      - name: Activate npm >= 11.5.1 (Trusted Publishing requires it)
+        run: |
+          corepack enable
+          corepack prepare npm@11.5.1 --activate
+          npm --version
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
