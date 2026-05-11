@@ -8,9 +8,9 @@ describe('skl ls', () => {
   it('renders compact per-source one-liner: label : N skills : names', () => {
     const { stdout, exitCode } = run(['ls'], LOCK_DIR);
     expect(exitCode).toBe(0);
-    expect(stdout).toMatch(/\.claude\/skills\s+:\s+2 skills\s+:\s+brainstorming\s+writing-plans/);
+    expect(stdout).toMatch(/\.claude\/skills\s+:\s+2 skills\s+:\s+skill-bar\s+skill-foo/);
     expect(stdout).toMatch(
-      /skills-lock\.json\s+:\s+3 skills\s+:\s+brainstorming.*frontend-design.*writing-plans/,
+      /skills-lock\.json\s+:\s+3 skills\s+:\s+skill-bar\s+skill-baz\s+skill-foo/,
     );
     expect(stdout).not.toMatch(/~\d+ tok/);
   });
@@ -18,7 +18,7 @@ describe('skl ls', () => {
   it('emits a diff line for skills missing on disk', () => {
     const { stdout, exitCode } = run(['ls'], LOCK_DIR);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain('skills-lock.json has 1 skill missing on disk: frontend-design');
+    expect(stdout).toContain('skills-lock.json has 1 skill missing on disk: skill-baz');
   });
 
   it('list alias works', () => {

@@ -6,29 +6,29 @@ describe('formatUsageRow', () => {
     expect(
       formatUsageRow({
         count: 8,
-        name: 'brainstorming',
+        name: 'skill-foo',
         countWidth: 2,
       }),
-    ).toBe(' 8 brainstorming');
+    ).toBe(' 8 skill-foo');
   });
 
   it('renders a multi-digit count without padding overflow', () => {
     expect(
       formatUsageRow({
         count: 91,
-        name: 'subagent-driven-development',
+        name: 'skill-corge',
         countWidth: 2,
       }),
-    ).toBe('91 subagent-driven-development');
+    ).toBe('91 skill-corge');
   });
 
   it('renders a zero count with width-aligned padding', () => {
     expect(
       formatUsageRow({
         count: 0,
-        name: 'frontend-design',
+        name: 'skill-baz',
         countWidth: 2,
       }),
-    ).toBe(' 0 frontend-design');
+    ).toBe(' 0 skill-baz');
   });
 });

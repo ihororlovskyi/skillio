@@ -1,5 +1,5 @@
 ---
-name: writing-plans
+name: skill-bar
 description: write a plan from a spec
 ---
-# writing-plans
+# skill-bar

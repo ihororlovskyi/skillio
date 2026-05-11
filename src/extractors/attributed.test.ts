@@ -3,7 +3,7 @@ import { extractAttributed } from './attributed';
 
 describe('extractAttributed', () => {
   it('returns skill from attributionSkill field', () => {
-    expect(extractAttributed({ attributionSkill: 'brainstorming' })).toEqual(['brainstorming']);
+    expect(extractAttributed({ attributionSkill: 'skill-foo' })).toEqual(['skill-foo']);
   });
   it('returns empty when field is missing', () => {
     expect(extractAttributed({ type: 'user', content: [] })).toEqual([]);

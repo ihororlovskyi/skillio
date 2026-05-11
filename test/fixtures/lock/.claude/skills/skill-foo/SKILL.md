@@ -1,5 +1,5 @@
 ---
-name: brainstorming
+name: skill-foo
 description: explore ideas before building
 ---
-# brainstorming
+# skill-foo

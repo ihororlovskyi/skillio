@@ -15,8 +15,8 @@ describe('readLock', () => {
   });
   it('reads an existing lock file', () => {
     const path = join(TMP, 'lock.json');
-    writeLock(path, { skills: { brainstorming: {} } });
-    expect(readLock(path)).toEqual({ skills: { brainstorming: {} } });
+    writeLock(path, { skills: { 'skill-foo': {} } });
+    expect(readLock(path)).toEqual({ skills: { 'skill-foo': {} } });
   });
 });
 
@@ -32,11 +32,11 @@ describe('writeLock', () => {
 describe('removeSkillFromLock', () => {
   it('removes a skill and keeps the rest', () => {
     const path = join(TMP, 'lock.json');
-    writeLock(path, { skills: { brainstorming: {}, 'writing-plans': {} } });
-    const result = removeSkillFromLock(path, 'brainstorming');
+    writeLock(path, { skills: { 'skill-foo': {}, 'skill-bar': {} } });
+    const result = removeSkillFromLock(path, 'skill-foo');
     expect(result.removed).toBe(true);
-    expect(readLock(path).skills).not.toHaveProperty('brainstorming');
-    expect(readLock(path).skills).toHaveProperty('writing-plans');
+    expect(readLock(path).skills).not.toHaveProperty('skill-foo');
+    expect(readLock(path).skills).toHaveProperty('skill-bar');
   });
   it('returns removed: false when skill is absent', () => {
     const path = join(TMP, 'lock.json');
