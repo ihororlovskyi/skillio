@@ -7,7 +7,6 @@ on:
 
 permissions:
   contents: write
-  id-token: write
 
 jobs:
   release:
@@ -24,12 +23,6 @@ jobs:
         with:
           node-version: 22
           registry-url: 'https://registry.npmjs.org'
-
-      - name: Activate npm >= 11.5.1 (Trusted Publishing requires it)
-        run: |
-          corepack enable
-          corepack prepare npm@latest --activate
-          npm --version
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
@@ -58,8 +51,10 @@ jobs:
       - name: Pack tarball
         run: npm pack
 
-      - name: Publish to npm (OIDC Trusted Publishing)
-        run: npm publish --provenance --access public
+      - name: Publish to npm
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Create GitHub release with tarball
         env:
