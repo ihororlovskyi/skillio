@@ -66,23 +66,24 @@ audits both Claude Code and Codex over all time).
 ## Usage
 
 ```sh
-# from any repo: scoped to that repo
-skl                                    # both agents, all-time, this repo only
-skl -a claude --period 7d              # claude only, last 7 days, this repo
+# bare command — quick summary across global + local sources, with verdict
+skl
+skillio                                # equivalent
 
-# from $HOME (or anywhere with -g): global, all repos on this machine
-cd ~ && skl                            # auto-global when cwd === $HOME
-skl -g                                 # force global from any repo
-skl --global --period 1m               # global, last 30 days
+# subcommands
+skl ls                                 # list skills per source with diffs
+skl cost                               # ambient ballast cost (frontmatter tokens) per skill
+skl usage                              # consumption: usage count × frontmatter tokens
+skl rm brainstorming                   # remove from lock + delete on-disk dir (with Y/n prompt)
+skl rm brainstorming writing-plans     # remove multiple
+skl rm --yes brainstorming             # skip confirmation
+skl rm --dry-run brainstorming         # preview only
 
-skillio …                              # same binary, longer alias
-skillio -a claude-code codex           # both agents (space-separated)
-skillio -a claude -a codex             # equivalent: repeated --agent flag
-skillio list                           # list skills in local skills-lock.json
-skillio list --global                  # list from ~/.agents/.skill-lock.json
-skillio remove brainstorming           # remove skill from lock
-skillio remove brainstorming writing-plans  # remove multiple skills
-skillio remove --dry-run brainstorming # preview removal
+# scope flags
+skl -g                                 # force global scope on any subcommand
+skl usage -p 7d                        # last 7 days
+skl usage -a claude-code codex         # both agents (space-separated)
+skl usage -a claude -a codex           # equivalent: repeated --agent flag
 ```
 
 ### Scope (per-repo vs global)
@@ -96,26 +97,38 @@ skillio remove --dry-run brainstorming # preview removal
 | anywhere with `-g` / `--global` | global override |
 | with `--root <dir>` | that exact dir, treated as global |
 
+> Bare `skl` (no subcommand) ignores `-g` — it always shows both Global and Local sections plus a grand Total.
+
 ## What it does
 
-- **Audit skill usage** — parse agent session logs and count which skills were invoked, when, and how often
-- **Manage a skills lock** — list and remove skills from a local or global lock file
+- **Summary** (`skl`) — counts and tokens across `.claude/skills`, `.agents/skills`, and `skills-lock.json` for both global and local scopes, with a cleanup verdict.
+- **Audit skill usage** (`skl usage`) — parse agent session logs and count which skills were invoked, when, and how often.
+- **Manage a skills lock** (`skl ls`, `skl rm`) — inspect and remove skills from a local or global lock file.
 
 ## Options
 
-### `skillio` (audit)
+### Global flags
 
-Audits skill usage from agent session logs. This is the default operation —
-no subcommand keyword is needed.
+| Flag | Default | Description |
+|------|---------|-------------|
+| `-h, --help` | — | Show help and exit |
+| `-v, --version` | — | Show version and exit |
+| `-g, --global` | `false` | Use global scope (ignore current directory) |
+| `-p, --period` | `all` | Period for `usage`: `30sec`, `5min`, `12h`, `7d`, `2w`, `1m`, `1y`, `all` |
+| `-a, --agent` | both | Agent for `usage`: `claude-code` (alias `claude`), `codex` — pass both space-separated (`-a claude-code codex`) or repeat the flag |
+
+### `skillio usage` / `us`
+
+Audits skill usage from agent session logs.
 
 ```sh
-skillio --agent claude --period 7d
-skillio --agent codex --mode activations
+skillio usage --agent claude --period 7d
+skillio usage --agent codex --mode activations
 ```
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `-a, --agent` | both | `claude-code`/`claude`, `codex` — pass both space-separated (`-a claude-code codex`) or repeat the flag (`-a claude -a codex`) |
+| `-a, --agent` | both | `claude-code`/`claude`, `codex` |
 | `-p, --period` | `all` | `7d`, `2w`, `1m`, `1y`, `all` |
 | `--since` | — | `yyyy-mm-dd`, overrides `--period` |
 | `--mode` | `attributed` (claude) / `activations` (codex) | `attributed` \| `activations` \| `mentions` |
@@ -137,6 +150,13 @@ skillio list            # local skills-lock.json
 skillio list --global   # ~/.agents/.skill-lock.json
 ```
 
+### `skillio cost` / `co`
+
+```sh
+skillio cost            # local: per-skill frontmatter tokens with verdict
+skillio cost --global   # same, against ~/.agents/.skill-lock.json
+```
+
 ### `skillio remove` / `rm`
 
 ```sh
@@ -144,6 +164,7 @@ skillio remove <skill-name>
 skillio remove <skill-one> <skill-two>
 skillio remove --global <skill-name>
 skillio remove --dry-run <skill-name>
+skillio remove --yes <skill-name>      # skip confirmation prompt
 ```
 
 ## Requirements

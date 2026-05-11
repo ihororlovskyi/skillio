@@ -9,11 +9,15 @@ export interface RunResult {
   exitCode: number;
 }
 
-export function run(args: string[], cwd?: string): RunResult {
+export function run(
+  args: string[],
+  cwd?: string,
+  env?: Record<string, string>,
+): RunResult {
   const result = spawnSync(process.execPath, [CLI, ...args], {
     encoding: 'utf8',
     cwd: cwd ?? process.cwd(),
-    env: { ...process.env, SKILLIO_NO_UPDATE_CHECK: '1' },
+    env: { ...process.env, SKILLIO_NO_UPDATE_CHECK: '1', ...env },
   });
   return {
     stdout: result.stdout ?? '',

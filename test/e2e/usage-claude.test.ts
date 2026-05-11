@@ -4,9 +4,10 @@ import { run } from './helpers';
 
 const FIXTURES = join(process.cwd(), 'test', 'fixtures', 'claude');
 
-describe('skvisor audit claude', () => {
+describe('skl usage claude', () => {
   it('counts attributed skills from fixtures', () => {
     const { stdout, exitCode } = run([
+      'usage',
       '--agent',
       'claude-code',
       '--mode',
@@ -24,6 +25,7 @@ describe('skvisor audit claude', () => {
 
   it('counts activations mode', () => {
     const { stdout, exitCode } = run([
+      'usage',
       '--agent',
       'claude-code',
       '--mode',
@@ -39,6 +41,7 @@ describe('skvisor audit claude', () => {
 
   it('outputs valid JSON with --format json', () => {
     const { stdout, exitCode } = run([
+      'usage',
       '--agent',
       'claude-code',
       '--mode',
@@ -60,14 +63,15 @@ describe('skvisor audit claude', () => {
   });
 
   it('audits both agents and all-time when --agent is missing', () => {
-    const { stdout, exitCode } = run(['--root', FIXTURES]);
+    const { stdout, exitCode } = run(['usage', '--root', FIXTURES]);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain('claude-code skill usage all-time');
-    expect(stdout).toContain('codex skill usage all-time');
+    expect(stdout).toMatch(/claude-code \d+ skills? \d+ times? by all/);
+    expect(stdout).toMatch(/codex \d+ skills? \d+ times? by all/);
   });
 
   it('accepts space-separated agents (-a claude-code codex)', () => {
     const { stdout, exitCode } = run([
+      'usage',
       '--root',
       FIXTURES,
       '--scan-all-files',
@@ -76,13 +80,13 @@ describe('skvisor audit claude', () => {
       'codex',
     ]);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain('claude-code skill usage');
-    expect(stdout).toContain('codex skill usage');
+    expect(stdout).toMatch(/claude-code \d+ skills?/);
+    expect(stdout).toMatch(/codex \d+ skills?/);
   });
 
   it('accepts legacy "audit" keyword as no-op prefix', () => {
     const { stdout, exitCode } = run([
-      'audit',
+      'usage',
       '--root',
       FIXTURES,
       '--scan-all-files',
@@ -90,12 +94,13 @@ describe('skvisor audit claude', () => {
       'claude-code',
     ]);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain('claude-code skill usage');
+    expect(stdout).toMatch(/claude-code \d+ skills?/);
     expect(stdout).toMatch(/2\s+brainstorming/);
   });
 
   it('accepts repeated --agent flag (-a claude -a codex)', () => {
     const { stdout, exitCode } = run([
+      'usage',
       '--root',
       FIXTURES,
       '--scan-all-files',
@@ -105,12 +110,13 @@ describe('skvisor audit claude', () => {
       'codex',
     ]);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain('claude-code skill usage');
-    expect(stdout).toContain('codex skill usage');
+    expect(stdout).toMatch(/claude-code \d+ skills?/);
+    expect(stdout).toMatch(/codex \d+ skills?/);
   });
 
   it('filters out old entries with --period 7d', () => {
     const { stdout, exitCode } = run([
+      'usage',
       '--agent',
       'claude-code',
       '--mode',

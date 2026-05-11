@@ -1,60 +1,65 @@
-import { cpSync, mkdtempSync, rmSync } from 'node:fs';
-import { join } from 'node:path';
+import { cpSync, existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { run } from './helpers';
 
-const LOCK_FIXTURE = join(process.cwd(), 'test', 'fixtures', 'lock', 'skills-lock.json');
+const LOCK_DIR = join(process.cwd(), 'test', 'fixtures', 'lock');
 
 let TMP = '';
 
 beforeEach(() => {
-  TMP = mkdtempSync(join(tmpdir(), 'skvisor-e2e-'));
-  cpSync(LOCK_FIXTURE, join(TMP, 'skills-lock.json'));
+  TMP = mkdtempSync(join(tmpdir(), 'skl-rm-e2e-'));
+  cpSync(LOCK_DIR, TMP, { recursive: true });
 });
 
 afterEach(() => rmSync(TMP, { recursive: true, force: true }));
 
-describe('skvisor remove', () => {
-  it('removes a skill and prints the updated list', () => {
-    const { stdout, exitCode } = run(['remove', 'brainstorming'], TMP);
+describe('skl rm', () => {
+  it('--yes removes from lock and deletes .claude/skills directory', () => {
+    expect(existsSync(join(TMP, '.claude/skills/brainstorming/SKILL.md'))).toBe(true);
+    const { stdout, exitCode } = run(['rm', '--yes', 'brainstorming'], TMP);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain('Removed "brainstorming"');
-    const match = stdout.match(/\[[\s\S]*\]/);
-    const skills = JSON.parse(match![0]!) as string[];
-    expect(skills).not.toContain('brainstorming');
-    expect(skills).toContain('writing-plans');
+    expect(stdout).toContain('Removed "brainstorming" from skills-lock.json');
+    expect(stdout).toMatch(/Removed "brainstorming" from \.claude\/skills/);
+    expect(existsSync(join(TMP, '.claude/skills/brainstorming'))).toBe(false);
+    const { stdout: lsOut } = run(['ls'], TMP);
+    expect(lsOut).toMatch(/skills-lock\.json\s+:\s+(?!.*\bbrainstorming\b).*/);
   });
 
-  it('rm alias works', () => {
-    const { stdout, exitCode } = run(['rm', 'frontend-design'], TMP);
+  it('--dry-run shows the plan without deleting', () => {
+    const { stdout, exitCode } = run(['rm', '--dry-run', 'brainstorming'], TMP);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain('Removed "frontend-design"');
+    expect(stdout).toContain('Will remove "brainstorming"');
+    expect(stdout).toContain('skills-lock.json');
+    expect(existsSync(join(TMP, '.claude/skills/brainstorming/SKILL.md'))).toBe(true);
   });
 
-  it('reports when skill is not in lock', () => {
-    const { stdout, exitCode } = run(['remove', 'nonexistent'], TMP);
+  it('reports skips when skill is missing from a source', () => {
+    const { stdout, exitCode } = run(['rm', '--yes', 'frontend-design'], TMP);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain('not in');
+    expect(stdout).toContain('Removed "frontend-design" from skills-lock.json');
+    expect(stdout).toContain('Skipped .claude/skills (not found)');
   });
 
-  it('removes multiple skills at once', () => {
-    const { stdout, exitCode } = run(['remove', 'brainstorming', 'writing-plans'], TMP);
+  it('exits 1 when nothing matches', () => {
+    const { stdout, exitCode } = run(['rm', '--yes', 'nonexistent'], TMP);
+    expect(exitCode).toBe(1);
+    expect(stdout).toContain('"nonexistent" is not in lock or on disk');
+  });
+
+  it('removes multiple skills with a single confirmation (--yes)', () => {
+    const { stdout, exitCode } = run(['rm', '--yes', 'brainstorming', 'writing-plans'], TMP);
     expect(exitCode).toBe(0);
     expect(stdout).toContain('Removed "brainstorming"');
     expect(stdout).toContain('Removed "writing-plans"');
-    const match = stdout.match(/\[[\s\S]*\]/);
-    const skills = JSON.parse(match![0]!) as string[];
-    expect(skills).not.toContain('brainstorming');
-    expect(skills).not.toContain('writing-plans');
-    expect(skills).toContain('frontend-design');
+    expect(existsSync(join(TMP, '.claude/skills/brainstorming'))).toBe(false);
+    expect(existsSync(join(TMP, '.claude/skills/writing-plans'))).toBe(false);
   });
 
-  it('--dry-run prints without modifying the file', () => {
-    const { stdout, exitCode } = run(['remove', '--dry-run', 'brainstorming'], TMP);
+  it('rm alias works', () => {
+    const { stdout, exitCode } = run(['remove', '--yes', 'brainstorming'], TMP);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain('Would remove');
-    const { stdout: listOut } = run(['list', '--json'], TMP);
-    expect(JSON.parse(listOut) as string[]).toContain('brainstorming');
+    expect(stdout).toContain('Removed "brainstorming"');
   });
 });

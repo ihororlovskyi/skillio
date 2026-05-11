@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "skills": {
+    "brainstorming": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/brainstorming/SKILL.md",
+      "computedHash": "deadbeef"
+    },
+    "no-fm": {
+      "source": "test",
+      "sourceType": "local",
+      "skillPath": "skills/no-fm/SKILL.md",
+      "computedHash": "deadbeef"
+    },
+    "ghost-skill": {
+      "source": "test",
+      "sourceType": "local",
+      "skillPath": "skills/ghost-skill/SKILL.md",
+      "computedHash": "deadbeef"
+    }
+  }
+}

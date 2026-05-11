@@ -1,56 +1,123 @@
 import { defineCommand } from 'citty';
-import { readClaudeUsage } from '../readers/claude';
-import { readCodexUsage } from '../readers/codex';
-import { parsePeriod } from '../utils/period';
+import { getLockPath } from '../lock/file';
+import { green, red, yellow } from '../utils/ansi';
+import { discoverSkills, type SkillRecord } from '../utils/discover-skills';
+
+type Verdict = 'ok' | 'plan' | 'cleanup';
+
+interface SourceRow {
+  label: string;
+  count: number;
+  tokens: number;
+}
+
+interface Section {
+  title: 'Global' | 'Local';
+  rows: SourceRow[];
+  totalCount: number;
+  totalTokens: number;
+}
+
+function classify(total: number): {
+  verdict: Verdict;
+  message: string;
+  paint: (s: string) => string;
+} {
+  if (total < 1000) return { verdict: 'ok', message: 'OK — keep it lean', paint: green };
+  if (total <= 1500)
+    return { verdict: 'plan', message: 'time to plan some cleanup', paint: yellow };
+  return { verdict: 'cleanup', message: 'ballast — clean it up', paint: red };
+}
+
+function bucketTokens(records: SkillRecord[], source: SkillRecord['sources'][number]): number {
+  return records
+    .filter((r) => r.sources.includes(source))
+    .reduce((acc, r) => acc + (r.frontmatterTokens ?? 0), 0);
+}
+
+function bucketCount(records: SkillRecord[], source: SkillRecord['sources'][number]): number {
+  return records.filter((r) => r.sources.includes(source)).length;
+}
+
+function buildSection(opts: { isGlobal: boolean; cwd: string; prefix: string }): Section {
+  const lockPath = getLockPath(opts.isGlobal);
+  const records = [
+    ...discoverSkills({ isGlobal: opts.isGlobal, cwd: opts.cwd, lockPath }).values(),
+  ];
+  const rows: SourceRow[] = [
+    {
+      label: `${opts.prefix}.claude/skills`,
+      count: bucketCount(records, '.claude'),
+      tokens: bucketTokens(records, '.claude'),
+    },
+    {
+      label: `${opts.prefix}.agents/skills`,
+      count: bucketCount(records, '.agents'),
+      tokens: bucketTokens(records, '.agents'),
+    },
+    {
+      label: `${opts.prefix}skills-lock.json`,
+      count: bucketCount(records, 'lock'),
+      tokens: bucketTokens(records, 'lock'),
+    },
+  ];
+  const totalTokens = records.reduce((acc, r) => acc + (r.frontmatterTokens ?? 0), 0);
+  const totalCount = records.length;
+  return {
+    title: opts.isGlobal ? 'Global' : 'Local',
+    rows,
+    totalCount,
+    totalTokens,
+  };
+}
+
+function formatRow(row: SourceRow, labelW: number, countW: number, tokenW: number): string {
+  const countCell = row.count === 0 ? '(empty)' : `${row.count} skill${row.count === 1 ? '' : 's'}`;
+  const tokensCell = `~${row.tokens} tok`;
+  return `${row.label.padEnd(labelW)} : ${countCell.padEnd(countW)}  ${tokensCell.padStart(tokenW)}`;
+}
+
+function renderSection(section: Section): string[] {
+  const labelW = Math.max(...section.rows.map((r) => r.label.length));
+  const countCells = section.rows.map((r) =>
+    r.count === 0 ? '(empty)' : `${r.count} skill${r.count === 1 ? '' : 's'}`,
+  );
+  const countW = Math.max(...countCells.map((c) => c.length));
+  const tokenW = Math.max(...section.rows.map((r) => `~${r.tokens} tok`.length));
+  return [section.title, ...section.rows.map((r) => formatRow(r, labelW, countW, tokenW))];
+}
+
+export interface SummaryArgs {
+  global: boolean;
+}
+
+export function runSummary(args: SummaryArgs): void {
+  const cwd = process.cwd();
+  const global = buildSection({ isGlobal: true, cwd, prefix: '~/' });
+  const local = buildSection({ isGlobal: false, cwd, prefix: '' });
+
+  const lines: string[] = [];
+  lines.push(...renderSection(global));
+  lines.push('');
+  lines.push(...renderSection(local));
+  lines.push('');
+
+  const grandTokens = global.totalTokens + local.totalTokens;
+  const grandCount = global.totalCount + local.totalCount;
+  const { message, paint } = classify(grandTokens);
+  lines.push(`Total: ${grandCount} skills  ~${grandTokens} tok    ${paint(message)}`);
+
+  // suppress unused warning until we need it
+  void args;
+  console.log(lines.join('\n'));
+}
 
 export const summaryCommand = defineCommand({
-  meta: { description: 'Show session counts for all agents' },
+  meta: { description: 'Show skill counts and tokens across global + local sources' },
   args: {
-    period: {
-      type: 'string',
-      alias: 'p',
-      default: '7d',
-      description: '30sec, 5min, 12h, 7d, 2w, 1m, 1y',
-    },
-    since: { type: 'string', description: 'yyyy-mm-dd, overrides --period' },
-    root: { type: 'string', description: 'Override agent sessions directory' },
-    'scan-all-files': { type: 'boolean', default: false, description: 'Ignore file mtime' },
+    global: { type: 'boolean', alias: 'g', default: false, description: 'Use global scope' },
   },
-  async run({ args }) {
-    const since = args.since
-      ? new Date(`${args.since}T00:00:00`)
-      : new Date(Date.now() - parsePeriod(args.period));
-
-    if (Number.isNaN(since.getTime())) {
-      console.error(`Invalid --since value: ${args.since}`);
-      process.exit(1);
-    }
-
-    const claude = readClaudeUsage({
-      since,
-      mode: 'attributed',
-      root: args.root,
-      scanAllFiles: args['scan-all-files'],
-    });
-
-    const codex = readCodexUsage({
-      since,
-      mode: 'activations',
-      root: args.root,
-      scanAllFiles: args['scan-all-files'],
-    });
-
-    const label = args.since ? `since ${args.since}` : `last ${args.period}`;
-
-    const nameWidth = Math.max('claude'.length, 'codex'.length);
-    const countWidth = Math.max(String(claude.filesRead).length, String(codex.filesRead).length);
-
-    console.log(`Agent sessions (${label}):`);
-    console.log(
-      `  ${'claude'.padEnd(nameWidth)}  ${String(claude.filesRead).padStart(countWidth)} sessions`,
-    );
-    console.log(
-      `  ${'codex'.padEnd(nameWidth)}   ${String(codex.filesRead).padStart(countWidth)} sessions`,
-    );
+  run({ args }) {
+    runSummary({ global: args.global });
   },
 });

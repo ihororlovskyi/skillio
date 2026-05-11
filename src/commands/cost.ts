@@ -1,62 +1,61 @@
 import { defineCommand } from 'citty';
-import { getLockPath, readLock } from '../lock/file';
-import { countFrontmatterTokens, findSkillFile } from '../utils/skill-files';
+import { getLockPath } from '../lock/file';
+import { green, red, yellow } from '../utils/ansi';
+import { discoverSkills, type SkillRecord } from '../utils/discover-skills';
 
-interface Row {
-  skill: string;
-  tokens: number | 'missing' | 'no-frontmatter';
+type Verdict = 'ok' | 'plan' | 'cleanup';
+
+function classify(total: number): {
+  verdict: Verdict;
+  message: string;
+  paint: (s: string) => string;
+} {
+  if (total < 1000) return { verdict: 'ok', message: 'OK — keep it lean', paint: green };
+  if (total <= 1500)
+    return { verdict: 'plan', message: 'time to plan some cleanup', paint: yellow };
+  return { verdict: 'cleanup', message: 'ballast — clean it up', paint: red };
+}
+
+function sortRows(records: SkillRecord[]): SkillRecord[] {
+  const ok = records.filter((r) => r.status === 'ok');
+  const rest = records.filter((r) => r.status !== 'ok');
+  ok.sort(
+    (a, b) =>
+      (b.frontmatterTokens ?? 0) - (a.frontmatterTokens ?? 0) || a.name.localeCompare(b.name),
+  );
+  rest.sort((a, b) => a.name.localeCompare(b.name));
+  return [...ok, ...rest];
 }
 
 export const costCommand = defineCommand({
-  meta: {
-    description: 'Estimate ambient token cost (frontmatter) of each skill in the lock file',
-  },
+  meta: { description: 'Show ambient ballast cost (per-skill frontmatter tokens) sorted desc' },
   args: {
-    global: { type: 'boolean', alias: 'g', default: false, description: 'Use global lock file' },
-    json: { type: 'boolean', default: false, description: 'Output as JSON' },
+    global: { type: 'boolean', alias: 'g', default: false, description: 'Use global scope' },
   },
   run({ args }) {
     const lockPath = getLockPath(args.global);
-    const lock = readLock(lockPath);
-    const names = Object.keys(lock.skills).sort();
+    const map = discoverSkills({ isGlobal: args.global, cwd: process.cwd(), lockPath });
+    const rows = sortRows([...map.values()]);
+    const total = rows.reduce((acc, r) => acc + (r.frontmatterTokens ?? 0), 0);
+    const { message, paint } = classify(total);
 
-    const rows: Row[] = names.map((skill) => {
-      const file = findSkillFile(skill, lockPath, args.global);
-      if (!file) return { skill, tokens: 'missing' };
-      const tokens = countFrontmatterTokens(file);
-      if (tokens === undefined) return { skill, tokens: 'no-frontmatter' };
-      return { skill, tokens };
-    });
-
-    if (args.json) {
-      console.log(JSON.stringify(rows, null, 2));
-      return;
-    }
+    console.log(args.global ? 'Global' : 'Local');
+    console.log('');
 
     if (rows.length === 0) {
       console.log(`No skills in ${lockPath}`);
       return;
     }
 
-    const nameWidth = Math.max(...rows.map((r) => r.skill.length));
-    let total = 0;
-    let missing = 0;
+    const nameWidth = Math.max(...rows.map((r) => r.name.length));
     for (const r of rows) {
       let cell: string;
-      if (typeof r.tokens === 'number') {
-        cell = `~${r.tokens} tok`;
-        total += r.tokens;
-      } else if (r.tokens === 'missing') {
-        cell = 'missing';
-        missing += 1;
-      } else {
-        cell = '(no frontmatter)';
-      }
-      console.log(`${r.skill.padEnd(nameWidth)}  ${cell}`);
+      if (r.status === 'ok') cell = `~${r.frontmatterTokens} tok`;
+      else if (r.status === 'missing') cell = 'missing';
+      else cell = '(no frontmatter)';
+      console.log(`${r.name.padEnd(nameWidth)}  ${cell}`);
     }
-
     console.log('');
-    const tail = missing > 0 ? ` (${missing} missing)` : '';
-    console.log(`Total: ~${total} tok across ${rows.length} skills${tail}`);
+    console.log(`Total: ~${total} tok across ${rows.length} skills    ${paint(message)}`);
   },
 });

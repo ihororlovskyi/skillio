@@ -4,27 +4,26 @@ import { run } from './helpers';
 
 const LOCK_DIR = join(process.cwd(), 'test', 'fixtures', 'lock');
 
-describe('skvisor list', () => {
-  it('lists skills from skills-lock.json in cwd with total count', () => {
-    const { stdout, exitCode } = run(['list'], LOCK_DIR);
-    expect(exitCode).toBe(0);
-    expect(stdout).toContain('brainstorming');
-    expect(stdout).toContain('writing-plans');
-    expect(stdout).toContain('frontend-design');
-    expect(stdout).toContain('Total: 3 skills');
-  });
-
-  it('ls alias works the same as list', () => {
+describe('skl ls', () => {
+  it('renders compact per-source one-liner: label : N skills : names', () => {
     const { stdout, exitCode } = run(['ls'], LOCK_DIR);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain('Total: 3 skills');
+    expect(stdout).toMatch(/\.claude\/skills\s+:\s+2 skills\s+:\s+brainstorming\s+writing-plans/);
+    expect(stdout).toMatch(
+      /skills-lock\.json\s+:\s+3 skills\s+:\s+brainstorming.*frontend-design.*writing-plans/,
+    );
+    expect(stdout).not.toMatch(/~\d+ tok/);
   });
 
-  it('--json outputs a JSON array', () => {
-    const { stdout, exitCode } = run(['ls', '--json'], LOCK_DIR);
+  it('emits a diff line for skills missing on disk', () => {
+    const { stdout, exitCode } = run(['ls'], LOCK_DIR);
     expect(exitCode).toBe(0);
-    const parsed = JSON.parse(stdout) as string[];
-    expect(parsed).toContain('brainstorming');
-    expect(parsed.length).toBe(3);
+    expect(stdout).toContain('skills-lock.json has 1 skill missing on disk: frontend-design');
+  });
+
+  it('list alias works', () => {
+    const { stdout, exitCode } = run(['list'], LOCK_DIR);
+    expect(exitCode).toBe(0);
+    expect(stdout).toContain('skills-lock.json');
   });
 });
