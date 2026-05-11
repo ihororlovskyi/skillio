@@ -17,28 +17,28 @@ afterEach(() => rmSync(TMP, { recursive: true, force: true }));
 
 describe('skl rm', () => {
   it('--yes removes from lock and deletes .claude/skills directory', () => {
-    expect(existsSync(join(TMP, '.claude/skills/brainstorming/SKILL.md'))).toBe(true);
-    const { stdout, exitCode } = run(['rm', '--yes', 'brainstorming'], TMP);
+    expect(existsSync(join(TMP, '.claude/skills/skill-foo/SKILL.md'))).toBe(true);
+    const { stdout, exitCode } = run(['rm', '--yes', 'skill-foo'], TMP);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain('Removed "brainstorming" from skills-lock.json');
-    expect(stdout).toMatch(/Removed "brainstorming" from \.claude\/skills/);
-    expect(existsSync(join(TMP, '.claude/skills/brainstorming'))).toBe(false);
+    expect(stdout).toContain('Removed "skill-foo" from skills-lock.json');
+    expect(stdout).toMatch(/Removed "skill-foo" from \.claude\/skills/);
+    expect(existsSync(join(TMP, '.claude/skills/skill-foo'))).toBe(false);
     const { stdout: lsOut } = run(['ls'], TMP);
-    expect(lsOut).toMatch(/skills-lock\.json\s+:\s+(?!.*\bbrainstorming\b).*/);
+    expect(lsOut).toMatch(/skills-lock\.json\s+:\s+(?!.*\bskill-foo\b).*/);
   });
 
   it('--dry-run shows the plan without deleting', () => {
-    const { stdout, exitCode } = run(['rm', '--dry-run', 'brainstorming'], TMP);
+    const { stdout, exitCode } = run(['rm', '--dry-run', 'skill-foo'], TMP);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain('Will remove "brainstorming"');
+    expect(stdout).toContain('Will remove "skill-foo"');
     expect(stdout).toContain('skills-lock.json');
-    expect(existsSync(join(TMP, '.claude/skills/brainstorming/SKILL.md'))).toBe(true);
+    expect(existsSync(join(TMP, '.claude/skills/skill-foo/SKILL.md'))).toBe(true);
   });
 
   it('reports skips when skill is missing from a source', () => {
-    const { stdout, exitCode } = run(['rm', '--yes', 'frontend-design'], TMP);
+    const { stdout, exitCode } = run(['rm', '--yes', 'skill-baz'], TMP);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain('Removed "frontend-design" from skills-lock.json');
+    expect(stdout).toContain('Removed "skill-baz" from skills-lock.json');
     expect(stdout).toContain('Skipped .claude/skills (not found)');
   });
 
@@ -49,17 +49,17 @@ describe('skl rm', () => {
   });
 
   it('removes multiple skills with a single confirmation (--yes)', () => {
-    const { stdout, exitCode } = run(['rm', '--yes', 'brainstorming', 'writing-plans'], TMP);
+    const { stdout, exitCode } = run(['rm', '--yes', 'skill-foo', 'skill-bar'], TMP);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain('Removed "brainstorming"');
-    expect(stdout).toContain('Removed "writing-plans"');
-    expect(existsSync(join(TMP, '.claude/skills/brainstorming'))).toBe(false);
-    expect(existsSync(join(TMP, '.claude/skills/writing-plans'))).toBe(false);
+    expect(stdout).toContain('Removed "skill-foo"');
+    expect(stdout).toContain('Removed "skill-bar"');
+    expect(existsSync(join(TMP, '.claude/skills/skill-foo'))).toBe(false);
+    expect(existsSync(join(TMP, '.claude/skills/skill-bar'))).toBe(false);
   });
 
   it('rm alias works', () => {
-    const { stdout, exitCode } = run(['remove', '--yes', 'brainstorming'], TMP);
+    const { stdout, exitCode } = run(['remove', '--yes', 'skill-foo'], TMP);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain('Removed "brainstorming"');
+    expect(stdout).toContain('Removed "skill-foo"');
   });
 });

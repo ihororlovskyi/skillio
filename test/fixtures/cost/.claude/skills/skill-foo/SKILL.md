@@ -1,5 +1,5 @@
 ---
-name: brainstorming
+name: skill-foo
 description: "Tiny test description for token counting."
 ---
 

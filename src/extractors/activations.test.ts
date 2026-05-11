@@ -6,10 +6,10 @@ describe('extractClaudeActivations', () => {
     const entry = {
       type: 'assistant',
       message: {
-        content: [{ type: 'tool_use', name: 'Skill', input: { skill: 'brainstorming' } }],
+        content: [{ type: 'tool_use', name: 'Skill', input: { skill: 'skill-foo' } }],
       },
     };
-    expect(extractClaudeActivations(entry)).toEqual(['brainstorming']);
+    expect(extractClaudeActivations(entry)).toEqual(['skill-foo']);
   });
 
   it('finds multiple Skill invocations', () => {
@@ -38,10 +38,10 @@ describe('extractCodexActivations', () => {
       type: 'event_msg',
       payload: {
         type: 'exec_command_end',
-        parsed_cmd: [{ path: '/home/user/.agents/skills/brainstorming/SKILL.md' }],
+        parsed_cmd: [{ path: '/home/user/.agents/skills/skill-foo/SKILL.md' }],
       },
     };
-    expect(extractCodexActivations(entry)).toEqual(['brainstorming']);
+    expect(extractCodexActivations(entry)).toEqual(['skill-foo']);
   });
 
   it('finds injected skill from response_item XML', () => {
@@ -50,10 +50,10 @@ describe('extractCodexActivations', () => {
       payload: {
         type: 'message',
         role: 'user',
-        content: [{ type: 'input_text', text: '<skill>\n<name>writing-plans</name>\n</skill>' }],
+        content: [{ type: 'input_text', text: '<skill>\n<name>skill-bar</name>\n</skill>' }],
       },
     };
-    expect(extractCodexActivations(entry)).toEqual(['writing-plans']);
+    expect(extractCodexActivations(entry)).toEqual(['skill-bar']);
   });
 
   it('ignores non-SKILL.md paths', () => {

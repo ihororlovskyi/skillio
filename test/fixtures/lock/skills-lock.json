@@ -1,7 +1,7 @@
 {
   "skills": {
-    "brainstorming": {},
-    "writing-plans": {},
-    "frontend-design": {}
+    "skill-foo": {},
+    "skill-bar": {},
+    "skill-baz": {}
   }
 }

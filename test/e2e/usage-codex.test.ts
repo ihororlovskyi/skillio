@@ -17,9 +17,9 @@ describe('skl usage codex', () => {
       '--scan-all-files',
     ]);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain('brainstorming');
-    expect(stdout).toContain('writing-plans');
-    expect(stdout).toMatch(/2\s+brainstorming/);
+    expect(stdout).toContain('skill-foo');
+    expect(stdout).toContain('skill-bar');
+    expect(stdout).toMatch(/2\s+skill-foo/);
   });
 
   it('outputs valid JSON', () => {

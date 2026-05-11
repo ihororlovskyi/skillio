@@ -8,14 +8,14 @@ describe('skl cost', () => {
   it('lists per-skill cost sorted desc with verdict line', () => {
     const { stdout, exitCode } = run(['cost'], COST_DIR);
     expect(exitCode).toBe(0);
-    // brainstorming has frontmatter, comes before missing/no-frontmatter rows
+    // skill-foo has frontmatter, comes before missing/no-frontmatter rows
     const lines = stdout.split('\n').filter((l) => l.trim().length);
-    const brainIdx = lines.findIndex((l) => l.startsWith('brainstorming'));
+    const brainIdx = lines.findIndex((l) => l.startsWith('skill-foo'));
     const noFmIdx = lines.findIndex((l) => l.startsWith('no-fm'));
     const ghostIdx = lines.findIndex((l) => l.startsWith('ghost-skill'));
     expect(brainIdx).toBeLessThan(noFmIdx);
     expect(brainIdx).toBeLessThan(ghostIdx);
-    expect(stdout).toMatch(/brainstorming\s+~\d+ tok/);
+    expect(stdout).toMatch(/skill-foo\s+~\d+ tok/);
     expect(stdout).toMatch(/no-fm\s+\(no frontmatter\)/);
     expect(stdout).toMatch(/ghost-skill\s+missing/);
     expect(stdout).toMatch(/Total: ~\d+ tok across 3 skills/);

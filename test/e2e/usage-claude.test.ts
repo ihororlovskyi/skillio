@@ -17,10 +17,10 @@ describe('skl usage claude', () => {
       '--scan-all-files',
     ]);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain('brainstorming');
-    expect(stdout).toContain('writing-plans');
-    expect(stdout).toMatch(/2\s+brainstorming/);
-    expect(stdout).toMatch(/1\s+writing-plans/);
+    expect(stdout).toContain('skill-foo');
+    expect(stdout).toContain('skill-bar');
+    expect(stdout).toMatch(/2\s+skill-foo/);
+    expect(stdout).toMatch(/1\s+skill-bar/);
   });
 
   it('counts activations mode', () => {
@@ -35,8 +35,8 @@ describe('skl usage claude', () => {
       '--scan-all-files',
     ]);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain('simplify');
-    expect(stdout).toContain('brainstorming');
+    expect(stdout).toContain('skill-quux');
+    expect(stdout).toContain('skill-foo');
   });
 
   it('outputs valid JSON with --format json', () => {
@@ -58,7 +58,7 @@ describe('skl usage claude', () => {
       skills: Array<{ skill: string; count: number }>;
     };
     expect(parsed.agent).toBe('claude-code');
-    expect(parsed.skills[0]?.skill).toBe('brainstorming');
+    expect(parsed.skills[0]?.skill).toBe('skill-foo');
     expect(parsed.skills[0]?.count).toBe(2);
   });
 
@@ -95,7 +95,7 @@ describe('skl usage claude', () => {
     ]);
     expect(exitCode).toBe(0);
     expect(stdout).toMatch(/claude-code \d+ skills?/);
-    expect(stdout).toMatch(/2\s+brainstorming/);
+    expect(stdout).toMatch(/2\s+skill-foo/);
   });
 
   it('accepts repeated --agent flag (-a claude -a codex)', () => {
