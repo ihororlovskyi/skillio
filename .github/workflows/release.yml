@@ -28,7 +28,7 @@ jobs:
       - name: Activate npm >= 11.5.1 (Trusted Publishing requires it)
         run: |
           corepack enable
-          corepack prepare npm@11.5.1 --activate
+          corepack prepare npm@latest --activate
           npm --version
 
       - name: Install dependencies
