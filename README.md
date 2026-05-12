@@ -66,14 +66,16 @@ audits both Claude Code and Codex over all time).
 ## Usage
 
 ```sh
-# bare command — quick summary across global + local sources, with verdict
+# bare command — per-skill ambient token cost, sorted desc, with verdict
 skl
 skillio                                # equivalent
 
 # subcommands
 skl ls                                 # list skills per source with diffs
 skl cost                               # ambient ballast cost (frontmatter tokens) per skill
+skl cst                                # alias for cost
 skl usage                              # consumption: usage count × frontmatter tokens
+skl usg                                # alias for usage
 skl rm brainstorming                   # remove from lock + delete on-disk dir (with Y/n prompt)
 skl rm brainstorming writing-plans     # remove multiple
 skl rm --yes brainstorming             # skip confirmation
@@ -97,11 +99,9 @@ skl usage -a claude -a codex           # equivalent: repeated --agent flag
 | anywhere with `-g` / `--global` | global override |
 | with `--root <dir>` | that exact dir, treated as global |
 
-> Bare `skl` (no subcommand) ignores `-g` — it always shows both Global and Local sections plus a grand Total.
-
 ## What it does
 
-- **Summary** (`skl`) — counts and tokens across `.claude/skills`, `.agents/skills`, and `skills-lock.json` for both global and local scopes, with a cleanup verdict.
+- **Cost** (`skl`) — per-skill ambient token cost sorted descending, with a cleanup verdict. Bare `skl` = `skl cost` in local scope; `skl -g` = global scope.
 - **Audit skill usage** (`skl usage`) — parse agent session logs and count which skills were invoked, when, and how often.
 - **Manage a skills lock** (`skl ls`, `skl rm`) — inspect and remove skills from a local or global lock file.
 

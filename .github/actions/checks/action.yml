@@ -1,0 +1,42 @@
+name: skillio checks
+description: Install, lint, typecheck, unit tests, build, e2e tests
+inputs:
+  node-version:
+    description: Node.js version to use
+    required: false
+    default: '22'
+runs:
+  using: composite
+  steps:
+    - uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: latest
+
+    - uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        registry-url: 'https://registry.npmjs.org'
+
+    - name: Install dependencies
+      shell: bash
+      run: bun install --frozen-lockfile
+
+    - name: Lint
+      shell: bash
+      run: bun run node_modules/.bin/biome check src/
+
+    - name: Typecheck
+      shell: bash
+      run: bun run node_modules/.bin/tsc --noEmit
+
+    - name: Unit tests
+      shell: bash
+      run: bun run node_modules/.bin/vitest run
+
+    - name: Build
+      shell: bash
+      run: bun run node_modules/.bin/bunup
+
+    - name: e2e tests
+      shell: bash
+      run: bun run node_modules/.bin/vitest run --config vitest.e2e.config.ts

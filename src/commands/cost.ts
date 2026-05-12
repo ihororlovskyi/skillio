@@ -1,6 +1,6 @@
 import { defineCommand } from 'citty';
 import { getLockPath } from '../lock/file';
-import { green, red, yellow } from '../utils/ansi';
+import { cyan, green, red, yellow } from '../utils/ansi';
 import { discoverSkills, type SkillRecord } from '../utils/discover-skills';
 
 type Verdict = 'ok' | 'plan' | 'cleanup';
@@ -53,7 +53,8 @@ export const costCommand = defineCommand({
       if (r.status === 'ok') cell = `~${r.frontmatterTokens} tok`;
       else if (r.status === 'missing') cell = 'missing';
       else cell = '(no frontmatter)';
-      console.log(`${r.name.padEnd(nameWidth)}  ${cell}`);
+      const pad = ' '.repeat(nameWidth - r.name.length);
+      console.log(`${cyan(r.name)}${pad}  ${cell}`);
     }
     console.log('');
     console.log(`Total: ~${total} tok across ${rows.length} skills    ${paint(message)}`);

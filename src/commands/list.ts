@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { defineCommand } from 'citty';
 import { getLockPath } from '../lock/file';
+import { cyan } from '../utils/ansi';
 import { discoverSkills, type SkillRecord } from '../utils/discover-skills';
 
 interface SourceRow {
@@ -95,7 +96,7 @@ export const listCommand = defineCommand({
       const row = sourceRows[i];
       if (!row) continue;
       const countCell = countCells[i] ?? '';
-      const namesText = row.names.length ? row.names.join(' ') : '';
+      const namesText = row.names.length ? row.names.map(cyan).join(' ') : '';
       const line = `${row.label.padEnd(labelWidth)} : ${countCell.padEnd(countWidth)}${
         namesText ? ` : ${namesText}` : ''
       }`;
@@ -105,17 +106,17 @@ export const listCommand = defineCommand({
     const diffs: string[] = [];
     if (lockOnly.length) {
       diffs.push(
-        `skills-lock.json has ${lockOnly.length} skill${lockOnly.length === 1 ? '' : 's'} missing on disk: ${lockOnly.join(', ')}`,
+        `skills-lock.json has ${lockOnly.length} skill${lockOnly.length === 1 ? '' : 's'} missing on disk: ${lockOnly.map(cyan).join(', ')}`,
       );
     }
     if (claudeNotInLock.length) {
       diffs.push(
-        `.claude/skills has ${claudeNotInLock.length} skill${claudeNotInLock.length === 1 ? '' : 's'} not in lock: ${claudeNotInLock.join(', ')}`,
+        `.claude/skills has ${claudeNotInLock.length} skill${claudeNotInLock.length === 1 ? '' : 's'} not in lock: ${claudeNotInLock.map(cyan).join(', ')}`,
       );
     }
     if (agentsNotInLock.length) {
       diffs.push(
-        `.agents/skills has ${agentsNotInLock.length} skill${agentsNotInLock.length === 1 ? '' : 's'} not in lock: ${agentsNotInLock.join(', ')}`,
+        `.agents/skills has ${agentsNotInLock.length} skill${agentsNotInLock.length === 1 ? '' : 's'} not in lock: ${agentsNotInLock.map(cyan).join(', ')}`,
       );
     }
     if (diffs.length) {

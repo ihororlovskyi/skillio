@@ -114,6 +114,12 @@ describe('skl usage claude', () => {
     expect(stdout).toMatch(/codex \d+ skills?/);
   });
 
+  it('usg alias works', () => {
+    const { stdout, exitCode } = run(['usg', '--root', FIXTURES, '-a', 'claude-code', '--scan-all-files']);
+    expect(exitCode).toBe(0);
+    expect(stdout).toMatch(/claude-code \d+ skills? \d+ times?/);
+  });
+
   it('filters out old entries with --period 7d', () => {
     const { stdout, exitCode } = run([
       'usage',

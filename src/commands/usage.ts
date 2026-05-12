@@ -4,6 +4,7 @@ import { defineCommand } from 'citty';
 import { getLockPath } from '../lock/file';
 import { type ClaudeMode, readClaudeUsage } from '../readers/claude';
 import { type CodexMode, readCodexUsage } from '../readers/codex';
+import { cyan } from '../utils/ansi';
 import { discoverSkills, type SkillRecord } from '../utils/discover-skills';
 import { expandHome } from '../utils/expand-home';
 import { parsePeriod } from '../utils/period';
@@ -33,7 +34,7 @@ function pad(n: number | string, width: number): string {
 }
 
 export function formatUsageRow(row: UsageRowInput): string {
-  return `${pad(row.count, row.countWidth)} ${row.name}`;
+  return `${pad(row.count, row.countWidth)} ${cyan(row.name)}`;
 }
 
 function parseAgents(agent: string | undefined): Agent[] {
