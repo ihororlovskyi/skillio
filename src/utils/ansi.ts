@@ -20,3 +20,7 @@ export function yellow(s: string): string {
 export function red(s: string): string {
   return enabled ? `\x1b[31m${s}\x1b[0m` : s;
 }
+
+export function cyan(s: string): string {
+  return enabled ? `\x1b[36m${s}\x1b[0m` : s;
+}

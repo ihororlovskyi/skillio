@@ -4,7 +4,6 @@ import { defineCommand, runMain } from 'citty';
 import { costCommand } from './commands/cost';
 import { listCommand } from './commands/list';
 import { removeCommand } from './commands/remove';
-import { summaryCommand } from './commands/summary';
 import { usageCommand } from './commands/usage';
 import { detectColorSupport, setColorEnabled } from './utils/ansi';
 import { maybePrintUpdateNotice } from './utils/update-check';
@@ -41,7 +40,18 @@ function mergeAgentArgs(argv: string[]): string[] {
   return out;
 }
 
-const SUBCOMMAND_NAMES = new Set(['list', 'ls', 'remove', 'rm', 'cost', 'co', 'usage', 'us']);
+const SUBCOMMAND_NAMES = new Set([
+  'list',
+  'ls',
+  'remove',
+  'rm',
+  'cost',
+  'co',
+  'cst',
+  'usage',
+  'us',
+  'usg',
+]);
 
 function reorderRootFlagsToSubcommand(argv: string[]): string[] {
   const tail = argv.slice(2);
@@ -74,8 +84,8 @@ function printRootHelp(): void {
     '',
     '  list, ls         List skills per source with totals and lock-vs-disk diff',
     '  remove, rm       Remove skills from lock and delete their on-disk dirs',
-    '  cost, co         Show ambient ballast cost (per-skill frontmatter tokens) sorted desc',
-    '  usage, us        Show skill usage × cost (consumption) with missed rows',
+    '  cost, co, cst    Show ambient ballast cost (per-skill frontmatter tokens) sorted desc',
+    '  usage, us, usg   Show skill usage × cost (consumption) with missed rows',
   ];
   console.log(lines.join('\n'));
 }
@@ -126,12 +136,12 @@ const main = defineCommand({
     version,
     description: 'Audit and manage AI agent skills',
   },
-  args: summaryCommand.args,
+  args: costCommand.args,
   async run({ args }) {
     if (hasSubcommand(process.argv)) return;
-    await summaryCommand.run?.({
+    await costCommand.run?.({
       args,
-      cmd: summaryCommand,
+      cmd: costCommand,
       rawArgs: process.argv.slice(2),
     } as never);
   },
@@ -142,8 +152,10 @@ const main = defineCommand({
     rm: removeCommand,
     cost: costCommand,
     co: costCommand,
+    cst: costCommand,
     usage: usageCommand,
     us: usageCommand,
+    usg: usageCommand,
   },
 });
 
