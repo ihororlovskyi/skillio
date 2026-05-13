@@ -1,0 +1,5 @@
+{"timestamp":"2026-05-13T10:00:00Z","attributionSkill":"skill-foo","type":"summary"}
+{"timestamp":"2026-05-13T10:00:01Z","attributionSkill":"skill-foo","type":"summary"}
+{"timestamp":"2026-05-13T10:00:02Z","type":"assistant","message":{"content":[{"type":"tool_use","name":"Skill","input":{"skill":"skill-bar"}}]}}
+{"timestamp":"2026-05-13T10:00:03Z","attributionSkill":"skill-qux","type":"summary"}
+{"timestamp":"2026-05-13T10:00:04Z","attributionSkill":"skill-foo","type":"summary"}

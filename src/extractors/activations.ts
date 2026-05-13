@@ -48,5 +48,27 @@ export function extractCodexActivations(entry: unknown): string[] {
     return [...paths].map(skillNameFromPath).filter((s): s is string => s !== null);
   }
 
+  if (
+    e.type === 'response_item' &&
+    payload?.type === 'function_call' &&
+    payload?.name === 'exec_command'
+  ) {
+    const argsStr = payload?.arguments;
+    if (typeof argsStr !== 'string') return [];
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(argsStr);
+    } catch {
+      return [];
+    }
+    const cmd = (parsed as Record<string, unknown> | null)?.cmd;
+    if (typeof cmd !== 'string') return [];
+    const paths = new Set<string>();
+    for (const m of cmd.matchAll(/(?:^|['"\s])([^'"\s]+\/SKILL\.md)(?=$|['"\s])/g)) {
+      if (m[1]) paths.add(m[1]);
+    }
+    return [...paths].map(skillNameFromPath).filter((s): s is string => s !== null);
+  }
+
   return [];
 }

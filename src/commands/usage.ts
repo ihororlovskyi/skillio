@@ -66,7 +66,10 @@ export const usageArgs = {
     description: '30sec, 5min, 12h, 7d, 2w, 1m, 1y, all',
   },
   since: { type: 'string', description: 'yyyy-mm-dd, overrides --period' },
-  mode: { type: 'string', description: 'attributed | activations | mentions' },
+  mode: {
+    type: 'string',
+    description: 'merged (default for claude-code) | attributed | activations | mentions',
+  },
   format: { type: 'string', default: 'text', description: 'text | json' },
   root: { type: 'string', description: 'Override agent sessions directory; implies global' },
   'scan-all-files': { type: 'boolean', default: false, description: 'Ignore file mtime' },
@@ -127,7 +130,7 @@ export async function runUsage(args: UsageArgs): Promise<void> {
     let stats: { filesRead: number; linesRead: number };
     let mode: string;
     if (agent === 'claude-code') {
-      mode = (args.mode ?? 'attributed') as ClaudeMode;
+      mode = (args.mode ?? 'merged') as ClaudeMode;
       const result = claudeRootMissing
         ? { counts: new Map<string, number>(), filesRead: 0, linesRead: 0 }
         : readClaudeUsage({ since, mode: mode as ClaudeMode, root: claudeRoot, scanAllFiles });

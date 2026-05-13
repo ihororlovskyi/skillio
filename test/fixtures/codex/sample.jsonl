@@ -2,3 +2,4 @@
 {"type":"response_item","ts":1778025601,"payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"<skill>\n<name>skill-bar</name>\n</skill>"}]}}
 {"type":"event_msg","ts":1778025602,"payload":{"type":"exec_command_end","parsed_cmd":[{"path":"/home/user/.agents/skills/skill-foo/SKILL.md"}]}}
 {"type":"event_msg","ts":1000000,"payload":{"type":"exec_command_end","parsed_cmd":[{"path":"/skills/old-skill/SKILL.md"}]}}
+{"type":"response_item","ts":1778025603,"payload":{"type":"function_call","name":"exec_command","arguments":"{\"cmd\":\"cat /home/user/.agents/skills/skill-baz/SKILL.md\"}"}}

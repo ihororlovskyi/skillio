@@ -3,6 +3,7 @@ import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { defineCommand } from 'citty';
 import { getLockPath, readLock, removeSkillFromLock } from '../lock/file';
+import { cyan } from '../utils/ansi';
 import { confirm } from '../utils/confirm';
 import { rmSkillDir } from '../utils/fs-rm';
 
@@ -18,6 +19,8 @@ interface DeletePlan {
   claudeFileCount?: number;
   agentsFileCount?: number;
 }
+
+const q = (name: string) => `"${cyan(name)}"`;
 
 function buildTarget(name: string, isGlobal: boolean, lockPath: string): SkillTarget {
   const lock = readLock(lockPath);
@@ -50,7 +53,7 @@ function fileCount(dir: string): number {
 
 function printPlan(plan: DeletePlan): void {
   const { target } = plan;
-  console.log(`Will remove "${target.name}":`);
+  console.log(`Will remove ${q(target.name)}:`);
   if (target.inLock) console.log('  - skills-lock.json');
   else console.log('  - skills-lock.json (not in lock)');
   if (target.claudeDir)
@@ -84,7 +87,7 @@ export const removeCommand = defineCommand({
 
     const orphan = targets.filter((t) => !t.inLock && !t.claudeDir && !t.agentsDir);
     if (orphan.length) {
-      for (const o of orphan) console.log(`"${o.name}" is not in lock or on disk`);
+      for (const o of orphan) console.log(`${q(o.name)} is not in lock or on disk`);
       process.exit(1);
     }
 
@@ -117,19 +120,19 @@ export const removeCommand = defineCommand({
     for (const { target } of plans) {
       if (target.inLock) {
         const r = removeSkillFromLock(lockPath, target.name);
-        if (r.removed) console.log(`Removed "${target.name}" from skills-lock.json`);
+        if (r.removed) console.log(`Removed ${q(target.name)} from skills-lock.json`);
       } else {
         console.log(`Skipped skills-lock.json (not in lock)`);
       }
       if (target.claudeDir) {
         const r = rmSkillDir(target.claudeDir, { allowedRoots });
-        console.log(`Removed "${target.name}" from .claude/skills (${r.fileCount} files)`);
+        console.log(`Removed ${q(target.name)} from .claude/skills (${r.fileCount} files)`);
       } else {
         console.log('Skipped .claude/skills (not found)');
       }
       if (target.agentsDir) {
         const r = rmSkillDir(target.agentsDir, { allowedRoots });
-        console.log(`Removed "${target.name}" from .agents/skills (${r.fileCount} files)`);
+        console.log(`Removed ${q(target.name)} from .agents/skills (${r.fileCount} files)`);
       } else {
         console.log('Skipped .agents/skills (not found)');
       }

@@ -68,3 +68,79 @@ describe('extractCodexActivations', () => {
     expect(extractCodexActivations({ type: 'other' })).toEqual([]);
   });
 });
+
+describe('extractCodexActivations response_item/function_call', () => {
+  it('finds skill from cat /path/SKILL.md inside function_call arguments', () => {
+    const entry = {
+      type: 'response_item',
+      payload: {
+        type: 'function_call',
+        name: 'exec_command',
+        arguments: JSON.stringify({
+          cmd: 'cat /Users/x/.agents/skills/skill-foo/SKILL.md',
+        }),
+      },
+    };
+    expect(extractCodexActivations(entry)).toEqual(['skill-foo']);
+  });
+
+  it('finds skill from sed -n inside function_call arguments', () => {
+    const entry = {
+      type: 'response_item',
+      payload: {
+        type: 'function_call',
+        name: 'exec_command',
+        arguments: JSON.stringify({
+          cmd: "sed -n '1,180p' /home/y/.claude/skills/skill-bar/SKILL.md",
+        }),
+      },
+    };
+    expect(extractCodexActivations(entry)).toEqual(['skill-bar']);
+  });
+
+  it('dedupes multiple references to the same SKILL.md in one command', () => {
+    const entry = {
+      type: 'response_item',
+      payload: {
+        type: 'function_call',
+        name: 'exec_command',
+        arguments: JSON.stringify({
+          cmd: 'cat /a/skill-foo/SKILL.md /a/skill-foo/SKILL.md',
+        }),
+      },
+    };
+    expect(extractCodexActivations(entry)).toEqual(['skill-foo']);
+  });
+
+  it('returns empty array when arguments is not valid JSON', () => {
+    const entry = {
+      type: 'response_item',
+      payload: { type: 'function_call', name: 'exec_command', arguments: 'not-json' },
+    };
+    expect(extractCodexActivations(entry)).toEqual([]);
+  });
+
+  it('returns empty array when cmd has no SKILL.md path', () => {
+    const entry = {
+      type: 'response_item',
+      payload: {
+        type: 'function_call',
+        name: 'exec_command',
+        arguments: JSON.stringify({ cmd: 'ls /tmp' }),
+      },
+    };
+    expect(extractCodexActivations(entry)).toEqual([]);
+  });
+
+  it('ignores function_call entries with a different name', () => {
+    const entry = {
+      type: 'response_item',
+      payload: {
+        type: 'function_call',
+        name: 'shell',
+        arguments: JSON.stringify({ cmd: 'cat /a/skill-foo/SKILL.md' }),
+      },
+    };
+    expect(extractCodexActivations(entry)).toEqual([]);
+  });
+});

@@ -20,6 +20,8 @@ describe('skl usage codex', () => {
     expect(stdout).toContain('skill-foo');
     expect(stdout).toContain('skill-bar');
     expect(stdout).toMatch(/2\s+skill-foo/);
+    expect(stdout).toContain('skill-baz');
+    expect(stdout).toMatch(/1\s+skill-baz/);
   });
 
   it('outputs valid JSON', () => {
