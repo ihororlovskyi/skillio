@@ -1,7 +1,7 @@
 import type { EventEmitter } from 'node:events';
 import { PassThrough } from 'node:stream';
 import { describe, expect, it } from 'vitest';
-import { select } from './prompt';
+import { multiSelect, select } from './prompt';
 
 function makeFakeTTY(): {
   input: NodeJS.ReadStream;
@@ -96,5 +96,79 @@ describe('select', () => {
     const p = select({ title: 't', options: OPTIONS, input, output });
     emitKey('c', { ctrl: true });
     expect(await p).toBeNull();
+  });
+});
+
+describe('multiSelect', () => {
+  it('returns null when input is not a TTY', async () => {
+    const input = new PassThrough() as unknown as NodeJS.ReadStream;
+    const output = new PassThrough() as unknown as NodeJS.WriteStream;
+    (input as { isTTY?: boolean }).isTTY = false;
+    (output as { isTTY?: boolean }).isTTY = false;
+    expect(
+      await multiSelect({ title: 't', options: [{ value: 'a', label: 'A' }], input, output }),
+    ).toBeNull();
+  });
+
+  it('Enter with no selections returns empty array', async () => {
+    const { input, output, emitKey } = makeFakeTTY();
+    const p = multiSelect({ title: 't', options: OPTIONS, input, output });
+    emitKey('return');
+    expect(await p).toEqual([]);
+  });
+
+  it('Space toggles selection on current cursor and Enter returns selected values', async () => {
+    const { input, output, emitKey } = makeFakeTTY();
+    const p = multiSelect({ title: 't', options: OPTIONS, input, output });
+    emitKey('space'); // toggle 'a' on (cursor=0)
+    emitKey('down');
+    emitKey('down');
+    emitKey('space'); // toggle 'c' on (cursor=2)
+    emitKey('return');
+    expect(await p).toEqual(['a', 'c']);
+  });
+
+  it('Space twice on same option toggles off', async () => {
+    const { input, output, emitKey } = makeFakeTTY();
+    const p = multiSelect({ title: 't', options: OPTIONS, input, output });
+    emitKey('space'); // 'a' on
+    emitKey('space'); // 'a' off
+    emitKey('return');
+    expect(await p).toEqual([]);
+  });
+
+  it('escape cancels with null even if items were selected', async () => {
+    const { input, output, emitKey } = makeFakeTTY();
+    const p = multiSelect({ title: 't', options: OPTIONS, input, output });
+    emitKey('space');
+    emitKey('escape');
+    expect(await p).toBeNull();
+  });
+
+  it('q cancels with null', async () => {
+    const { input, output, emitKey } = makeFakeTTY();
+    const p = multiSelect({ title: 't', options: OPTIONS, input, output });
+    emitKey('q');
+    expect(await p).toBeNull();
+  });
+
+  it('ctrl+c cancels with null', async () => {
+    const { input, output, emitKey } = makeFakeTTY();
+    const p = multiSelect({ title: 't', options: OPTIONS, input, output });
+    emitKey('c', { ctrl: true });
+    expect(await p).toBeNull();
+  });
+
+  it('selections are returned in option order regardless of click order', async () => {
+    const { input, output, emitKey } = makeFakeTTY();
+    const p = multiSelect({ title: 't', options: OPTIONS, input, output });
+    emitKey('down');
+    emitKey('down');
+    emitKey('space'); // 'c' on
+    emitKey('up');
+    emitKey('up');
+    emitKey('space'); // 'a' on
+    emitKey('return');
+    expect(await p).toEqual(['a', 'c']);
   });
 });

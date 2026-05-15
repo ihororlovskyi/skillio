@@ -3,9 +3,13 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { selectMock } = vi.hoisted(() => ({ selectMock: vi.fn() }));
+const { selectMock, multiSelectMock } = vi.hoisted(() => ({
+  selectMock: vi.fn(),
+  multiSelectMock: vi.fn(),
+}));
 vi.mock('../utils/prompt', () => ({
   select: (params: unknown) => selectMock(params),
+  multiSelect: (params: unknown) => multiSelectMock(params),
 }));
 
 import { setColorEnabled } from '../utils/ansi';
@@ -15,6 +19,7 @@ describe('runPicker — remove sub-picker (unit)', () => {
   beforeEach(() => {
     tmp = mkdtempSync(join(tmpdir(), 'skl-picker-unit-'));
     selectMock.mockReset();
+    multiSelectMock.mockReset();
     setColorEnabled(true);
   });
   afterEach(() => {
@@ -32,12 +37,13 @@ describe('runPicker — remove sub-picker (unit)', () => {
     return lockPath;
   }
 
-  it('sub-picker options: in-lock alphabetic first, then orphan with red "(orphan)" suffix, then cancel', async () => {
+  it('sub-picker options: in-lock alphabetic first, then orphan with red "(orphan)" suffix', async () => {
     seed({
       lock: { 'b-locked': {}, 'a-locked': {} },
       claudeNames: ['b-locked', 'd-orphan', 'c-orphan'],
     });
-    selectMock.mockResolvedValueOnce('remove').mockResolvedValueOnce('__cancel__');
+    selectMock.mockResolvedValueOnce('remove');
+    multiSelectMock.mockResolvedValueOnce(null);
 
     const cwdBefore = process.cwd();
     process.chdir(tmp);
@@ -49,17 +55,18 @@ describe('runPicker — remove sub-picker (unit)', () => {
       process.chdir(cwdBefore);
     }
 
-    expect(selectMock).toHaveBeenCalledTimes(2);
-    const subPickerCall = selectMock.mock.calls[1]?.[0] as {
+    expect(selectMock).toHaveBeenCalledTimes(1);
+    expect(multiSelectMock).toHaveBeenCalledTimes(1);
+    const subPickerCall = multiSelectMock.mock.calls[0]?.[0] as {
       title: string;
       options: Array<{ value: string; label: string }>;
     };
-    expect(subPickerCall.title).toMatch(/skill to remove/i);
+    expect(subPickerCall.title).toMatch(/skills to remove/i);
     const labels = subPickerCall.options.map((o) => o.label);
     const values = subPickerCall.options.map((o) => o.value);
 
     const ESC = '\x1b';
-    expect(values).toEqual(['a-locked', 'b-locked', 'c-orphan', 'd-orphan', '__cancel__']);
+    expect(values).toEqual(['a-locked', 'b-locked', 'c-orphan', 'd-orphan']);
     expect(labels[2]).toContain('c-orphan');
     expect(labels[2]).toContain(`${ESC}[31m`);
     expect(labels[2]).toContain('(orphan)');
@@ -83,11 +90,13 @@ describe('runPicker — remove sub-picker (unit)', () => {
       process.chdir(cwdBefore);
     }
     expect(selectMock).toHaveBeenCalledTimes(1);
+    expect(multiSelectMock).toHaveBeenCalledTimes(0);
   });
 
   it('sub-picker ESC returns 0 (no spawn) without re-entering main menu', async () => {
     seed({ lock: { foo: {} } });
-    selectMock.mockResolvedValueOnce('remove').mockResolvedValueOnce(null);
+    selectMock.mockResolvedValueOnce('remove');
+    multiSelectMock.mockResolvedValueOnce(null);
 
     const cwdBefore = process.cwd();
     process.chdir(tmp);
@@ -98,7 +107,8 @@ describe('runPicker — remove sub-picker (unit)', () => {
     } finally {
       process.chdir(cwdBefore);
     }
-    expect(selectMock).toHaveBeenCalledTimes(2);
+    expect(selectMock).toHaveBeenCalledTimes(1);
+    expect(multiSelectMock).toHaveBeenCalledTimes(1);
   });
 
   it('empty scope: prints "No skills found in scope." and returns 0', async () => {

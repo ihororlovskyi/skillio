@@ -2,15 +2,13 @@ import { spawnSync } from 'node:child_process';
 import { getLockPath } from '../lock/file';
 import { red } from '../utils/ansi';
 import { listRemovableTargets } from '../utils/list-removable';
-import { select } from '../utils/prompt';
+import { multiSelect, select } from '../utils/prompt';
 
 export interface PickerArgs {
   global: boolean;
 }
 
-const CANCEL = '__cancel__';
-
-async function pickRemoveTarget(args: PickerArgs): Promise<string | null> {
+async function pickRemoveTargets(args: PickerArgs): Promise<string[] | null> {
   const lockPath = getLockPath(args.global);
   const { inLock, orphan } = listRemovableTargets({
     isGlobal: args.global,
@@ -20,18 +18,18 @@ async function pickRemoveTarget(args: PickerArgs): Promise<string | null> {
 
   if (inLock.length === 0 && orphan.length === 0) {
     console.log('No skills found in scope.');
-    return null;
+    return [];
   }
 
   const options = [
     ...inLock.map((name) => ({ value: name, label: name })),
     ...orphan.map((name) => ({ value: name, label: `${name} ${red('(orphan)')}` })),
-    { value: CANCEL, label: 'cancel' },
   ];
 
-  const choice = await select({ title: 'skillio — pick a skill to remove', options });
-  if (choice === null || choice === CANCEL) return null;
-  return choice;
+  return await multiSelect({
+    title: 'skillio — pick skills to remove (Space toggle, Enter confirm)',
+    options,
+  });
 }
 
 export async function runPicker(args: PickerArgs): Promise<number> {
@@ -56,9 +54,9 @@ export async function runPicker(args: PickerArgs): Promise<number> {
 
   let argv: string[];
   if (choice === 'remove') {
-    const target = await pickRemoveTarget(args);
-    if (target === null) return 0;
-    argv = ['rm', target];
+    const targets = await pickRemoveTargets(args);
+    if (targets === null || targets.length === 0) return 0;
+    argv = ['rm', ...targets];
   } else {
     argv = [choice];
   }
