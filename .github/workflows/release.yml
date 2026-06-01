@@ -27,13 +27,14 @@ jobs:
 
       - uses: ./.github/actions/checks
 
+      - name: Upgrade npm for trusted publishing
+        run: npm install -g npm@latest
+
       - name: Pack tarball
         run: npm pack
 
-      - name: Publish to npm (with provenance attestation)
+      - name: Publish to npm via trusted publishing (with provenance attestation)
         run: npm publish --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Create GitHub release with tarball
         env:
