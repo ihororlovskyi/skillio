@@ -47,7 +47,7 @@ const SUBCOMMAND_NAMES = new Set([
   'remove',
   'rm',
   'cost',
-  'co',
+  'cs',
   'cst',
   'usage',
   'us',
@@ -66,7 +66,13 @@ function reorderRootFlagsToSubcommand(argv: string[]): string[] {
   return [argv[0] ?? '', argv[1] ?? '', sub, ...before, ...after];
 }
 
-process.argv = reorderRootFlagsToSubcommand(mergeAgentArgs(process.argv));
+// `-fl` is an explicit short alias for `--force-lock`. Normalize before citty
+// parses, since most arg parsers would split `-fl` into `-f -l`.
+function normalizeShortFlags(argv: string[]): string[] {
+  return argv.map((tok) => (tok === '-fl' ? '--force-lock' : tok));
+}
+
+process.argv = reorderRootFlagsToSubcommand(normalizeShortFlags(mergeAgentArgs(process.argv)));
 
 function printRootHelp(): void {
   const lines = [
@@ -86,7 +92,7 @@ function printRootHelp(): void {
     '',
     '  list, ls         List skills per source: install type, lock orphans, disk/lock diff',
     '  remove, rm       Delete on-disk skill dirs; lock kept unless --force-lock',
-    '  cost, co, cst    Show ambient ballast cost (per-skill frontmatter tokens) sorted desc',
+    '  cost, cs, cst    Show ambient ballast cost (per-skill frontmatter tokens) sorted desc',
     '  usage, us, usg   Show skill usage × cost (consumption) with missed rows',
     '  completion       Print shell completion script (bash, zsh, fish)',
   ];
@@ -116,22 +122,23 @@ function printRemoveHelp(): void {
     '',
     'ARGUMENTS',
     '',
-    '  SKILL...         One or more skill names. Use --all to target every skill in scope.',
+    '  SKILL...         One or more skill names. Use "." to target every skill in scope.',
     '',
     'OPTIONS',
     '',
-    '  -g, --global     Use global scope (default: false)',
-    '      --all        Remove every skill in scope (mutually exclusive with SKILL)',
-    '      --dry-run    Print plan without deleting',
-    '  -y, --yes        Skip confirmation prompt (non-TTY only for --all)',
-    '      --force-lock Also remove entry from skills-lock.json (default: lock preserved)',
-    '      --lock-only  Remove only the lock entry; keep on-disk directories',
+    '  -g, --global       Use global scope (default: false)',
+    '      --dry-run      Print plan without deleting',
+    '  -y, --yes          Skip confirmation prompt (non-TTY only for ".")',
+    '      --force-lock   Also remove entry from skills-lock.json (default: lock preserved)',
+    '  -fl                Alias for --force-lock',
+    '      --lock-only    Remove only the lock entry; keep on-disk directories',
     '',
     'EXAMPLES',
     '',
     '  skillio rm brainstorming',
     '  skillio rm brainstorming writing-plans --yes',
-    '  skillio rm --all --dry-run',
+    '  skillio rm . --dry-run',
+    '  skillio rm . -fl',
     '  skillio rm --force-lock obsolete-skill',
     '  skillio rm --lock-only stale-entry',
   ];
@@ -200,7 +207,7 @@ const main = defineCommand({
     remove: removeCommand,
     rm: removeCommand,
     cost: costCommand,
-    co: costCommand,
+    cs: costCommand,
     cst: costCommand,
     usage: usageCommand,
     us: usageCommand,

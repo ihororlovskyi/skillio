@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.1.14 (2026-06-01)
+
+### Changed
+
+- **`cost` short alias is now `cs`** (was `co`). `cst` is unchanged. `co` is
+  no longer recognized. **Breaking** for anyone scripting `skl co`.
+- **`skl rm .` replaces `skl rm --all`.** Use the positional `.` to target
+  every skill in scope; `skl rm . -fl` (or `--force-lock`) also wipes lock
+  entries. The `--all` flag is **removed**. **Breaking.**
+- **`-fl` short alias for `--force-lock`.**
+- **`rm` result block reformatted.** A blank line precedes the results; each
+  skill prints a `"name"` header followed by per-source lines —
+  `removed` (red), `kept` (green), `skipped` (yellow) — in the order
+  `.agents/skills`, `.claude/skills`, `skills-lock.json`.
+- **`skl ls` drops the "skills-lock.json has N skills missing on disk" line.**
+  Lock orphans are already shown inline (red) in the lock row.
+- **Bulk-remove confirm reverted to instant `y`.** `skl rm .` now asks
+  `Remove ALL N skills?` and accepts a single `y` keypress (no Enter), like
+  single-skill removal. The 0.1.13 typed-`all` guard is removed; `--yes` again
+  skips the prompt entirely.
+
 ## 0.1.13 (2026-05-16)
 
 ### Added

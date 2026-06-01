@@ -8,7 +8,7 @@ _skillio_completions() {
   cur="\${COMP_WORDS[COMP_CWORD]}"
   prev="\${COMP_WORDS[COMP_CWORD-1]}"
 
-  local cmds="list ls remove rm cost co cst usage us usg completion"
+  local cmds="list ls remove rm cost cs cst usage us usg completion"
   if [ "\${COMP_CWORD}" -eq 1 ]; then
     COMPREPLY=( $(compgen -W "\${cmds} -h --help -v --version" -- "\${cur}") )
     return 0
@@ -18,7 +18,7 @@ _skillio_completions() {
   case "\${sub}" in
     rm|remove)
       if [[ "\${cur}" == -* ]]; then
-        COMPREPLY=( $(compgen -W "-g --global --all --dry-run -y --yes --force-lock --lock-only -h --help" -- "\${cur}") )
+        COMPREPLY=( $(compgen -W "-g --global --dry-run -y --yes --force-lock -fl --lock-only -h --help" -- "\${cur}") )
       else
         local names
         local scope=""
@@ -50,7 +50,7 @@ _skillio() {
     'remove:Delete on-disk skill dirs'
     'rm:Alias for remove'
     'cost:Show ambient ballast cost'
-    'co:Alias for cost'
+    'cs:Alias for cost'
     'cst:Alias for cost'
     'usage:Show skill usage'
     'us:Alias for usage'
@@ -67,10 +67,9 @@ _skillio() {
       if [[ \${words[CURRENT]} == -* ]]; then
         _values 'flag' \\
           '-g[global scope]' '--global[global scope]' \\
-          '--all[remove every skill in scope]' \\
           '--dry-run[print plan without deleting]' \\
           '-y[skip confirmation]' '--yes[skip confirmation]' \\
-          '--force-lock[also remove lock entry]' \\
+          '--force-lock[also remove lock entry]' '-fl[alias for --force-lock]' \\
           '--lock-only[remove only lock entry, keep disk]'
       else
         local scope=""
@@ -113,17 +112,17 @@ function __skillio_using_subcommand
   test "$cmd[2]" = "$argv[1]"
 end
 
-complete -c skl -n __skillio_needs_command -a 'list ls remove rm cost co cst usage us usg completion'
-complete -c skillio -n __skillio_needs_command -a 'list ls remove rm cost co cst usage us usg completion'
+complete -c skl -n __skillio_needs_command -a 'list ls remove rm cost cs cst usage us usg completion'
+complete -c skillio -n __skillio_needs_command -a 'list ls remove rm cost cs cst usage us usg completion'
 
 for sub in rm remove
   complete -c skl -n "__skillio_using_subcommand $sub" -f -a '(__skillio_skill_names)'
   complete -c skillio -n "__skillio_using_subcommand $sub" -f -a '(__skillio_skill_names)'
   complete -c skl -n "__skillio_using_subcommand $sub" -s g -l global -d 'Use global scope'
-  complete -c skl -n "__skillio_using_subcommand $sub" -l all -d 'Remove every skill in scope'
   complete -c skl -n "__skillio_using_subcommand $sub" -l dry-run -d 'Print plan without deleting'
   complete -c skl -n "__skillio_using_subcommand $sub" -s y -l yes -d 'Skip confirmation prompt'
   complete -c skl -n "__skillio_using_subcommand $sub" -l force-lock -d 'Also remove lock entry'
+  complete -c skl -n "__skillio_using_subcommand $sub" -o fl -d 'Alias for --force-lock'
   complete -c skl -n "__skillio_using_subcommand $sub" -l lock-only -d 'Remove only lock entry, keep disk'
 end
 

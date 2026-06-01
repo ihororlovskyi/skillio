@@ -78,15 +78,16 @@ skillio                                # equivalent
 # subcommands
 skl ls                                 # list skills per source with diffs
 skl cost                               # ambient ballast cost (frontmatter tokens) per skill
-skl cst                                # alias for cost
+skl cs                                 # alias for cost (also: cst)
 skl usage                              # consumption: usage count × frontmatter tokens
 skl usg                                # alias for usage
 skl rm brainstorming                   # delete on-disk dir; lock kept (Y/n prompt)
 skl rm brainstorming writing-plans     # remove multiple
-skl rm --all                           # remove all skills in scope
+skl rm .                               # remove all skills in scope (lock kept)
+skl rm . -fl                           # remove all, including lock entries
 skl rm --yes brainstorming             # skip confirmation
 skl rm --dry-run brainstorming         # preview only
-skl rm --force-lock brainstorming      # also remove the lock entry
+skl rm --force-lock brainstorming      # also remove the lock entry (-fl)
 
 # scope flags
 skl -g                                 # force global scope on any subcommand
@@ -158,7 +159,7 @@ skillio list            # local skills-lock.json
 skillio list --global   # ~/.agents/.skill-lock.json
 ```
 
-### `skillio cost` / `co`
+### `skillio cost` / `cs`
 
 ```sh
 skillio cost            # local: per-skill frontmatter tokens with verdict
@@ -170,8 +171,9 @@ skillio cost --global   # same, against ~/.agents/.skill-lock.json
 ```sh
 skillio remove <skill-name>               # delete on-disk dir; lock kept
 skillio remove <skill-one> <skill-two>
-skillio remove --all                      # remove all skills in scope
-skillio remove --force-lock <skill-name>  # also remove the lock entry
+skillio remove .                          # remove all skills in scope (lock kept)
+skillio remove . -fl                      # remove all, including lock entries
+skillio remove --force-lock <skill-name>  # also remove the lock entry (alias -fl)
 skillio remove --lock-only <skill-name>   # only the lock entry; keep on disk
 skillio remove --global <skill-name>
 skillio remove --dry-run <skill-name>     # preview only

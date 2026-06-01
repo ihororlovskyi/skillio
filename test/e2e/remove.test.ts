@@ -23,8 +23,9 @@ describe('skl rm', () => {
     expect(existsSync(join(TMP, '.claude/skills/skill-foo/SKILL.md'))).toBe(true);
     const { stdout, exitCode } = run(['rm', '--yes', 'skill-foo'], TMP);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain('Kept "skill-foo" in skills-lock.json (no --force-lock)');
-    expect(stdout).toMatch(/Removed "skill-foo" from \.claude\/skills/);
+    expect(stdout).toContain('"skill-foo"');
+    expect(stdout).toContain('kept in skills-lock.json');
+    expect(stdout).toMatch(/removed from \.claude\/skills/);
     expect(existsSync(join(TMP, '.claude/skills/skill-foo'))).toBe(false);
     // lock still contains skill-foo
     const lock = JSON.parse(readFileSync(join(TMP, 'skills-lock.json'), 'utf8'));
@@ -42,8 +43,9 @@ describe('skl rm', () => {
   it('reports skips when skill is missing from a source', () => {
     const { stdout, exitCode } = run(['rm', '--yes', 'skill-baz'], TMP);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain('Kept "skill-baz" in skills-lock.json (no --force-lock)');
-    expect(stdout).toContain('Skipped .claude/skills (not found)');
+    expect(stdout).toContain('"skill-baz"');
+    expect(stdout).toContain('kept in skills-lock.json');
+    expect(stdout).toContain('skipped .claude/skills (not found)');
   });
 
   it('exits 1 when nothing matches', () => {
@@ -55,8 +57,9 @@ describe('skl rm', () => {
   it('removes multiple skills with a single confirmation (--yes)', () => {
     const { stdout, exitCode } = run(['rm', '--yes', 'skill-foo', 'skill-bar'], TMP);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain('Kept "skill-foo" in skills-lock.json (no --force-lock)');
-    expect(stdout).toContain('Kept "skill-bar" in skills-lock.json (no --force-lock)');
+    expect(stdout).toContain('"skill-foo"');
+    expect(stdout).toContain('"skill-bar"');
+    expect(stdout).toContain('kept in skills-lock.json');
     expect(existsSync(join(TMP, '.claude/skills/skill-foo'))).toBe(false);
     expect(existsSync(join(TMP, '.claude/skills/skill-bar'))).toBe(false);
     // lock still has both
@@ -68,7 +71,7 @@ describe('skl rm', () => {
   it('rm alias works', () => {
     const { stdout, exitCode } = run(['remove', '--yes', 'skill-foo'], TMP);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain('Kept "skill-foo"');
+    expect(stdout).toContain('"skill-foo"');
   });
 
   it('default leaves lock untouched (lock preservation)', () => {
@@ -87,7 +90,7 @@ describe('skl rm', () => {
     const lock = JSON.parse(readFileSync(join(tmpDir, 'skills-lock.json'), 'utf8'));
     expect(lock.skills).toHaveProperty('foo'); // lock kept
     expect(existsSync(join(tmpDir, '.claude', 'skills', 'foo'))).toBe(false); // disk gone
-    expect(r.stdout).toContain('Kept');
+    expect(r.stdout).toContain('kept');
     expect(r.stdout).toContain('skills-lock.json');
 
     rmSync(tmpDir, { recursive: true, force: true });
@@ -107,7 +110,7 @@ describe('skl rm', () => {
     const lock = JSON.parse(readFileSync(join(tmpDir, 'skills-lock.json'), 'utf8'));
     expect(lock.skills).not.toHaveProperty('foo');
     expect(lock.skills).toHaveProperty('bar');
-    expect(r.stdout).toContain('Removed');
+    expect(r.stdout).toContain('removed from skills-lock.json');
 
     rmSync(tmpDir, { recursive: true, force: true });
   });
@@ -132,7 +135,7 @@ describe('skl rm', () => {
     expect(lock.skills).not.toHaveProperty('foo');
     expect(lock.skills).toHaveProperty('bar');
     expect(existsSync(join(tmpDir, '.claude', 'skills', 'foo', 'SKILL.md'))).toBe(true);
-    expect(r.stdout).toContain('Kept .claude/skills/foo/');
+    expect(r.stdout).toContain('kept .claude/skills (--lock-only)');
 
     rmSync(tmpDir, { recursive: true, force: true });
   });
@@ -159,7 +162,7 @@ describe('skl rm', () => {
       env: { ...process.env, SKILLIO_NO_UPDATE_CHECK: '1' },
     });
     expect(r.status).toBe(0);
-    expect(r.stdout).toMatch(/Removed "foo" from \.agents\/skills/);
+    expect(r.stdout).toMatch(/removed from \.agents\/skills/);
     expect(existsSync(join(tmpDir, '.agents', 'skills', 'foo'))).toBe(false);
 
     rmSync(tmpDir, { recursive: true, force: true });

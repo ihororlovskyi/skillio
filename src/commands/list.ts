@@ -138,16 +138,10 @@ export const listCommand = defineCommand({
     const claudeNames = rows.claude.names.map((n) => n.name);
     const agentsNames = rows.agents.names.map((n) => n.name);
     const lockNames = rows.lock.names.map((n) => n.name);
-    const lockOnly = lockNames.filter((n) => !claudeNames.includes(n) && !agentsNames.includes(n));
     const claudeNotInLock = claudeNames.filter((n) => !lockNames.includes(n));
     const agentsNotInLock = agentsNames.filter((n) => !lockNames.includes(n));
 
     const diffs: string[] = [];
-    if (lockOnly.length) {
-      diffs.push(
-        `skills-lock.json has ${lockOnly.length} skill${lockOnly.length === 1 ? '' : 's'} missing on disk: ${lockOnly.map(cyan).join(', ')}`,
-      );
-    }
     if (claudeNotInLock.length) {
       diffs.push(
         `.claude/skills has ${claudeNotInLock.length} skill${claudeNotInLock.length === 1 ? '' : 's'} not in lock: ${claudeNotInLock.map(cyan).join(', ')}`,

@@ -30,10 +30,10 @@ describe('skl ls', () => {
     expect(stdout).not.toMatch(/~\d+ tok/);
   });
 
-  it('emits a diff line for skills missing on disk', () => {
+  it('does not emit a "missing on disk" diff line (orphans shown inline in lock row)', () => {
     const { stdout, exitCode } = run(['ls'], LOCK_DIR);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain('skills-lock.json has 1 skill missing on disk: skill-baz');
+    expect(stdout).not.toContain('missing on disk');
   });
 
   it('list alias works', () => {
