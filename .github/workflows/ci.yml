@@ -49,7 +49,7 @@ jobs:
         run: node node_modules/.bin/vitest run --coverage
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v6
         with:
           files: ./coverage/lcov.info
           flags: unit
