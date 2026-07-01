@@ -28,6 +28,22 @@ function countFiles(path: string): number {
   return n;
 }
 
+export function countFoldersAndFiles(dir: string): { folders: number; files: number } {
+  let folders = 0;
+  let files = 0;
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (entry.isDirectory()) {
+      folders++;
+      const nested = countFoldersAndFiles(join(dir, entry.name));
+      folders += nested.folders;
+      files += nested.files;
+    } else {
+      files++;
+    }
+  }
+  return { folders, files };
+}
+
 export function rmSkillDir(path: string, opts: RmOptions): RmResult {
   const safe = opts.allowedRoots.some((root) => isInside(path, root));
   if (!safe) {

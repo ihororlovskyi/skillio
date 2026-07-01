@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { rmSkillDir } from './fs-rm';
+import { countFoldersAndFiles, rmSkillDir } from './fs-rm';
 
 let TMP = '';
 
@@ -40,5 +40,32 @@ describe('rmSkillDir', () => {
     expect(() => rmSkillDir('/etc/passwd', { allowedRoots: [TMP] })).toThrow(
       /outside allowed roots/,
     );
+  });
+});
+
+describe('countFoldersAndFiles', () => {
+  it('counts nested folders and files, excluding the root directory itself', () => {
+    const dir = join(TMP, 'skill');
+    mkdirSync(join(dir, 'scripts', 'nested'), { recursive: true });
+    writeFileSync(join(dir, 'SKILL.md'), '---\nname: x\n---\n');
+    writeFileSync(join(dir, 'scripts', 'a.sh'), 'echo hi');
+    writeFileSync(join(dir, 'scripts', 'nested', 'b.sh'), 'echo hi');
+
+    expect(countFoldersAndFiles(dir)).toEqual({ folders: 2, files: 3 });
+  });
+
+  it('returns zero folders for a flat directory with only files', () => {
+    const dir = join(TMP, 'flat');
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, 'SKILL.md'), 'x');
+
+    expect(countFoldersAndFiles(dir)).toEqual({ folders: 0, files: 1 });
+  });
+
+  it('returns zeros for an empty directory', () => {
+    const dir = join(TMP, 'empty');
+    mkdirSync(dir, { recursive: true });
+
+    expect(countFoldersAndFiles(dir)).toEqual({ folders: 0, files: 0 });
   });
 });
