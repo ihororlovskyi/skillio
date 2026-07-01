@@ -1,40 +1,54 @@
-import { existsSync } from 'node:fs';
+import { existsSync, lstatSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { defineCommand } from 'citty';
-import { getLockPath, readLock, removeSkillFromLock } from '../lock/file';
-import { cyan, green, red, yellow } from '../utils/ansi';
-import { confirm } from '../utils/confirm';
+import { countLockLinesToRemove, getLockPath, readLock, removeSkillFromLock } from '../lock/file';
+import { green, red, yellow } from '../utils/ansi';
+import { createConfirmer } from '../utils/confirm';
 import { discoverSkills } from '../utils/discover-skills';
-import { rmSkillDir } from '../utils/fs-rm';
+import { countFoldersAndFiles, rmSkillDir } from '../utils/fs-rm';
+
+type LocationKind = 'real' | 'symlink' | 'missing';
+
+interface LocationInfo {
+  kind: LocationKind;
+  folders: number;
+  files: number;
+}
 
 interface SkillTarget {
   name: string;
-  inLock: boolean;
-  claudeDir?: string;
-  agentsDir?: string;
+  agentsDir: string;
+  claudeDir: string;
+  agents: LocationInfo;
+  claude: LocationInfo;
 }
 
-interface DeletePlan {
-  target: SkillTarget;
-  claudeFileCount?: number;
-  agentsFileCount?: number;
+type Scope = 'all' | 'lock-only' | 'agents-only' | 'claude-only';
+
+function buildLocation(dir: string): LocationInfo {
+  if (!existsSync(dir)) return { kind: 'missing', folders: 0, files: 0 };
+  if (lstatSync(dir).isSymbolicLink()) return { kind: 'symlink', folders: 0, files: 0 };
+  const { folders, files } = countFoldersAndFiles(dir);
+  return { kind: 'real', folders, files };
 }
 
-const q = (name: string) => `"${cyan(name)}"`;
+function rootFor(base: '.agents' | '.claude', isGlobal: boolean, lockPath: string): string {
+  return isGlobal
+    ? join(homedir(), base, 'skills')
+    : join(dirname(resolve(lockPath)), base, 'skills');
+}
 
 function buildTarget(name: string, isGlobal: boolean, lockPath: string): SkillTarget {
-  const lock = readLock(lockPath);
-  const inLock = Object.hasOwn(lock.skills, name);
-  const baseClaude = isGlobal
-    ? join(homedir(), '.claude', 'skills')
-    : join(dirname(resolve(lockPath)), '.claude', 'skills');
-  const baseAgents = isGlobal
-    ? join(homedir(), '.agents', 'skills')
-    : join(dirname(resolve(lockPath)), '.agents', 'skills');
-  const claudeDir = existsSync(join(baseClaude, name)) ? join(baseClaude, name) : undefined;
-  const agentsDir = existsSync(join(baseAgents, name)) ? join(baseAgents, name) : undefined;
-  return { name, inLock, claudeDir, agentsDir };
+  const agentsDir = join(rootFor('.agents', isGlobal, lockPath), name);
+  const claudeDir = join(rootFor('.claude', isGlobal, lockPath), name);
+  return {
+    name,
+    agentsDir,
+    claudeDir,
+    agents: buildLocation(agentsDir),
+    claude: buildLocation(claudeDir),
+  };
 }
 
 function collectAllTargets(isGlobal: boolean, lockPath: string): SkillTarget[] {
@@ -42,75 +56,145 @@ function collectAllTargets(isGlobal: boolean, lockPath: string): SkillTarget[] {
   return [...map.keys()].sort().map((name) => buildTarget(name, isGlobal, lockPath));
 }
 
-function fileCount(dir: string): number {
-  const { readdirSync, statSync } = require('node:fs') as typeof import('node:fs');
-  let n = 0;
-  const stack = [dir];
-  while (stack.length) {
-    const cur = stack.pop()!;
-    const stat = statSync(cur);
-    if (stat.isFile()) n++;
-    else if (stat.isDirectory()) for (const e of readdirSync(cur)) stack.push(join(cur, e));
-  }
-  return n;
+function plural(n: number, word: string): string {
+  return `${n} ${word}${n === 1 ? '' : 's'}`;
 }
 
-function printPlan(plan: DeletePlan, modifyLock: boolean, lockOnly: boolean): void {
-  const { target } = plan;
-  console.log(`Will remove ${q(target.name)}:`);
-  if (target.inLock) {
-    if (lockOnly || modifyLock) console.log('  - skills-lock.json');
-    else console.log('  - skills-lock.json (kept; use --force-lock to remove lock entry)');
-  } else {
-    console.log('  - skills-lock.json (not in lock)');
+function header(targets: SkillTarget[], verb: string): string {
+  const names = targets.map((t) => red(`"${t.name}"`)).join(', ');
+  return `${plural(targets.length, 'skill')} ${names} ${verb}`;
+}
+
+function aggregateLocations(infos: LocationInfo[]): {
+  folders: number;
+  files: number;
+  symlinks: number;
+  found: boolean;
+} {
+  let folders = 0;
+  let files = 0;
+  let symlinks = 0;
+  for (const info of infos) {
+    if (info.kind === 'real') {
+      folders += info.folders;
+      files += info.files;
+    } else if (info.kind === 'symlink') {
+      symlinks += 1;
+    }
   }
-  if (lockOnly) {
-    if (target.claudeDir) console.log(`  - .claude/skills/${target.name}/  (kept; --lock-only)`);
-    else console.log('  - .claude/skills/  (not found)');
-    if (target.agentsDir) console.log(`  - .agents/skills/${target.name}/  (kept; --lock-only)`);
-    else console.log('  - .agents/skills/  (not found)');
-    return;
+  return { folders, files, symlinks, found: infos.some((i) => i.kind !== 'missing') };
+}
+
+function diskLine(
+  label: string,
+  singleName: string | undefined,
+  infos: LocationInfo[],
+  variant: 'plan' | 'summary',
+): string {
+  const displayLabel = singleName ? `${label}/${singleName}/` : label;
+  const agg = aggregateLocations(infos);
+  if (!agg.found) return `  ${displayLabel}  (not found)`;
+  const parts: string[] = [];
+  if (agg.folders > 0 || agg.files > 0) {
+    const text = `${plural(agg.folders, 'folder')}, ${plural(agg.files, 'file')}`;
+    parts.push(variant === 'summary' ? red(text) : green(text));
   }
-  if (target.claudeDir)
-    console.log(`  - .claude/skills/${target.name}/  (${plan.claudeFileCount} files)`);
-  else console.log('  - .claude/skills/  (not found)');
-  if (target.agentsDir)
-    console.log(`  - .agents/skills/${target.name}/  (${plan.agentsFileCount} files)`);
-  else console.log('  - .agents/skills/  (not found)');
+  if (agg.symlinks > 0) {
+    const text = plural(agg.symlinks, 'symlink');
+    parts.push(variant === 'summary' ? red(text) : yellow(text));
+  }
+  return `  ${displayLabel}  (${parts.join(', ')})`;
+}
+
+function lockLine(n: number, variant: 'removed' | 'kept'): string {
+  const label = 'skills-lock.json';
+  if (n === 0) return `  ${label}  (not in lock)`;
+  if (variant === 'kept') return `  ${green(`${label}  (${plural(n, 'line')} kept)`)}`;
+  return `  ${red(`${label}  (${plural(n, 'line')})`)}`;
+}
+
+function printBlock(
+  targets: SkillTarget[],
+  scope: Scope,
+  verb: string,
+  lockLinesToRemove: number,
+  diskVariant: 'plan' | 'summary',
+  lockVariant: 'removed' | 'kept',
+): void {
+  console.log(header(targets, verb));
+  const singleName = targets.length === 1 ? targets[0]?.name : undefined;
+  if (scope === 'all' || scope === 'agents-only') {
+    console.log(
+      diskLine(
+        '.agents/skills',
+        singleName,
+        targets.map((t) => t.agents),
+        diskVariant,
+      ),
+    );
+  }
+  if (scope === 'all' || scope === 'claude-only') {
+    console.log(
+      diskLine(
+        '.claude/skills',
+        singleName,
+        targets.map((t) => t.claude),
+        diskVariant,
+      ),
+    );
+  }
+  if (scope === 'all' || scope === 'lock-only') {
+    console.log(lockLine(lockLinesToRemove, lockVariant));
+  }
 }
 
 export const removeCommand = defineCommand({
   meta: {
-    description: 'Remove one or more skills from on-disk dirs (lock preserved unless --force-lock)',
+    description: 'Remove one or more skills from on-disk dirs and/or skills-lock.json',
   },
   args: {
     global: { type: 'boolean', alias: 'g', default: false, description: 'Use global scope' },
-    'dry-run': { type: 'boolean', default: false, description: 'Print plan, do not delete' },
-    yes: { type: 'boolean', alias: 'y', default: false, description: 'Skip confirmation prompt' },
-    'force-lock': {
-      type: 'boolean',
-      default: false,
-      description: 'Also remove entry from skills-lock.json (default is to keep lock untouched)',
-    },
+    yes: { type: 'boolean', alias: 'y', default: false, description: 'Skip confirmation prompts' },
     'lock-only': {
       type: 'boolean',
+      alias: 'lo',
       default: false,
-      description: 'Remove only the skills-lock.json entry; keep on-disk directories',
+      description: 'Only remove the skills-lock.json entry; keep on-disk directories',
+    },
+    'agents-only': {
+      type: 'boolean',
+      alias: 'ao',
+      default: false,
+      description: 'Only remove from .agents/skills; keep .claude/skills and the lock entry',
+    },
+    'claude-only': {
+      type: 'boolean',
+      alias: 'co',
+      default: false,
+      description: 'Only remove from .claude/skills; keep .agents/skills and the lock entry',
     },
   },
   async run({ args }) {
     const {
       global: isGlobal,
-      'dry-run': dryRun,
       yes,
-      'force-lock': modifyLock,
       'lock-only': lockOnly,
+      'agents-only': agentsOnly,
+      'claude-only': claudeOnly,
     } = args;
 
-    if (lockOnly && modifyLock) {
-      console.error('--lock-only is mutually exclusive with --force-lock');
+    const onlyFlagCount = [lockOnly, agentsOnly, claudeOnly].filter(Boolean).length;
+    if (onlyFlagCount > 1) {
+      console.error('--lock-only, --agents-only, and --claude-only are mutually exclusive');
       process.exit(1);
     }
+    const scope: Scope = lockOnly
+      ? 'lock-only'
+      : agentsOnly
+        ? 'agents-only'
+        : claudeOnly
+          ? 'claude-only'
+          : 'all';
 
     const subcmdIdx = process.argv.findIndex((a) => a === 'remove' || a === 'rm');
     const rawNames = process.argv.slice(subcmdIdx + 1).filter((a) => !a.startsWith('-'));
@@ -138,34 +222,26 @@ export const removeCommand = defineCommand({
       return;
     }
 
-    const orphan = targets.filter((t) => !t.inLock && !t.claudeDir && !t.agentsDir);
+    const lockNames = new Set(Object.keys(readLock(lockPath).skills));
+    const orphan = targets.filter(
+      (t) => t.agents.kind === 'missing' && t.claude.kind === 'missing' && !lockNames.has(t.name),
+    );
     if (orphan.length) {
-      for (const o of orphan) console.log(`${q(o.name)} is not in lock or on disk`);
+      for (const o of orphan) console.log(`"${o.name}" is not in lock or on disk`);
       process.exit(1);
     }
 
-    const plans: DeletePlan[] = targets.map((t) => ({
-      target: t,
-      claudeFileCount: t.claudeDir ? fileCount(t.claudeDir) : undefined,
-      agentsFileCount: t.agentsDir ? fileCount(t.agentsDir) : undefined,
-    }));
+    const lockLinesToRemove = countLockLinesToRemove(
+      lockPath,
+      targets.map((t) => t.name),
+    );
 
-    for (const p of plans) {
-      printPlan(p, modifyLock, lockOnly);
-      console.log('');
-    }
+    printBlock(targets, scope, 'will be removed from:', lockLinesToRemove, 'plan', 'removed');
 
-    if (dryRun) return;
+    const ask = createConfirmer();
 
     if (!yes) {
-      let question = 'Proceed?';
-      if (all) {
-        const subject = lockOnly
-          ? `ALL ${plans.length} lock entries (disk preserved)`
-          : `ALL ${plans.length} skills`;
-        question = `Remove ${subject}?`;
-      }
-      const ok = await confirm(question);
+      const ok = await ask('Proceed?');
       if (!ok) {
         console.log('Aborted');
         process.exit(1);
@@ -174,44 +250,34 @@ export const removeCommand = defineCommand({
 
     const allowedRoots = [isGlobal ? homedir() : dirname(resolve(lockPath)), homedir()];
 
-    const removed = (s: string) => red('removed') + s;
-    const kept = (s: string) => green('kept') + s;
-    const skipped = (s: string) => yellow('skipped') + s;
+    if (scope === 'all' || scope === 'agents-only') {
+      for (const t of targets) rmSkillDir(t.agentsDir, { allowedRoots });
+    }
+    if (scope === 'all' || scope === 'claude-only') {
+      for (const t of targets) rmSkillDir(t.claudeDir, { allowedRoots });
+    }
 
-    for (const { target } of plans) {
-      console.log('');
-      console.log(q(target.name));
-
-      if (lockOnly) {
-        if (target.agentsDir) console.log(kept(' .agents/skills (--lock-only)'));
-        else console.log(skipped(' .agents/skills (not found)'));
-        if (target.claudeDir) console.log(kept(' .claude/skills (--lock-only)'));
-        else console.log(skipped(' .claude/skills (not found)'));
-      } else {
-        if (target.agentsDir) {
-          const r = rmSkillDir(target.agentsDir, { allowedRoots });
-          console.log(removed(` from .agents/skills (${r.fileCount} files)`));
-        } else {
-          console.log(skipped(' .agents/skills (not found)'));
-        }
-        if (target.claudeDir) {
-          const r = rmSkillDir(target.claudeDir, { allowedRoots });
-          console.log(removed(` from .claude/skills (${r.fileCount} files)`));
-        } else {
-          console.log(skipped(' .claude/skills (not found)'));
-        }
-      }
-
-      if (target.inLock) {
-        if (lockOnly || modifyLock) {
-          const r = removeSkillFromLock(lockPath, target.name);
-          if (r.removed) console.log(removed(' from skills-lock.json'));
-        } else {
-          console.log(kept(' in skills-lock.json'));
-        }
-      } else {
-        console.log(skipped(' skills-lock.json (not in lock)'));
+    let lockCleaned = false;
+    if (scope === 'lock-only') {
+      for (const t of targets) removeSkillFromLock(lockPath, t.name);
+      lockCleaned = true;
+    } else if (scope === 'all' && lockLinesToRemove > 0) {
+      const cleanLock =
+        yes || (await ask(`Clean skills-lock.json (${plural(lockLinesToRemove, 'line')})?`));
+      if (cleanLock) {
+        for (const t of targets) removeSkillFromLock(lockPath, t.name);
+        lockCleaned = true;
       }
     }
+
+    console.log('');
+    printBlock(
+      targets,
+      scope,
+      'removed from:',
+      lockLinesToRemove,
+      'summary',
+      lockCleaned ? 'removed' : 'kept',
+    );
   },
 });
