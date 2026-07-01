@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.1.15 (2026-07-01)
+
+### Changed
+
+- **`skl rm` plan/summary output is now colored and aggregated.** Real
+  installs show `(N folders, M files)` in green; symlinked installs show
+  `(N symlinks)` in yellow; the `skills-lock.json` line shows the exact
+  number of lines that will change, in red. Multiple targets (including
+  `rm .`) share one aggregated block instead of a header repeated per skill.
+- **Lock cleanup is now an interactive question, not a flag.** `--force-lock`
+  and its `-fl` alias are **removed**. After confirming disk removal, `rm`
+  asks a second, independent `Clean skills-lock.json (N lines)? [y/n]`
+  question whenever at least one target is in the lock. `--yes`/`-y` now
+  answers **both** questions. **Breaking** for scripts relying on
+  `--force-lock` or on `--yes` leaving the lock untouched.
+- **`--dry-run` removed.** The plan is always printed before every
+  confirmation, so a separate preview mode was redundant. **Breaking**.
+- **New scoped flags**: `--lock-only`/`--lo` (unchanged behavior, new alias),
+  `--agents-only`/`--ao`, and `--claude-only`/`--co` — each restricts `rm` to
+  exactly one location (disk side or lock) with a single confirmation and no
+  second question. Mutually exclusive with each other.
+- **Confirmation prompts now read `[y/n]`** (was `[y/N]`); behavior for
+  anything other than a literal `y`/`yes` answer is unchanged (still `false`).
+
 ## 0.1.14 (2026-06-01)
 
 ### Changed

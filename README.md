@@ -81,13 +81,13 @@ skl cost                               # ambient ballast cost (frontmatter token
 skl cs                                 # alias for cost (also: cst)
 skl usage                              # consumption: usage count × frontmatter tokens
 skl usg                                # alias for usage
-skl rm brainstorming                   # delete on-disk dir; lock kept (Y/n prompt)
-skl rm brainstorming writing-plans     # remove multiple
-skl rm .                               # remove all skills in scope (lock kept)
-skl rm . -fl                           # remove all, including lock entries
-skl rm --yes brainstorming             # skip confirmation
-skl rm --dry-run brainstorming         # preview only
-skl rm --force-lock brainstorming      # also remove the lock entry (-fl)
+skl rm brainstorming                   # colored plan, Proceed? [y/n], then Clean lock? [y/n]
+skl rm brainstorming writing-plans     # remove multiple, one pair of prompts
+skl rm .                               # remove all skills in scope
+skl rm --yes brainstorming             # skip both prompts
+skl rm brainstorming --lock-only       # only the lock entry (alias --lo)
+skl rm brainstorming --agents-only     # only .agents/skills (alias --ao)
+skl rm brainstorming --claude-only     # only .claude/skills (alias --co)
 
 # scope flags
 skl -g                                 # force global scope on any subcommand
@@ -169,15 +169,14 @@ skillio cost --global   # same, against ~/.agents/.skill-lock.json
 ### `skillio remove` / `rm`
 
 ```sh
-skillio remove <skill-name>               # delete on-disk dir; lock kept
+skillio remove <skill-name>               # colored plan/summary, two prompts (disk, then lock)
 skillio remove <skill-one> <skill-two>
-skillio remove .                          # remove all skills in scope (lock kept)
-skillio remove . -fl                      # remove all, including lock entries
-skillio remove --force-lock <skill-name>  # also remove the lock entry (alias -fl)
-skillio remove --lock-only <skill-name>   # only the lock entry; keep on disk
+skillio remove .                          # remove all skills in scope
+skillio remove --lock-only <skill-name>   # only the lock entry; keep on disk (alias --lo)
+skillio remove --agents-only <skill-name> # only .agents/skills; keep .claude/skills and lock (alias --ao)
+skillio remove --claude-only <skill-name> # only .claude/skills; keep .agents/skills and lock (alias --co)
 skillio remove --global <skill-name>
-skillio remove --dry-run <skill-name>     # preview only
-skillio remove --yes <skill-name>         # skip confirmation prompt
+skillio remove --yes <skill-name>         # skip both confirmation prompts
 ```
 
 ### Shell completion
