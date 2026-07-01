@@ -61,7 +61,7 @@ function plural(n: number, word: string): string {
 }
 
 function header(targets: SkillTarget[], verb: string): string {
-  const names = targets.map((t) => red(`"${t.name}"`)).join(', ');
+  const names = targets.map((t) => red(t.name)).join(' ');
   return `${plural(targets.length, 'skill')} ${names} ${verb}`;
 }
 

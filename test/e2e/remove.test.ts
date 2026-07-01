@@ -32,7 +32,7 @@ describe('skl rm', () => {
     expect(existsSync(join(TMP, '.claude/skills/skill-foo/SKILL.md'))).toBe(true);
     const { stdout, exitCode } = run(['rm', '--yes', 'skill-foo'], TMP);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain('"skill-foo"');
+    expect(stdout).toContain('skill-foo');
     expect(stdout).toContain('will be removed from:');
     expect(stdout).toContain('removed from:');
     expect(existsSync(join(TMP, '.claude/skills/skill-foo'))).toBe(false);
@@ -43,7 +43,7 @@ describe('skl rm', () => {
   it('reports "not found" when a location is missing', () => {
     const { stdout, exitCode } = run(['rm', '--yes', 'skill-baz'], TMP);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain('"skill-baz"');
+    expect(stdout).toContain('skill-baz');
     expect(stdout).toContain('.agents/skills/skill-baz/  (not found)');
     expect(stdout).toContain('.claude/skills/skill-baz/  (not found)');
   });
@@ -57,9 +57,9 @@ describe('skl rm', () => {
   it('removes multiple skills with a single pair of confirmations (--yes)', () => {
     const { stdout, exitCode } = run(['rm', '--yes', 'skill-foo', 'skill-bar'], TMP);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain('2 skills');
-    expect(stdout).toContain('"skill-foo"');
-    expect(stdout).toContain('"skill-bar"');
+    expect(stdout).toContain('2 skills skill-foo skill-bar will be removed from:');
+    expect(stdout).not.toContain('"skill-foo"');
+    expect(stdout).not.toContain('skill-foo,');
     expect(existsSync(join(TMP, '.claude/skills/skill-foo'))).toBe(false);
     expect(existsSync(join(TMP, '.claude/skills/skill-bar'))).toBe(false);
     const lock = JSON.parse(readFileSync(join(TMP, 'skills-lock.json'), 'utf8'));
@@ -70,7 +70,7 @@ describe('skl rm', () => {
   it('rm alias works', () => {
     const { stdout, exitCode } = run(['remove', '--yes', 'skill-foo'], TMP);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain('"skill-foo"');
+    expect(stdout).toContain('skill-foo');
   });
 
   it('without --yes, declining Proceed? aborts and changes nothing', () => {
@@ -220,6 +220,26 @@ describe('skl rm', () => {
     expect(r.stdout).toContain('1 symlink');
 
     rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('colors only target names in multi-target headers and omits quotes and commas', () => {
+    const env: NodeJS.ProcessEnv = {
+      ...process.env,
+      FORCE_COLOR: '1',
+      SKILLIO_NO_UPDATE_CHECK: '1',
+    };
+    delete env.NO_COLOR;
+    const r = spawnSync(process.execPath, [CLI, 'rm', 'skill-foo', 'skill-bar', '--yes'], {
+      cwd: TMP,
+      encoding: 'utf8',
+      env,
+    });
+    expect(r.status).toBe(0);
+    expect(r.stdout).toContain(
+      '2 skills \x1b[31mskill-foo\x1b[0m \x1b[31mskill-bar\x1b[0m will be removed from:',
+    );
+    expect(r.stdout).not.toContain('"skill-foo"');
+    expect(r.stdout).not.toContain('skill-foo,');
   });
 
   it('aggregates mixed real and symlink installs across multiple targets in one line', () => {
