@@ -18,7 +18,7 @@ _skillio_completions() {
   case "\${sub}" in
     rm|remove)
       if [[ "\${cur}" == -* ]]; then
-        COMPREPLY=( $(compgen -W "-g --global --dry-run -y --yes --force-lock -fl --lock-only -h --help" -- "\${cur}") )
+        COMPREPLY=( $(compgen -W "-g --global -y --yes --lock-only --lo --agents-only --ao --claude-only --co -h --help" -- "\${cur}") )
       else
         local names
         local scope=""
@@ -67,18 +67,18 @@ _skillio() {
       if [[ \${words[CURRENT]} == -* ]]; then
         _values 'flag' \\
           '-g[global scope]' '--global[global scope]' \\
-          '--dry-run[print plan without deleting]' \\
           '-y[skip confirmation]' '--yes[skip confirmation]' \\
-          '--force-lock[also remove lock entry]' '-fl[alias for --force-lock]' \\
-          '--lock-only[remove only lock entry, keep disk]'
+          '--lock-only[only remove lock entry]' '--lo[alias for --lock-only]' \\
+          '--agents-only[only remove from .agents/skills]' '--ao[alias for --agents-only]' \\
+          '--claude-only[only remove from .claude/skills]' '--co[alias for --claude-only]'
       else
         local scope=""
         for w in \${words[@]}; do
           if [[ $w == "-g" || $w == "--global" ]]; then scope="-g"; fi
         done
         local -a names
-        names=(\${(f)"$(skl list --names \$scope 2>/dev/null)"})
-        compadd -- \$names
+        names=(\${(f)"$(skl list --names $scope 2>/dev/null)"})
+        compadd -- $names
       fi
       ;;
     completion)
@@ -119,11 +119,13 @@ for sub in rm remove
   complete -c skl -n "__skillio_using_subcommand $sub" -f -a '(__skillio_skill_names)'
   complete -c skillio -n "__skillio_using_subcommand $sub" -f -a '(__skillio_skill_names)'
   complete -c skl -n "__skillio_using_subcommand $sub" -s g -l global -d 'Use global scope'
-  complete -c skl -n "__skillio_using_subcommand $sub" -l dry-run -d 'Print plan without deleting'
   complete -c skl -n "__skillio_using_subcommand $sub" -s y -l yes -d 'Skip confirmation prompt'
-  complete -c skl -n "__skillio_using_subcommand $sub" -l force-lock -d 'Also remove lock entry'
-  complete -c skl -n "__skillio_using_subcommand $sub" -o fl -d 'Alias for --force-lock'
-  complete -c skl -n "__skillio_using_subcommand $sub" -l lock-only -d 'Remove only lock entry, keep disk'
+  complete -c skl -n "__skillio_using_subcommand $sub" -l lock-only -d 'Only remove lock entry'
+  complete -c skl -n "__skillio_using_subcommand $sub" -l lo -d 'Alias for --lock-only'
+  complete -c skl -n "__skillio_using_subcommand $sub" -l agents-only -d 'Only remove from .agents/skills'
+  complete -c skl -n "__skillio_using_subcommand $sub" -l ao -d 'Alias for --agents-only'
+  complete -c skl -n "__skillio_using_subcommand $sub" -l claude-only -d 'Only remove from .claude/skills'
+  complete -c skl -n "__skillio_using_subcommand $sub" -l co -d 'Alias for --claude-only'
 end
 
 for sub in completion
