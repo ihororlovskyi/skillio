@@ -26,7 +26,7 @@ describe('skl rm .', () => {
     }
   }
 
-  it('wipes all on-disk skills', () => {
+  it('wipes all on-disk skills and lock entries with --yes', () => {
     seed3();
     const r = spawnSync(process.execPath, [CLI, 'rm', '.', '--yes'], {
       cwd: tmp,
@@ -34,51 +34,35 @@ describe('skl rm .', () => {
       env: { ...process.env, SKILLIO_NO_UPDATE_CHECK: '1' },
     });
     expect(r.status).toBe(0);
+    expect(r.stdout).toContain('3 skills');
     expect(existsSync(join(tmp, '.claude', 'skills', 'foo'))).toBe(false);
     expect(existsSync(join(tmp, '.claude', 'skills', 'bar'))).toBe(false);
     expect(existsSync(join(tmp, '.claude', 'skills', 'baz'))).toBe(false);
+    const lock = JSON.parse(readFileSync(join(tmp, 'skills-lock.json'), 'utf8'));
+    expect(lock.skills).toEqual({});
   });
 
-  it('keeps lock by default (. without --force-lock)', () => {
+  it('y then n removes all disk dirs but keeps all lock entries', () => {
     seed3();
-    spawnSync(process.execPath, [CLI, 'rm', '.', '--yes'], {
+    const r = spawnSync(process.execPath, [CLI, 'rm', '.'], {
       cwd: tmp,
       encoding: 'utf8',
+      input: 'y\nn\n',
       env: { ...process.env, SKILLIO_NO_UPDATE_CHECK: '1' },
     });
+    expect(r.status).toBe(0);
+    expect(existsSync(join(tmp, '.claude', 'skills', 'foo'))).toBe(false);
     const lock = JSON.parse(readFileSync(join(tmp, 'skills-lock.json'), 'utf8'));
     expect(Object.keys(lock.skills).sort()).toEqual(['bar', 'baz', 'foo']);
   });
 
-  it('. --force-lock wipes lock entries', () => {
-    seed3();
-    spawnSync(
-      process.execPath,
-      [CLI, 'rm', '.', '--force-lock', '--yes'],
-      { cwd: tmp, encoding: 'utf8', env: { ...process.env, SKILLIO_NO_UPDATE_CHECK: '1' } },
-    );
-    const lock = JSON.parse(readFileSync(join(tmp, 'skills-lock.json'), 'utf8'));
-    expect(lock.skills).toEqual({});
-  });
-
-  it('. -fl (short alias for --force-lock) wipes lock entries', () => {
-    seed3();
-    spawnSync(
-      process.execPath,
-      [CLI, 'rm', '.', '-fl', '--yes'],
-      { cwd: tmp, encoding: 'utf8', env: { ...process.env, SKILLIO_NO_UPDATE_CHECK: '1' } },
-    );
-    const lock = JSON.parse(readFileSync(join(tmp, 'skills-lock.json'), 'utf8'));
-    expect(lock.skills).toEqual({});
-  });
-
   it('rejects positional names alongside .', () => {
     seed3();
-    const r = spawnSync(
-      process.execPath,
-      [CLI, 'rm', '.', 'foo', '--yes'],
-      { cwd: tmp, encoding: 'utf8', env: { ...process.env, SKILLIO_NO_UPDATE_CHECK: '1' } },
-    );
+    const r = spawnSync(process.execPath, [CLI, 'rm', '.', 'foo', '--yes'], {
+      cwd: tmp,
+      encoding: 'utf8',
+      env: { ...process.env, SKILLIO_NO_UPDATE_CHECK: '1' },
+    });
     expect(r.status).toBe(1);
     expect(r.stderr).toContain('mutually exclusive');
   });
@@ -92,5 +76,18 @@ describe('skl rm .', () => {
     });
     expect(r.status).toBe(0);
     expect(r.stdout).toContain('No skills to remove');
+  });
+
+  it('--lock-only wipes only lock entries, keeps disk dirs', () => {
+    seed3();
+    const r = spawnSync(process.execPath, [CLI, 'rm', '.', '--lock-only', '--yes'], {
+      cwd: tmp,
+      encoding: 'utf8',
+      env: { ...process.env, SKILLIO_NO_UPDATE_CHECK: '1' },
+    });
+    expect(r.status).toBe(0);
+    const lock = JSON.parse(readFileSync(join(tmp, 'skills-lock.json'), 'utf8'));
+    expect(lock.skills).toEqual({});
+    expect(existsSync(join(tmp, '.claude', 'skills', 'foo', 'SKILL.md'))).toBe(true);
   });
 });
