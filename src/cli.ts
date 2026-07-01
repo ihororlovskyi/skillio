@@ -66,13 +66,7 @@ function reorderRootFlagsToSubcommand(argv: string[]): string[] {
   return [argv[0] ?? '', argv[1] ?? '', sub, ...before, ...after];
 }
 
-// `-fl` is an explicit short alias for `--force-lock`. Normalize before citty
-// parses, since most arg parsers would split `-fl` into `-f -l`.
-function normalizeShortFlags(argv: string[]): string[] {
-  return argv.map((tok) => (tok === '-fl' ? '--force-lock' : tok));
-}
-
-process.argv = reorderRootFlagsToSubcommand(normalizeShortFlags(mergeAgentArgs(process.argv)));
+process.argv = reorderRootFlagsToSubcommand(mergeAgentArgs(process.argv));
 
 function printRootHelp(): void {
   const lines = [
@@ -91,7 +85,7 @@ function printRootHelp(): void {
     'COMMANDS',
     '',
     '  list, ls         List skills per source: install type, lock orphans, disk/lock diff',
-    '  remove, rm       Delete on-disk skill dirs; lock kept unless --force-lock',
+    '  remove, rm       Delete on-disk skill dirs and/or skills-lock.json (interactive)',
     '  cost, cs, cst    Show ambient ballast cost (per-skill frontmatter tokens) sorted desc',
     '  usage, us, usg   Show skill usage × cost (consumption) with missed rows',
     '  completion       Print shell completion script (bash, zsh, fish)',
@@ -115,32 +109,30 @@ function isRemoveHelp(argv: string[]): boolean {
 
 function printRemoveHelp(): void {
   const lines = [
-    'Remove skills from on-disk dirs (lock preserved unless --force-lock).',
+    'Remove skills from on-disk dirs and/or skills-lock.json.',
     '',
     'USAGE skillio remove [SKILL...] [OPTIONS]',
     '       skillio rm [SKILL...] [OPTIONS]',
     '',
     'ARGUMENTS',
     '',
-    '  SKILL...         One or more skill names. Use "." to target every skill in scope.',
+    '  SKILL...            One or more skill names. Use "." to target every skill in scope.',
     '',
     'OPTIONS',
     '',
-    '  -g, --global       Use global scope (default: false)',
-    '      --dry-run      Print plan without deleting',
-    '  -y, --yes          Skip confirmation prompt (non-TTY only for ".")',
-    '      --force-lock   Also remove entry from skills-lock.json (default: lock preserved)',
-    '  -fl                Alias for --force-lock',
-    '      --lock-only    Remove only the lock entry; keep on-disk directories',
+    '  -g, --global         Use global scope (default: false)',
+    '  -y, --yes            Skip confirmation prompts',
+    '      --lock-only      Only remove the skills-lock.json entry (alias --lo)',
+    '      --agents-only    Only remove from .agents/skills (alias --ao)',
+    '      --claude-only    Only remove from .claude/skills (alias --co)',
     '',
     'EXAMPLES',
     '',
     '  skillio rm brainstorming',
     '  skillio rm brainstorming writing-plans --yes',
-    '  skillio rm . --dry-run',
-    '  skillio rm . -fl',
-    '  skillio rm --force-lock obsolete-skill',
-    '  skillio rm --lock-only stale-entry',
+    '  skillio rm .',
+    '  skillio rm brainstorming --agents-only',
+    '  skillio rm brainstorming --lock-only',
   ];
   console.log(lines.join('\n'));
 }
