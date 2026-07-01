@@ -2,7 +2,13 @@ import { mkdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { getLockPath, readLock, removeSkillFromLock, writeLock } from './file';
+import {
+  countLockLinesToRemove,
+  getLockPath,
+  readLock,
+  removeSkillFromLock,
+  writeLock,
+} from './file';
 
 const TMP = join(tmpdir(), `skillum-lock-${Date.now()}`);
 
@@ -56,5 +62,38 @@ describe('getLockPath', () => {
     const p = getLockPath(true);
     expect(p).toContain('.agents');
     expect(p).toContain('.skill-lock.json');
+  });
+});
+
+describe('countLockLinesToRemove', () => {
+  it('returns 0 when the lock file does not exist', () => {
+    expect(countLockLinesToRemove(join(TMP, 'missing.json'), ['foo'])).toBe(0);
+  });
+
+  it('returns 0 when none of the names are in the lock', () => {
+    const path = join(TMP, 'lock.json');
+    writeLock(path, { skills: { foo: {} } });
+    expect(countLockLinesToRemove(path, ['bar'])).toBe(0);
+  });
+
+  it('counts the lines removed for a single matching key', () => {
+    const path = join(TMP, 'lock.json');
+    writeLock(path, { skills: { foo: {} } });
+    expect(countLockLinesToRemove(path, ['foo'])).toBeGreaterThan(0);
+  });
+
+  it('does not modify the file on disk', () => {
+    const path = join(TMP, 'lock.json');
+    writeLock(path, { skills: { foo: {} } });
+    countLockLinesToRemove(path, ['foo']);
+    expect(readLock(path).skills).toHaveProperty('foo');
+  });
+
+  it('counts more lines removed for two matching keys than for one', () => {
+    const path = join(TMP, 'lock.json');
+    writeLock(path, { skills: { foo: {}, bar: {} } });
+    const oneKey = countLockLinesToRemove(path, ['foo']);
+    const bothKeys = countLockLinesToRemove(path, ['foo', 'bar']);
+    expect(bothKeys).toBeGreaterThan(oneKey);
   });
 });
