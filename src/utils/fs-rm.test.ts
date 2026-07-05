@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, lstatSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -34,6 +34,32 @@ describe('rmSkillDir', () => {
     const result = rmSkillDir(join(TMP, 'nope'), { allowedRoots: [TMP] });
     expect(result.removed).toBe(false);
     expect(result.fileCount).toBe(0);
+  });
+
+  it('removes a live symlink without touching its target', () => {
+    const target = join(TMP, 'real-skill');
+    mkdirSync(target, { recursive: true });
+    writeFileSync(join(target, 'SKILL.md'), 'x');
+    const link = join(TMP, 'link-skill');
+    symlinkSync(target, link, 'dir');
+
+    const result = rmSkillDir(link, { allowedRoots: [TMP] });
+    expect(result.removed).toBe(true);
+    expect(existsSync(link)).toBe(false);
+    expect(existsSync(join(target, 'SKILL.md'))).toBe(true);
+  });
+
+  it('removes a dangling symlink (target already deleted)', () => {
+    const target = join(TMP, 'real-skill');
+    mkdirSync(target, { recursive: true });
+    const link = join(TMP, 'link-skill');
+    symlinkSync(target, link, 'dir');
+    rmSync(target, { recursive: true, force: true });
+    expect(() => lstatSync(link)).not.toThrow();
+
+    const result = rmSkillDir(link, { allowedRoots: [TMP] });
+    expect(result.removed).toBe(true);
+    expect(() => lstatSync(link)).toThrow();
   });
 
   it('throws when target is outside allowed roots', () => {

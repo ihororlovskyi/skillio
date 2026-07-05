@@ -1,4 +1,4 @@
-import { existsSync, lstatSync, readdirSync, rmSync } from 'node:fs';
+import { lstatSync, readdirSync, rmSync, type Stats } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 export interface RmOptions {
@@ -16,9 +16,18 @@ function isInside(target: string, root: string): boolean {
   return t === r || t.startsWith(`${r}/`);
 }
 
+// existsSync follows symlinks, so it reports false for dangling links; lstat sees the link itself
+export function lstatOrNull(path: string): Stats | null {
+  try {
+    return lstatSync(path);
+  } catch {
+    return null;
+  }
+}
+
 function countFiles(path: string): number {
-  if (!existsSync(path)) return 0;
-  const stat = lstatSync(path);
+  const stat = lstatOrNull(path);
+  if (!stat) return 0;
   if (stat.isFile()) return 1;
   if (!stat.isDirectory()) return 0;
   let n = 0;
@@ -49,7 +58,7 @@ export function rmSkillDir(path: string, opts: RmOptions): RmResult {
   if (!safe) {
     throw new Error(`Refusing to delete: "${path}" is outside allowed roots`);
   }
-  if (!existsSync(path)) return { removed: false, fileCount: 0 };
+  if (!lstatOrNull(path)) return { removed: false, fileCount: 0 };
   const fileCount = countFiles(path);
   rmSync(path, { recursive: true, force: true });
   return { removed: true, fileCount };

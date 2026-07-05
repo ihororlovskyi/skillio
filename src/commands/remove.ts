@@ -1,4 +1,3 @@
-import { existsSync, lstatSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { defineCommand } from 'citty';
@@ -6,13 +5,13 @@ import { countLockLinesToRemove, getLockPath, readLock, removeSkillFromLock } fr
 import { green, red, yellow } from '../utils/ansi';
 import { createConfirmer } from '../utils/confirm';
 import { discoverSkills } from '../utils/discover-skills';
-import { countFoldersAndFiles, rmSkillDir } from '../utils/fs-rm';
+import { countFoldersAndFiles, lstatOrNull, rmSkillDir } from '../utils/fs-rm';
 
 type LocationKind = 'real' | 'symlink' | 'missing';
 
 interface LocationInfo {
   kind: LocationKind;
-  folders: number;
+  subfolders: number;
   files: number;
 }
 
@@ -27,10 +26,12 @@ interface SkillTarget {
 type Scope = 'all' | 'lock-only' | 'agents-only' | 'claude-only';
 
 function buildLocation(dir: string): LocationInfo {
-  if (!existsSync(dir)) return { kind: 'missing', folders: 0, files: 0 };
-  if (lstatSync(dir).isSymbolicLink()) return { kind: 'symlink', folders: 0, files: 0 };
+  // lstat (not existsSync) so dangling symlinks are still seen and cleaned up
+  const stat = lstatOrNull(dir);
+  if (!stat) return { kind: 'missing', subfolders: 0, files: 0 };
+  if (stat.isSymbolicLink()) return { kind: 'symlink', subfolders: 0, files: 0 };
   const { folders, files } = countFoldersAndFiles(dir);
-  return { kind: 'real', folders, files };
+  return { kind: 'real', subfolders: folders, files };
 }
 
 function rootFor(base: '.agents' | '.claude', isGlobal: boolean, lockPath: string): string {
@@ -67,50 +68,46 @@ function header(targets: SkillTarget[], verb: string): string {
 
 function aggregateLocations(infos: LocationInfo[]): {
   folders: number;
+  subfolders: number;
   files: number;
   symlinks: number;
   found: boolean;
 } {
   let folders = 0;
+  let subfolders = 0;
   let files = 0;
   let symlinks = 0;
   for (const info of infos) {
     if (info.kind === 'real') {
-      folders += info.folders;
+      folders += 1;
+      subfolders += info.subfolders;
       files += info.files;
     } else if (info.kind === 'symlink') {
       symlinks += 1;
     }
   }
-  return { folders, files, symlinks, found: infos.some((i) => i.kind !== 'missing') };
+  return { folders, subfolders, files, symlinks, found: infos.some((i) => i.kind !== 'missing') };
 }
 
-function diskLine(
-  label: string,
-  singleName: string | undefined,
-  infos: LocationInfo[],
-  variant: 'plan' | 'summary',
-): string {
-  const displayLabel = singleName ? `${label}/${singleName}/` : label;
+function diskCell(infos: LocationInfo[], variant: 'plan' | 'summary'): string {
   const agg = aggregateLocations(infos);
-  if (!agg.found) return `  ${displayLabel}  (not found)`;
+  if (!agg.found) return 'not found';
   const parts: string[] = [];
   if (agg.folders > 0 || agg.files > 0) {
-    const text = `${plural(agg.folders, 'folder')}, ${plural(agg.files, 'file')}`;
+    const text = `${plural(agg.folders, 'folder')}, ${plural(agg.subfolders, 'subfolder')}, ${plural(agg.files, 'file')}`;
     parts.push(variant === 'summary' ? red(text) : green(text));
   }
   if (agg.symlinks > 0) {
     const text = plural(agg.symlinks, 'symlink');
     parts.push(variant === 'summary' ? red(text) : yellow(text));
   }
-  return `  ${displayLabel}  (${parts.join(', ')})`;
+  return parts.join(', ');
 }
 
-function lockLine(n: number, variant: 'removed' | 'kept'): string {
-  const label = 'skills-lock.json';
-  if (n === 0) return `  ${label}  (not in lock)`;
-  if (variant === 'kept') return `  ${green(`${label}  (${plural(n, 'line')} kept)`)}`;
-  return `  ${red(`${label}  (${plural(n, 'line')})`)}`;
+function lockCell(n: number, variant: 'removed' | 'kept'): string {
+  if (n === 0) return 'not in lock';
+  if (variant === 'kept') return green(`${plural(n, 'line')} kept`);
+  return red(plural(n, 'line'));
 }
 
 function printBlock(
@@ -122,29 +119,31 @@ function printBlock(
   lockVariant: 'removed' | 'kept',
 ): void {
   console.log(header(targets, verb));
-  const singleName = targets.length === 1 ? targets[0]?.name : undefined;
+  const rows: Array<[label: string, cell: string]> = [];
   if (scope === 'all' || scope === 'agents-only') {
-    console.log(
-      diskLine(
-        '.agents/skills',
-        singleName,
+    rows.push([
+      '.agents/skills/',
+      diskCell(
         targets.map((t) => t.agents),
         diskVariant,
       ),
-    );
+    ]);
   }
   if (scope === 'all' || scope === 'claude-only') {
-    console.log(
-      diskLine(
-        '.claude/skills',
-        singleName,
+    rows.push([
+      '.claude/skills/',
+      diskCell(
         targets.map((t) => t.claude),
         diskVariant,
       ),
-    );
+    ]);
   }
   if (scope === 'all' || scope === 'lock-only') {
-    console.log(lockLine(lockLinesToRemove, lockVariant));
+    rows.push(['skills-lock.json', lockCell(lockLinesToRemove, lockVariant)]);
+  }
+  const labelWidth = Math.max(...rows.map(([label]) => label.length));
+  for (const [label, cell] of rows) {
+    console.log(`${label.padEnd(labelWidth)}  ${cell}`);
   }
 }
 
@@ -241,6 +240,7 @@ export const removeCommand = defineCommand({
     const ask = createConfirmer();
 
     if (!yes) {
+      console.log('');
       const ok = await ask('Proceed?');
       if (!ok) {
         console.log('Aborted');
@@ -262,8 +262,11 @@ export const removeCommand = defineCommand({
       for (const t of targets) removeSkillFromLock(lockPath, t.name);
       lockCleaned = true;
     } else if (scope === 'all' && lockLinesToRemove > 0) {
-      const cleanLock =
-        yes || (await ask(`Clean skills-lock.json (${plural(lockLinesToRemove, 'line')})?`));
+      let cleanLock = yes;
+      if (!yes) {
+        console.log('');
+        cleanLock = await ask(`Clean skills-lock.json (${plural(lockLinesToRemove, 'line')})?`);
+      }
       if (cleanLock) {
         for (const t of targets) removeSkillFromLock(lockPath, t.name);
         lockCleaned = true;

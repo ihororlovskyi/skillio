@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process';
 import {
   cpSync,
   existsSync,
+  lstatSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -44,8 +45,8 @@ describe('skl rm', () => {
     const { stdout, exitCode } = run(['rm', '--yes', 'skill-baz'], TMP);
     expect(exitCode).toBe(0);
     expect(stdout).toContain('skill-baz');
-    expect(stdout).toContain('.agents/skills/skill-baz/  (not found)');
-    expect(stdout).toContain('.claude/skills/skill-baz/  (not found)');
+    expect(stdout).toContain('.agents/skills/   not found');
+    expect(stdout).toContain('.claude/skills/   not found');
   });
 
   it('exits 1 when nothing matches', () => {
@@ -81,6 +82,7 @@ describe('skl rm', () => {
       env: { ...process.env, SKILLIO_NO_UPDATE_CHECK: '1' },
     });
     expect(r.status).toBe(1);
+    expect(r.stdout).toContain('\n\nProceed?');
     expect(r.stdout).toContain('Aborted');
     expect(existsSync(join(TMP, '.claude/skills/skill-foo'))).toBe(true);
     const lock = JSON.parse(readFileSync(join(TMP, 'skills-lock.json'), 'utf8'));
@@ -96,7 +98,7 @@ describe('skl rm', () => {
     });
     expect(r.status).toBe(0);
     expect(existsSync(join(TMP, '.claude/skills/skill-foo'))).toBe(false);
-    expect(r.stdout).toContain('kept)');
+    expect(r.stdout).toContain('1 line kept');
     const lock = JSON.parse(readFileSync(join(TMP, 'skills-lock.json'), 'utf8'));
     expect(Object.keys(lock.skills)).toContain('skill-foo');
   });
@@ -127,7 +129,7 @@ describe('skl rm', () => {
       env: { ...process.env, SKILLIO_NO_UPDATE_CHECK: '1' },
     });
     expect(r.status).toBe(0);
-    expect(r.stdout).toContain('(not in lock)');
+    expect(r.stdout).toContain('not in lock');
     expect(existsSync(join(tmpDir, '.claude', 'skills', 'foo'))).toBe(false);
 
     rmSync(tmpDir, { recursive: true, force: true });
@@ -216,8 +218,11 @@ describe('skl rm', () => {
     expect(r.status).toBe(0);
     expect(r.stdout).toContain('\x1b[32m');
     expect(r.stdout).toContain('\x1b[33m');
-    expect(r.stdout).toContain('0 folders, 1 file');
+    expect(r.stdout).toContain('1 folder, 0 subfolders, 1 file');
     expect(r.stdout).toContain('1 symlink');
+    // the symlink itself must be gone from disk, not left dangling
+    expect(() => lstatSync(join(tmpDir, '.claude', 'skills', 'foo'))).toThrow();
+    expect(existsSync(join(tmpDir, '.agents', 'skills', 'foo'))).toBe(false);
 
     rmSync(tmpDir, { recursive: true, force: true });
   });
@@ -261,7 +266,8 @@ describe('skl rm', () => {
       env: { ...process.env, SKILLIO_NO_UPDATE_CHECK: '1' },
     });
     expect(r.status).toBe(0);
-    expect(r.stdout).toContain('.claude/skills  (0 folders, 1 file, 1 symlink)');
+    expect(r.stdout).toContain('.claude/skills/   1 folder, 0 subfolders, 1 file, 1 symlink');
+    expect(() => lstatSync(join(tmpDir, '.claude', 'skills', 'symlinked-one'))).toThrow();
 
     rmSync(tmpDir, { recursive: true, force: true });
   });

@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.1.16 (2026-07-05)
+
+### Fixed
+
+- **`skl rm` no longer leaves dangling symlinks.** Removal checked existence
+  with `existsSync`, which follows symlinks — after the real
+  `.agents/skills/<name>/` directory was deleted, the `.claude/skills/<name>`
+  symlink became dangling, reported as missing, and was silently kept on disk
+  (while the summary claimed it was removed). Existence is now checked with
+  `lstat`, so live and dangling symlinks are both deleted.
+
+### Changed
+
+- **`skl rm` plan/summary lines are flatter and aligned.** No leading
+  indentation and no parentheses; labels are always `.agents/skills/`,
+  `.claude/skills/`, and `skills-lock.json` (no per-skill suffix), padded into
+  columns. Disk counts now read `N folders, M subfolders, K files`, where
+  `folders` is the number of skill directories being removed and `subfolders`
+  the nested directories inside them. A blank line now precedes the
+  `Proceed? [y/n]` and `Clean skills-lock.json…?` prompts.
+- **`skl ls` lock row lists all lock entries.** The green `All skills
+  onboard!` message is gone; the `skills-lock.json` row now enumerates every
+  skill in the lock (uncolored), with lock orphans still highlighted in red.
+  **Breaking** for scripts grepping `All skills onboard!`.
+
 ## 0.1.15 (2026-07-01)
 
 ### Changed

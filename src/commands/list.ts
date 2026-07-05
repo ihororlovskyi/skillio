@@ -112,8 +112,10 @@ export const listCommand = defineCommand({
         row: rows.lock,
         render: () => {
           if (rows.lock.totalCount === 0) return '';
-          if (orphans.length === 0) return green('All skills onboard!');
-          return orphans.map((n) => red(n.name)).join(' ');
+          const orphanSet = new Set(orphans.map((n) => n.name));
+          return rows.lock.names
+            .map((n) => (orphanSet.has(n.name) ? red(n.name) : n.name))
+            .join(' ');
         },
       },
     ];

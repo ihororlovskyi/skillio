@@ -23,10 +23,10 @@ describe('skl ls', () => {
     expect(exitCode).toBe(0);
     // .claude has skill-bar and skill-foo (2 skills on disk)
     expect(stdout).toMatch(/\.claude\/skills\s+:\s+2 skills\s+:\s+skill-bar\s+skill-foo/);
-    // lock row count = total lock entries (3), but names = orphans only (skill-baz)
-    expect(stdout).toMatch(/skills-lock\.json\s+:\s+3 skills\s+:\s+skill-baz/);
-    // skill-foo and skill-bar NOT in lock row names (they're on disk)
-    expect(stdout).not.toMatch(/skills-lock\.json[^\n]*skill-foo/);
+    // lock row lists all lock entries; orphans (skill-baz) included
+    expect(stdout).toMatch(
+      /skills-lock\.json\s+:\s+3 skills\s+:\s+skill-bar\s+skill-baz\s+skill-foo/,
+    );
     expect(stdout).not.toMatch(/~\d+ tok/);
   });
 
@@ -48,13 +48,16 @@ describe('skl ls', () => {
     expect(stdout).toMatch(/\.agents\/skills\s+:\s+0 skills?/);
   });
 
-  it('all-onboard fixture renders "All skills onboard!" in lock row', () => {
+  it('all-onboard fixture lists lock names uncolored in lock row', () => {
     const fix = resolve(__dirname, '..', 'fixtures', 'list', 'all-onboard');
     const r = runWithColor(['list'], fix);
     expect(r.status).toBe(0);
     const plain = r.stdout.replace(/\x1b\[[0-9;]*m/g, '');
-    expect(plain).toContain('All skills onboard!');
-    expect(r.stdout).toMatch(/\x1b\[32m[^\x1b]*All skills onboard!/);
+    expect(plain).toMatch(/skills-lock\.json\s*:\s*2 skills\s*:\s*bar\s+foo/);
+    expect(plain).not.toContain('All skills onboard!');
+    // lock row names carry no ANSI color
+    const lockLine = r.stdout.split('\n').find((l) => l.includes('skills-lock.json')) ?? '';
+    expect(lockLine).not.toMatch(/\x1b\[/);
   });
 
   it('missing-in-lock fixture renders orphan name red in lock row', () => {
@@ -62,9 +65,10 @@ describe('skl ls', () => {
     const r = runWithColor(['list'], fix);
     expect(r.status).toBe(0);
     const plain = r.stdout.replace(/\x1b\[[0-9;]*m/g, '');
-    expect(plain).toMatch(/skills-lock\.json\s*:\s*2 skills\s*:\s*phantom/);
+    expect(plain).toMatch(/skills-lock\.json\s*:\s*2 skills\s*:\s*foo\s+phantom/);
     expect(r.stdout).toMatch(/\x1b\[31m[^\x1b]*phantom/);
-    expect(plain).not.toContain('All skills onboard!');
+    // non-orphan lock name stays uncolored
+    expect(r.stdout).not.toMatch(/\x1b\[31m[^\x1b]*foo/);
   });
 
   it('symlinked-skill fixture renders disk name yellow', () => {
