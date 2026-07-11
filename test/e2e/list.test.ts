@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -76,6 +76,25 @@ describe('skl ls', () => {
     const r = runWithColor(['list'], fix);
     expect(r.status).toBe(0);
     expect(r.stdout).toMatch(/\.claude\/skills[^\n]*\x1b\[33m[^\x1b]*foo/);
+  });
+
+  it('renders a dangling .claude/skills symlink name red', () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), 'skl-ls-broken-'));
+    writeFileSync(join(tmpDir, 'skills-lock.json'), JSON.stringify({ skills: {} }));
+    mkdirSync(join(tmpDir, '.claude', 'skills'), { recursive: true });
+    // target under .agents/skills does not exist — the symlink is dangling
+    symlinkSync(
+      join(tmpDir, '.agents', 'skills', 'ghost'),
+      join(tmpDir, '.claude', 'skills', 'ghost'),
+    );
+
+    const r = runWithColor(['list'], tmpDir);
+    expect(r.status).toBe(0);
+    const plain = r.stdout.replace(/\x1b\[[0-9;]*m/g, '');
+    expect(plain).toMatch(/\.claude\/skills\s*:\s*1 skill\s*:\s*ghost/);
+    expect(r.stdout).toMatch(/\.claude\/skills[^\n]*\x1b\[31m[^\x1b]*ghost/);
+
+    rmSync(tmpDir, { recursive: true, force: true });
   });
 
   it('reorder fixture renders .agents row before .claude', () => {

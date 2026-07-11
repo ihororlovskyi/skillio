@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -64,6 +64,23 @@ describe('discoverSkills (local scope)', () => {
 
     expect(map.get('plain')?.status).toBe('no-frontmatter');
     expect(map.get('plain')?.frontmatterTokens).toBeUndefined();
+  });
+
+  it('lists a dangling symlink skill in .claude/skills', () => {
+    writeLock(TMP, []);
+    const claudeSkills = join(TMP, '.claude', 'skills');
+    mkdirSync(claudeSkills, { recursive: true });
+    // symlink whose target does not exist — SKILL.md never resolves
+    symlinkSync(join(TMP, '.agents', 'skills', 'ghost'), join(claudeSkills, 'ghost'));
+
+    const map = discoverSkills({
+      isGlobal: false,
+      cwd: TMP,
+      lockPath: join(TMP, 'skills-lock.json'),
+    });
+
+    expect(map.get('ghost')?.sources).toEqual(['.claude']);
+    expect(map.get('ghost')?.status).toBe('missing');
   });
 
   it('omits .agents/skills row when the directory is absent', () => {

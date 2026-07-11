@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.1.17 (2026-07-11)
+
+### Fixed
+
+- **`skl ls` and `skl rm` now see dangling skill symlinks.** Skill discovery
+  detected a skill by resolving `<name>/SKILL.md` with `existsSync`, which
+  follows symlinks — so a `.claude/skills/<name>` symlink whose target no longer
+  exists resolved to nothing and was skipped entirely. Such skills were invisible
+  to `skl ls` (counted as `0 skills`) and untouched by `skl rm .`. A symlink
+  entry is now treated as a skill regardless of whether its target resolves, so
+  both commands list and clean up dangling symlinks.
+
+- **`skl ls` paints dangling symlinks red.** A `.claude/skills/<name>` symlink
+  whose target no longer resolves now renders red (broken) instead of yellow
+  (live symlink), so a symlink pointing nowhere is visually distinct.
+- **Build now emits `dist/index.*` (library exports were broken).** Both bunup
+  entries share `outDir: dist`, and bunup cleans the outDir at the start of each
+  entry build — so the `cli` entry wiped the `index` entry's `dist/index.js`,
+  `.cjs`, `.d.ts`, `.d.cts`, shipping a package whose `exports` pointed at
+  missing files (the CLI still worked via `bin`, but `import` of the library did
+  not). Per-entry `clean` is now off and the build script removes `dist` once up
+  front. A new e2e test guards that every `exports`/`bin` path exists in `dist`.
+
+### Changed
+
+- **Dev dependencies bumped**, incl. TypeScript `6` → `7` (native compiler),
+  Biome `2.4` → `2.5`, `@types/node` `25` → `26`, and vitest `4.1.10`.
+  Typecheck and build verified green on TypeScript 7.
+- **`skl rm` lock row shows the skill count.** The `skills-lock.json` line now
+  reads `N skills (M lines)` (e.g. `3 skills (20 lines)`) instead of bare
+  `M lines`, clarifying that the line count spans several skill entries.
+- **`skl rm -h` documents what `--yes` skips.** The help entry now spells out
+  that `-y, --yes` answers yes to both the `Proceed?` and
+  `Clean skills-lock.json?` prompts.
+
 ## 0.1.16 (2026-07-05)
 
 ### Fixed

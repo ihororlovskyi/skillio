@@ -1,6 +1,6 @@
 {
   "name": "skillio",
-  "version": "0.1.16",
+  "version": "0.1.17",
   "description": "Audit and manage AI agent skills for Claude Code and Codex",
   "license": "MIT",
   "author": "ihororlovskyi",
@@ -41,23 +41,23 @@
     "node": ">=20"
   },
   "scripts": {
-    "build": "~/.bun/bin/bun run node_modules/.bin/bunup",
+    "build": "rm -rf dist && ~/.bun/bin/bun run node_modules/.bin/bunup",
     "lint": "biome check src/",
     "format": "biome format --write src/",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
     "release": "changeset publish",
-    "prepublishOnly": "biome check src/ && vitest run && ~/.bun/bin/bun run node_modules/.bin/bunup && vitest run --config vitest.e2e.config.ts"
+    "prepublishOnly": "biome check src/ && vitest run && rm -rf dist && ~/.bun/bin/bun run node_modules/.bin/bunup && vitest run --config vitest.e2e.config.ts"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.14",
+    "@biomejs/biome": "^2.5.3",
     "@changesets/cli": "^2.31.0",
-    "@types/node": "^25.6.2",
-    "@vitest/coverage-v8": "^4.1.6",
-    "bunup": "^0.16.31",
+    "@types/node": "^26.1.1",
+    "@vitest/coverage-v8": "^4.1.10",
+    "bunup": "^0.16.32",
     "citty": "^0.2.2",
-    "typescript": "^6.0.3",
-    "vitest": "^4.1.5"
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
   }
 }

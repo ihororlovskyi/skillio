@@ -98,7 +98,7 @@ describe('skl rm', () => {
     });
     expect(r.status).toBe(0);
     expect(existsSync(join(TMP, '.claude/skills/skill-foo'))).toBe(false);
-    expect(r.stdout).toContain('1 line kept');
+    expect(r.stdout).toContain('1 skill (1 line) kept');
     const lock = JSON.parse(readFileSync(join(TMP, 'skills-lock.json'), 'utf8'));
     expect(Object.keys(lock.skills)).toContain('skill-foo');
   });

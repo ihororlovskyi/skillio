@@ -35,7 +35,7 @@ runs:
 
     - name: Build
       shell: bash
-      run: bun run node_modules/.bin/bunup
+      run: rm -rf dist && bun run node_modules/.bin/bunup
 
     - name: e2e tests
       shell: bash

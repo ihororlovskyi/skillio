@@ -104,16 +104,18 @@ function diskCell(infos: LocationInfo[], variant: 'plan' | 'summary'): string {
   return parts.join(', ');
 }
 
-function lockCell(n: number, variant: 'removed' | 'kept'): string {
-  if (n === 0) return 'not in lock';
-  if (variant === 'kept') return green(`${plural(n, 'line')} kept`);
-  return red(plural(n, 'line'));
+function lockCell(skills: number, lines: number, variant: 'removed' | 'kept'): string {
+  if (lines === 0) return 'not in lock';
+  const text = `${plural(skills, 'skill')} (${plural(lines, 'line')})`;
+  if (variant === 'kept') return green(`${text} kept`);
+  return red(text);
 }
 
 function printBlock(
   targets: SkillTarget[],
   scope: Scope,
   verb: string,
+  lockSkillsToRemove: number,
   lockLinesToRemove: number,
   diskVariant: 'plan' | 'summary',
   lockVariant: 'removed' | 'kept',
@@ -139,7 +141,7 @@ function printBlock(
     ]);
   }
   if (scope === 'all' || scope === 'lock-only') {
-    rows.push(['skills-lock.json', lockCell(lockLinesToRemove, lockVariant)]);
+    rows.push(['skills-lock.json', lockCell(lockSkillsToRemove, lockLinesToRemove, lockVariant)]);
   }
   const labelWidth = Math.max(...rows.map(([label]) => label.length));
   for (const [label, cell] of rows) {
@@ -234,8 +236,17 @@ export const removeCommand = defineCommand({
       lockPath,
       targets.map((t) => t.name),
     );
+    const lockSkillsToRemove = targets.filter((t) => lockNames.has(t.name)).length;
 
-    printBlock(targets, scope, 'will be removed from:', lockLinesToRemove, 'plan', 'removed');
+    printBlock(
+      targets,
+      scope,
+      'will be removed from:',
+      lockSkillsToRemove,
+      lockLinesToRemove,
+      'plan',
+      'removed',
+    );
 
     const ask = createConfirmer();
 
@@ -278,6 +289,7 @@ export const removeCommand = defineCommand({
       targets,
       scope,
       'removed from:',
+      lockSkillsToRemove,
       lockLinesToRemove,
       'summary',
       lockCleaned ? 'removed' : 'kept',

@@ -6,7 +6,7 @@ import { getLockPath } from '../lock/file';
 import { cyan, green, red, yellow } from '../utils/ansi';
 import { discoverSkills, type SkillRecord } from '../utils/discover-skills';
 
-type Install = 'real' | 'symlink';
+type Install = 'real' | 'symlink' | 'broken';
 
 interface NameWithInstall {
   name: string;
@@ -26,11 +26,16 @@ function rootFor(isGlobal: boolean, lockPath: string, kind: '.claude' | '.agents
 
 function getInstall(root: string, name: string): Install | undefined {
   const dir = join(root, name);
-  if (!existsSync(dir)) return undefined;
-  return lstatSync(dir).isSymbolicLink() ? 'symlink' : 'real';
+  // lstat (not existsSync) so dangling symlinks are still classified — a symlink
+  // whose target no longer resolves is 'broken', a live one is 'symlink'.
+  const stat = lstatSync(dir, { throwIfNoEntry: false });
+  if (!stat) return undefined;
+  if (stat.isSymbolicLink()) return existsSync(dir) ? 'symlink' : 'broken';
+  return 'real';
 }
 
 function paintDisk(n: NameWithInstall): string {
+  if (n.install === 'broken') return red(n.name);
   if (n.install === 'symlink') return yellow(n.name);
   if (n.install === 'real') return green(n.name);
   return cyan(n.name);

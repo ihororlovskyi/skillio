@@ -3,7 +3,7 @@ export function isUserTurnEntry(entry: unknown): boolean {
   const e = entry as Record<string, unknown>;
   if (e.type !== 'user') return false;
   const msg = e.message as Record<string, unknown> | undefined;
-  if (!msg || msg.role !== 'user') return false;
+  if (msg?.role !== 'user') return false;
   const content = msg.content;
   if (typeof content === 'string') return true;
   if (!Array.isArray(content)) return false;
