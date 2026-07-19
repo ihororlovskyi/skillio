@@ -123,6 +123,7 @@ function printRemoveHelp(): void {
     '  -g, --global         Use global scope (default: false)',
     '  -y, --yes            Skip confirmation prompts (answers yes to both the',
     '                       "Proceed?" and "Clean skills-lock.json?" questions)',
+    '  -x, --reject         With ".": skill names to keep (space-separated)',
     '      --lock-only      Only remove the skills-lock.json entry (alias --lo)',
     '      --agents-only    Only remove from .agents/skills (alias --ao)',
     '      --claude-only    Only remove from .claude/skills (alias --co)',
@@ -132,6 +133,7 @@ function printRemoveHelp(): void {
     '  skillio rm brainstorming',
     '  skillio rm brainstorming writing-plans --yes',
     '  skillio rm .',
+    '  skillio rm . -x web-debug typescript',
     '  skillio rm brainstorming --agents-only',
     '  skillio rm brainstorming --lock-only',
   ];

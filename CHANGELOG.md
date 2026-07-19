@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.18 (2026-07-19)
+
+### Added
+
+- **`skl rm . -x <name> …` / `--reject` — exclusions for remove-all.** When
+  removing all skills with `.`, listed skills are kept on disk and in
+  `skills-lock.json`, e.g. `skl rm . -x web-debug typescript`. Accepts multiple
+  space-separated names, repeated flags, and `--reject=<name>`. Only valid
+  together with `.`; unknown names abort before anything is removed. Shell
+  completions (bash/zsh/fish) advertise the new flag.
+
 ## 0.1.17 (2026-07-11)
 
 ### Fixed

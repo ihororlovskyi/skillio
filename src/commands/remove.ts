@@ -174,6 +174,11 @@ export const removeCommand = defineCommand({
       default: false,
       description: 'Only remove from .claude/skills; keep .agents/skills and the lock entry',
     },
+    reject: {
+      type: 'string',
+      alias: 'x',
+      description: 'With ".": skill names to keep (space-separated)',
+    },
   },
   async run({ args }) {
     const {
@@ -197,8 +202,33 @@ export const removeCommand = defineCommand({
           ? 'claude-only'
           : 'all';
 
+    // Manual argv parse: citty can't collect multiple space-separated values
+    // for positionals or for -x/--reject
     const subcmdIdx = process.argv.findIndex((a) => a === 'remove' || a === 'rm');
-    const rawNames = process.argv.slice(subcmdIdx + 1).filter((a) => !a.startsWith('-'));
+    const tokens = process.argv.slice(subcmdIdx + 1);
+    const rawNames: string[] = [];
+    const rejects: string[] = [];
+    let rejectFlagSeen = false;
+    for (let i = 0; i < tokens.length; i++) {
+      const tok = tokens[i];
+      if (tok === undefined) continue;
+      if (tok === '-x' || tok === '--reject') {
+        rejectFlagSeen = true;
+        let next = tokens[i + 1];
+        while (next !== undefined && !next.startsWith('-') && next !== '.') {
+          rejects.push(next);
+          i++;
+          next = tokens[i + 1];
+        }
+        continue;
+      }
+      if (tok.startsWith('--reject=')) {
+        rejectFlagSeen = true;
+        rejects.push(tok.slice('--reject='.length));
+        continue;
+      }
+      if (!tok.startsWith('-')) rawNames.push(tok);
+    }
     const all = rawNames.includes('.');
     const names = rawNames.filter((n) => n !== '.');
 
@@ -212,11 +242,31 @@ export const removeCommand = defineCommand({
       process.exit(1);
     }
 
+    if (rejectFlagSeen && !all) {
+      console.error('-x/--reject is only valid with "." (all skills)');
+      process.exit(1);
+    }
+    if (rejectFlagSeen && rejects.length === 0) {
+      console.error('-x/--reject requires at least one skill name');
+      process.exit(1);
+    }
+
     const lockPath = getLockPath(isGlobal);
 
-    const targets: SkillTarget[] = all
+    let targets: SkillTarget[] = all
       ? collectAllTargets(isGlobal, lockPath)
       : names.map((n) => buildTarget(n, isGlobal, lockPath));
+
+    if (rejects.length > 0) {
+      const inScope = new Set(targets.map((t) => t.name));
+      const unknown = rejects.filter((n) => !inScope.has(n));
+      if (unknown.length > 0) {
+        for (const n of unknown) console.error(`--reject: "${n}" is not in scope`);
+        process.exit(1);
+      }
+      const rejectSet = new Set(rejects);
+      targets = targets.filter((t) => !rejectSet.has(t.name));
+    }
 
     if (all && targets.length === 0) {
       console.log('No skills to remove in scope.');

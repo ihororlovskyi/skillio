@@ -18,7 +18,7 @@ _skillio_completions() {
   case "\${sub}" in
     rm|remove)
       if [[ "\${cur}" == -* ]]; then
-        COMPREPLY=( $(compgen -W "-g --global -y --yes --lock-only --lo --agents-only --ao --claude-only --co -h --help" -- "\${cur}") )
+        COMPREPLY=( $(compgen -W "-g --global -y --yes -x --reject --lock-only --lo --agents-only --ao --claude-only --co -h --help" -- "\${cur}") )
       else
         local names
         local scope=""
@@ -68,6 +68,7 @@ _skillio() {
         _values 'flag' \\
           '-g[global scope]' '--global[global scope]' \\
           '-y[skip confirmation]' '--yes[skip confirmation]' \\
+          '-x[with .: skills to keep]' '--reject[with .: skills to keep]' \\
           '--lock-only[only remove lock entry]' '--lo[alias for --lock-only]' \\
           '--agents-only[only remove from .agents/skills]' '--ao[alias for --agents-only]' \\
           '--claude-only[only remove from .claude/skills]' '--co[alias for --claude-only]'
@@ -120,6 +121,7 @@ for sub in rm remove
   complete -c skillio -n "__skillio_using_subcommand $sub" -f -a '(__skillio_skill_names)'
   complete -c skl -n "__skillio_using_subcommand $sub" -s g -l global -d 'Use global scope'
   complete -c skl -n "__skillio_using_subcommand $sub" -s y -l yes -d 'Skip confirmation prompt'
+  complete -c skl -n "__skillio_using_subcommand $sub" -s x -l reject -d 'With .: skills to keep'
   complete -c skl -n "__skillio_using_subcommand $sub" -l lock-only -d 'Only remove lock entry'
   complete -c skl -n "__skillio_using_subcommand $sub" -l lo -d 'Alias for --lock-only'
   complete -c skl -n "__skillio_using_subcommand $sub" -l agents-only -d 'Only remove from .agents/skills'

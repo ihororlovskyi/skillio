@@ -84,6 +84,7 @@ skl usg                                # alias for usage
 skl rm brainstorming                   # colored plan, Proceed? [y/n], then Clean lock? [y/n]
 skl rm brainstorming writing-plans     # remove multiple, one pair of prompts
 skl rm .                               # remove all skills in scope
+skl rm . -x web-debug typescript       # remove all except listed (alias --reject)
 skl rm --yes brainstorming             # skip both prompts
 skl rm brainstorming --lock-only       # only the lock entry (alias --lo)
 skl rm brainstorming --agents-only     # only .agents/skills (alias --ao)
@@ -172,6 +173,7 @@ skillio cost --global   # same, against ~/.agents/.skill-lock.json
 skillio remove <skill-name>               # colored plan/summary, two prompts (disk, then lock)
 skillio remove <skill-one> <skill-two>
 skillio remove .                          # remove all skills in scope
+skillio remove . -x <one> <two>           # remove all except listed (alias --reject)
 skillio remove --lock-only <skill-name>   # only the lock entry; keep on disk (alias --lo)
 skillio remove --agents-only <skill-name> # only .agents/skills; keep .claude/skills and lock (alias --ao)
 skillio remove --claude-only <skill-name> # only .claude/skills; keep .agents/skills and lock (alias --co)

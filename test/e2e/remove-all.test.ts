@@ -78,6 +78,88 @@ describe('skl rm .', () => {
     expect(r.stdout).toContain('No skills to remove');
   });
 
+  it('-x keeps rejected skill, removes the rest from disk and lock', () => {
+    seed3();
+    const r = spawnSync(process.execPath, [CLI, 'rm', '.', '-x', 'foo', '--yes'], {
+      cwd: tmp,
+      encoding: 'utf8',
+      env: { ...process.env, SKILLIO_NO_UPDATE_CHECK: '1' },
+    });
+    expect(r.status).toBe(0);
+    expect(r.stdout).toContain('2 skills');
+    expect(existsSync(join(tmp, '.claude', 'skills', 'foo', 'SKILL.md'))).toBe(true);
+    expect(existsSync(join(tmp, '.claude', 'skills', 'bar'))).toBe(false);
+    expect(existsSync(join(tmp, '.claude', 'skills', 'baz'))).toBe(false);
+    const lock = JSON.parse(readFileSync(join(tmp, 'skills-lock.json'), 'utf8'));
+    expect(Object.keys(lock.skills)).toEqual(['foo']);
+  });
+
+  it('--reject accepts multiple space-separated names', () => {
+    seed3();
+    const r = spawnSync(process.execPath, [CLI, 'rm', '.', '--reject', 'foo', 'bar', '--yes'], {
+      cwd: tmp,
+      encoding: 'utf8',
+      env: { ...process.env, SKILLIO_NO_UPDATE_CHECK: '1' },
+    });
+    expect(r.status).toBe(0);
+    expect(r.stdout).toContain('1 skill');
+    expect(existsSync(join(tmp, '.claude', 'skills', 'foo', 'SKILL.md'))).toBe(true);
+    expect(existsSync(join(tmp, '.claude', 'skills', 'bar', 'SKILL.md'))).toBe(true);
+    expect(existsSync(join(tmp, '.claude', 'skills', 'baz'))).toBe(false);
+    const lock = JSON.parse(readFileSync(join(tmp, 'skills-lock.json'), 'utf8'));
+    expect(Object.keys(lock.skills).sort()).toEqual(['bar', 'foo']);
+  });
+
+  it('-x with positional skill names is rejected', () => {
+    seed3();
+    const r = spawnSync(process.execPath, [CLI, 'rm', 'foo', '-x', 'bar', '--yes'], {
+      cwd: tmp,
+      encoding: 'utf8',
+      env: { ...process.env, SKILLIO_NO_UPDATE_CHECK: '1' },
+    });
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain('--reject');
+  });
+
+  it('-x without values is rejected', () => {
+    seed3();
+    const r = spawnSync(process.execPath, [CLI, 'rm', '.', '-x', '--yes'], {
+      cwd: tmp,
+      encoding: 'utf8',
+      env: { ...process.env, SKILLIO_NO_UPDATE_CHECK: '1' },
+    });
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain('--reject');
+  });
+
+  it('-x with an unknown skill name is rejected', () => {
+    seed3();
+    const r = spawnSync(process.execPath, [CLI, 'rm', '.', '-x', 'nope', '--yes'], {
+      cwd: tmp,
+      encoding: 'utf8',
+      env: { ...process.env, SKILLIO_NO_UPDATE_CHECK: '1' },
+    });
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain('nope');
+    expect(existsSync(join(tmp, '.claude', 'skills', 'foo', 'SKILL.md'))).toBe(true);
+  });
+
+  it('rejecting every skill leaves nothing to remove', () => {
+    seed3();
+    const r = spawnSync(
+      process.execPath,
+      [CLI, 'rm', '.', '-x', 'foo', 'bar', 'baz', '--yes'],
+      {
+        cwd: tmp,
+        encoding: 'utf8',
+        env: { ...process.env, SKILLIO_NO_UPDATE_CHECK: '1' },
+      },
+    );
+    expect(r.status).toBe(0);
+    expect(r.stdout).toContain('No skills to remove');
+    expect(existsSync(join(tmp, '.claude', 'skills', 'foo', 'SKILL.md'))).toBe(true);
+  });
+
   it('--lock-only wipes only lock entries, keeps disk dirs', () => {
     seed3();
     const r = spawnSync(process.execPath, [CLI, 'rm', '.', '--lock-only', '--yes'], {
