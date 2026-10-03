@@ -149,7 +149,7 @@ describe('skl usage claude', () => {
     expect(exitCode).toBe(0);
     const lines = stdout.split('\n');
     expect(lines[0]).toBe('');
-    expect(lines[1]).toMatch(/^(Local|Global)$/);
+    expect(lines[1]).toMatch(/^(Project|Global) Scope$/);
     const totalIdx = lines.findIndex((l) => l.startsWith('Total:'));
     expect(totalIdx).toBeGreaterThan(0);
     expect(lines[totalIdx - 1]).toBe('');

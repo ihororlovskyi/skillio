@@ -5,6 +5,7 @@ import { defineCommand } from 'citty';
 import { getLockPath } from '../lock/file';
 import { cyan, green, red, yellow } from '../utils/ansi';
 import { discoverSkills, type SkillRecord } from '../utils/discover-skills';
+import { scopeHeader } from '../utils/scope';
 
 type Install = 'real' | 'symlink' | 'broken';
 
@@ -98,7 +99,7 @@ export const listCommand = defineCommand({
       return;
     }
 
-    console.log(args.global ? 'Global' : 'Local');
+    console.log(scopeHeader(args.global));
 
     const claudeSet = new Set(rows.claude.names.map((n) => n.name));
     const agentsSet = new Set(rows.agents.names.map((n) => n.name));

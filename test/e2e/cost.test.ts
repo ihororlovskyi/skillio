@@ -35,15 +35,15 @@ describe('skl cost', () => {
     // cost format — NOT the old summary "Total: N skills ~M tok" format
     expect(stdout).toMatch(/Total: ~\d+ tok across 3 skills/);
     // summary printed both Global + Local sections; cost only prints one header
-    expect(stdout).not.toContain('Global');
+    expect(stdout).not.toContain('Global Scope');
   });
 
-  it('prints blank line before Local header and before Total line', () => {
+  it('prints blank line before Project Scope header and before Total line', () => {
     const { stdout, exitCode } = run(['cost'], COST_DIR);
     expect(exitCode).toBe(0);
     const lines = stdout.split('\n');
     expect(lines[0]).toBe('');
-    expect(lines[1]).toBe('Local');
+    expect(lines[1]).toBe('Project Scope');
     const totalIdx = lines.findIndex((l) => l.startsWith('Total:'));
     expect(totalIdx).toBeGreaterThan(0);
     expect(lines[totalIdx - 1]).toBe('');

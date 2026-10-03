@@ -85,10 +85,11 @@ skl rm brainstorming                   # colored plan, Proceed? [y/n], then Clea
 skl rm brainstorming writing-plans     # remove multiple, one pair of prompts
 skl rm .                               # remove all skills in scope
 skl rm . -x web-debug typescript       # remove all except listed (alias --reject)
-skl rm --yes brainstorming             # skip both prompts
-skl rm brainstorming --lock-only       # only the lock entry (alias --lo)
-skl rm brainstorming --agents-only     # only .agents/skills (alias --ao)
-skl rm brainstorming --claude-only     # only .claude/skills (alias --co)
+skl rm --yes brainstorming             # skip both prompts and the plan
+skl rm . -y -sm                        # one line: Executed 25/25/25 skills
+skl rm brainstorming --lock-only       # only the lock entry
+skl rm brainstorming --agents-only     # only .agents/skills
+skl rm brainstorming --claude-only     # only .claude/skills
 
 # scope flags
 skl -g                                 # force global scope on any subcommand
@@ -174,11 +175,12 @@ skillio remove <skill-name>               # colored plan/summary, two prompts (d
 skillio remove <skill-one> <skill-two>
 skillio remove .                          # remove all skills in scope
 skillio remove . -x <one> <two>           # remove all except listed (alias --reject)
-skillio remove --lock-only <skill-name>   # only the lock entry; keep on disk (alias --lo)
-skillio remove --agents-only <skill-name> # only .agents/skills; keep .claude/skills and lock (alias --ao)
-skillio remove --claude-only <skill-name> # only .claude/skills; keep .agents/skills and lock (alias --co)
+skillio remove --lock-only <skill-name>   # only the lock entry; keep on disk
+skillio remove --agents-only <skill-name> # only .agents/skills; keep .claude/skills and lock
+skillio remove --claude-only <skill-name> # only .claude/skills; keep .agents/skills and lock
 skillio remove --global <skill-name>
-skillio remove --yes <skill-name>         # skip both confirmation prompts
+skillio remove --yes <skill-name>         # skip both confirmation prompts and the plan
+skillio remove . -y --stealth-mode        # one line: Executed A/B/C skills (alias -sm)
 ```
 
 ### Shell completion

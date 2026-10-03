@@ -34,8 +34,8 @@ describe('skl rm', () => {
     const { stdout, exitCode } = run(['rm', '--yes', 'skill-foo'], TMP);
     expect(exitCode).toBe(0);
     expect(stdout).toContain('skill-foo');
-    expect(stdout).toContain('will be removed from:');
-    expect(stdout).toContain('removed from:');
+    expect(stdout).not.toContain('will be removed from:');
+    expect(stdout).toContain('1 skill skill-foo removed from:');
     expect(existsSync(join(TMP, '.claude/skills/skill-foo'))).toBe(false);
     const lock = JSON.parse(readFileSync(join(TMP, 'skills-lock.json'), 'utf8'));
     expect(Object.keys(lock.skills)).not.toContain('skill-foo');
@@ -58,7 +58,7 @@ describe('skl rm', () => {
   it('removes multiple skills with a single pair of confirmations (--yes)', () => {
     const { stdout, exitCode } = run(['rm', '--yes', 'skill-foo', 'skill-bar'], TMP);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain('2 skills skill-foo skill-bar will be removed from:');
+    expect(stdout).toContain('2 skills skill-foo skill-bar removed from:');
     expect(stdout).not.toContain('"skill-foo"');
     expect(stdout).not.toContain('skill-foo,');
     expect(existsSync(join(TMP, '.claude/skills/skill-foo'))).toBe(false);
@@ -146,13 +146,17 @@ describe('skl rm', () => {
     expect(Object.keys(lock.skills)).not.toContain('skill-foo');
   });
 
-  it('--lo is an alias for --lock-only', () => {
-    const { exitCode } = run(['rm', '--lo', '--yes', 'skill-foo'], TMP);
-    expect(exitCode).toBe(0);
-    expect(existsSync(join(TMP, '.claude/skills/skill-foo'))).toBe(true);
-    const lock = JSON.parse(readFileSync(join(TMP, 'skills-lock.json'), 'utf8'));
-    expect(Object.keys(lock.skills)).not.toContain('skill-foo');
-  });
+  it.each(['--lo', '--ao', '--co', '-lo', '-ao', '-co', '--bogus'])(
+    'unknown option %s is rejected and nothing is removed',
+    (flag) => {
+      const { stderr, exitCode } = run(['rm', flag, '--yes', 'skill-foo'], TMP);
+      expect(exitCode).toBe(1);
+      expect(stderr).toContain(`Unknown option: ${flag}`);
+      expect(existsSync(join(TMP, '.claude/skills/skill-foo/SKILL.md'))).toBe(true);
+      const lock = JSON.parse(readFileSync(join(TMP, 'skills-lock.json'), 'utf8'));
+      expect(Object.keys(lock.skills)).toContain('skill-foo');
+    },
+  );
 
   it('--claude-only removes only .claude/skills, keeps lock and .agents/skills', () => {
     const { stdout, exitCode } = run(['rm', '--claude-only', '--yes', 'skill-foo'], TMP);
@@ -210,9 +214,11 @@ describe('skl rm', () => {
       'dir',
     );
 
-    const r = spawnSync(process.execPath, [CLI, 'rm', 'foo', '--yes'], {
+    // without --yes, so the plan block (green/yellow) is printed
+    const r = spawnSync(process.execPath, [CLI, 'rm', 'foo'], {
       cwd: tmpDir,
       encoding: 'utf8',
+      input: 'y\n',
       env: { ...process.env, SKILLIO_NO_UPDATE_CHECK: '1', FORCE_COLOR: '1' },
     });
     expect(r.status).toBe(0);
@@ -241,7 +247,7 @@ describe('skl rm', () => {
     });
     expect(r.status).toBe(0);
     expect(r.stdout).toContain(
-      '2 skills \x1b[31mskill-foo\x1b[0m \x1b[31mskill-bar\x1b[0m will be removed from:',
+      '2 skills \x1b[31mskill-foo\x1b[0m \x1b[31mskill-bar\x1b[0m removed from:',
     );
     expect(r.stdout).not.toContain('"skill-foo"');
     expect(r.stdout).not.toContain('skill-foo,');

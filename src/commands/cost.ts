@@ -2,6 +2,7 @@ import { defineCommand } from 'citty';
 import { getLockPath } from '../lock/file';
 import { cyan, green, red, yellow } from '../utils/ansi';
 import { discoverSkills, type SkillRecord } from '../utils/discover-skills';
+import { scopeHeader } from '../utils/scope';
 
 type Verdict = 'ok' | 'plan' | 'cleanup';
 
@@ -40,7 +41,7 @@ export const costCommand = defineCommand({
     const { message, paint } = classify(total);
 
     console.log('');
-    console.log(args.global ? 'Global' : 'Local');
+    console.log(scopeHeader(args.global));
 
     if (rows.length === 0) {
       console.log(`No skills in ${lockPath}`);

@@ -8,7 +8,7 @@ import { cyan, red } from '../utils/ansi';
 import { discoverSkills } from '../utils/discover-skills';
 import { expandHome } from '../utils/expand-home';
 import { parsePeriod } from '../utils/period';
-import { detectScope, encodeClaudeProjectDir } from '../utils/scope';
+import { detectScope, encodeClaudeProjectDir, scopeHeader } from '../utils/scope';
 
 type Agent = 'claude-code' | 'codex';
 
@@ -190,9 +190,8 @@ export async function runUsage(args: UsageArgs): Promise<void> {
   }
 
   const periodLabel = args.since ? `since ${args.since}` : (args.period ?? 'all');
-  const scopeHeader = scope.global ? 'Global' : 'Local';
   console.log('');
-  console.log(scopeHeader);
+  console.log(scopeHeader(scope.global));
 
   const distinct = new Set<string>();
   let grandActivations = 0;

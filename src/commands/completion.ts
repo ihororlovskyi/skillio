@@ -18,7 +18,7 @@ _skillio_completions() {
   case "\${sub}" in
     rm|remove)
       if [[ "\${cur}" == -* ]]; then
-        COMPREPLY=( $(compgen -W "-g --global -y --yes -x --reject --lock-only --lo --agents-only --ao --claude-only --co -h --help" -- "\${cur}") )
+        COMPREPLY=( $(compgen -W "-g --global -y --yes -x --reject -sm --stealth-mode --lock-only --agents-only --claude-only -h --help" -- "\${cur}") )
       else
         local names
         local scope=""
@@ -69,9 +69,10 @@ _skillio() {
           '-g[global scope]' '--global[global scope]' \\
           '-y[skip confirmation]' '--yes[skip confirmation]' \\
           '-x[with .: skills to keep]' '--reject[with .: skills to keep]' \\
-          '--lock-only[only remove lock entry]' '--lo[alias for --lock-only]' \\
-          '--agents-only[only remove from .agents/skills]' '--ao[alias for --agents-only]' \\
-          '--claude-only[only remove from .claude/skills]' '--co[alias for --claude-only]'
+          '-sm[one-line summary]' '--stealth-mode[one-line summary]' \\
+          '--lock-only[only remove lock entry]' \\
+          '--agents-only[only remove from .agents/skills]' \\
+          '--claude-only[only remove from .claude/skills]'
       else
         local scope=""
         for w in \${words[@]}; do
@@ -122,12 +123,10 @@ for sub in rm remove
   complete -c skl -n "__skillio_using_subcommand $sub" -s g -l global -d 'Use global scope'
   complete -c skl -n "__skillio_using_subcommand $sub" -s y -l yes -d 'Skip confirmation prompt'
   complete -c skl -n "__skillio_using_subcommand $sub" -s x -l reject -d 'With .: skills to keep'
+  complete -c skl -n "__skillio_using_subcommand $sub" -o sm -l stealth-mode -d 'One-line summary'
   complete -c skl -n "__skillio_using_subcommand $sub" -l lock-only -d 'Only remove lock entry'
-  complete -c skl -n "__skillio_using_subcommand $sub" -l lo -d 'Alias for --lock-only'
   complete -c skl -n "__skillio_using_subcommand $sub" -l agents-only -d 'Only remove from .agents/skills'
-  complete -c skl -n "__skillio_using_subcommand $sub" -l ao -d 'Alias for --agents-only'
   complete -c skl -n "__skillio_using_subcommand $sub" -l claude-only -d 'Only remove from .claude/skills'
-  complete -c skl -n "__skillio_using_subcommand $sub" -l co -d 'Alias for --claude-only'
 end
 
 for sub in completion
