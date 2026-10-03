@@ -108,15 +108,15 @@ describe('skl ls', () => {
     expect(claudeIdx).toBeGreaterThan(agentsIdx);
   });
 
-  it('prints "Local" header as first line by default', () => {
+  it('prints "Project Scope" header as first line by default', () => {
     const fix = resolve(__dirname, '..', 'fixtures', 'list', 'empty-local');
     const r = run(['ls'], fix);
     expect(r.exitCode).toBe(0);
     const lines = r.stdout.split('\n');
-    expect(lines[0]).toBe('Local');
+    expect(lines[0]).toBe('Project Scope');
   });
 
-  it('prints "Global" header when -g is passed', () => {
+  it('prints "Global Scope" header when -g is passed', () => {
     const fix = resolve(__dirname, '..', 'fixtures', 'list', 'empty-local');
     const home = mkdtempSync(join(tmpdir(), 'skl-ls-global-'));
     try {
@@ -127,7 +127,7 @@ describe('skl ls', () => {
       });
       expect(r.status).toBe(0);
       const lines = (r.stdout ?? '').split('\n');
-      expect(lines[0]).toBe('Global');
+      expect(lines[0]).toBe('Global Scope');
     } finally {
       rmSync(home, { recursive: true, force: true });
     }
@@ -167,8 +167,8 @@ describe('skl ls', () => {
     expect(lines).toEqual(['skill-bar', 'skill-baz', 'skill-foo']);
     // no ANSI sequences
     expect(r.stdout).not.toMatch(/\x1b\[/);
-    // no Local/Global header
-    expect(r.stdout).not.toMatch(/^(Local|Global)$/m);
+    // no Project/Global Scope header
+    expect(r.stdout).not.toMatch(/^(Project|Global) Scope$/m);
   });
 
   it('--names emits nothing when scope is empty', () => {

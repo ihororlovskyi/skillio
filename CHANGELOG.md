@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.1.19 (2026-10-03)
+
+### Added
+
+- **`skl rm -sm` / `--stealth-mode` - one-line output.** Instead of the summary
+  block, `skl rm` prints a single `Executed A/B/C skills` line, where the
+  numbers are the skills actually removed from `.agents/skills/`,
+  `.claude/skills/` and `skills-lock.json`. Locations outside a scoped run
+  (`--lock-only` etc.) count as `0`. Without `--yes` the plan and prompts stay;
+  only the summary is replaced. Errors still go to stderr.
+
+### Changed
+
+- **`skl rm --yes` no longer prints the plan.** With `-y` nothing is asked, so
+  the `… will be removed from:` block only duplicated the summary. Now only the
+  `… removed from:` block is printed. Interactive runs are unchanged.
+- **Scope header renamed in `skl ls`, `skl cost` and `skl usg`.** `Local` is
+  now `Project Scope`, `Global` is now `Global Scope`. Breaking for scripts
+  that grep the header.
+- **Breaking: `--lo`, `--ao`, `--co` aliases removed from `skl rm`.** Use
+  `--lock-only`, `--agents-only`, `--claude-only`.
+- **`skl rm` rejects unknown options.** An unrecognised flag (e.g. `--lo` or
+  `-lo`) now exits 1 with `Unknown option: <flag>` before anything is removed.
+  Previously it was silently ignored, so `skl rm foo -lo` widened the scope to
+  every location instead of only the lock.
+
 ## 0.1.18 (2026-07-19)
 
 ### Added

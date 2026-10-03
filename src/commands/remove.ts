@@ -25,6 +25,20 @@ interface SkillTarget {
 
 type Scope = 'all' | 'lock-only' | 'agents-only' | 'claude-only';
 
+// citty silently ignores unknown flags, which would widen the scope to "all"
+const KNOWN_FLAGS = new Set([
+  '-g',
+  '--global',
+  '-y',
+  '--yes',
+  '--lock-only',
+  '--agents-only',
+  '--claude-only',
+  '--stealth-mode',
+  '-h',
+  '--help',
+]);
+
 function buildLocation(dir: string): LocationInfo {
   // lstat (not existsSync) so dangling symlinks are still seen and cleaned up
   const stat = lstatOrNull(dir);
@@ -158,19 +172,16 @@ export const removeCommand = defineCommand({
     yes: { type: 'boolean', alias: 'y', default: false, description: 'Skip confirmation prompts' },
     'lock-only': {
       type: 'boolean',
-      alias: 'lo',
       default: false,
       description: 'Only remove the skills-lock.json entry; keep on-disk directories',
     },
     'agents-only': {
       type: 'boolean',
-      alias: 'ao',
       default: false,
       description: 'Only remove from .agents/skills; keep .claude/skills and the lock entry',
     },
     'claude-only': {
       type: 'boolean',
-      alias: 'co',
       default: false,
       description: 'Only remove from .claude/skills; keep .agents/skills and the lock entry',
     },
@@ -178,6 +189,11 @@ export const removeCommand = defineCommand({
       type: 'string',
       alias: 'x',
       description: 'With ".": skill names to keep (space-separated)',
+    },
+    'stealth-mode': {
+      type: 'boolean',
+      default: false,
+      description: 'Print one "Executed A/B/C skills" line instead of the summary block',
     },
   },
   async run({ args }) {
@@ -188,6 +204,7 @@ export const removeCommand = defineCommand({
       'agents-only': agentsOnly,
       'claude-only': claudeOnly,
     } = args;
+    let stealth = args['stealth-mode'];
 
     const onlyFlagCount = [lockOnly, agentsOnly, claudeOnly].filter(Boolean).length;
     if (onlyFlagCount > 1) {
@@ -222,12 +239,22 @@ export const removeCommand = defineCommand({
         }
         continue;
       }
+      // citty splits "-sm" into "-s -m", so the short form is matched here
+      if (tok === '-sm') {
+        stealth = true;
+        continue;
+      }
       if (tok.startsWith('--reject=')) {
         rejectFlagSeen = true;
         rejects.push(tok.slice('--reject='.length));
         continue;
       }
-      if (!tok.startsWith('-')) rawNames.push(tok);
+      if (!tok.startsWith('-')) {
+        rawNames.push(tok);
+      } else if (!KNOWN_FLAGS.has(tok.split('=')[0] ?? tok)) {
+        console.error(`Unknown option: ${tok}`);
+        process.exit(1);
+      }
     }
     const all = rawNames.includes('.');
     const names = rawNames.filter((n) => n !== '.');
@@ -288,19 +315,18 @@ export const removeCommand = defineCommand({
     );
     const lockSkillsToRemove = targets.filter((t) => lockNames.has(t.name)).length;
 
-    printBlock(
-      targets,
-      scope,
-      'will be removed from:',
-      lockSkillsToRemove,
-      lockLinesToRemove,
-      'plan',
-      'removed',
-    );
-
     const ask = createConfirmer();
 
     if (!yes) {
+      printBlock(
+        targets,
+        scope,
+        'will be removed from:',
+        lockSkillsToRemove,
+        lockLinesToRemove,
+        'plan',
+        'removed',
+      );
       console.log('');
       const ok = await ask('Proceed?');
       if (!ok) {
@@ -334,7 +360,16 @@ export const removeCommand = defineCommand({
       }
     }
 
-    console.log('');
+    if (!yes) console.log('');
+    if (stealth) {
+      const removedFrom = (pick: (t: SkillTarget) => LocationInfo, inScope: boolean) =>
+        inScope ? targets.filter((t) => pick(t).kind !== 'missing').length : 0;
+      const agentsCount = removedFrom((t) => t.agents, scope === 'all' || scope === 'agents-only');
+      const claudeCount = removedFrom((t) => t.claude, scope === 'all' || scope === 'claude-only');
+      const lockCount = lockCleaned ? lockSkillsToRemove : 0;
+      console.log(`Executed ${agentsCount}/${claudeCount}/${lockCount} skills`);
+      return;
+    }
     printBlock(
       targets,
       scope,

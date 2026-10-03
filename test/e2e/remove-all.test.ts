@@ -172,4 +172,66 @@ describe('skl rm .', () => {
     expect(lock.skills).toEqual({});
     expect(existsSync(join(tmp, '.claude', 'skills', 'foo', 'SKILL.md'))).toBe(true);
   });
+
+  function rmAll(args: string[], input?: string) {
+    return spawnSync(process.execPath, [CLI, 'rm', '.', ...args], {
+      cwd: tmp,
+      encoding: 'utf8',
+      input,
+      env: { ...process.env, SKILLIO_NO_UPDATE_CHECK: '1' },
+    });
+  }
+
+  it('--yes prints only the summary block, not the plan', () => {
+    seed3();
+    const r = rmAll(['--yes']);
+    expect(r.status).toBe(0);
+    expect(r.stdout).not.toContain('will be removed from:');
+    expect(r.stdout.startsWith('3 skills bar baz foo removed from:\n')).toBe(true);
+  });
+
+  it('-y -sm prints a single Executed line with per-location counts', () => {
+    seed3();
+    mkdirSync(join(tmp, '.agents', 'skills', 'foo'), { recursive: true });
+    const r = rmAll(['-y', '-sm']);
+    expect(r.status).toBe(0);
+    expect(r.stdout).toBe('Executed 1/3/3 skills\n');
+    expect(existsSync(join(tmp, '.agents', 'skills', 'foo'))).toBe(false);
+    expect(existsSync(join(tmp, '.claude', 'skills', 'foo'))).toBe(false);
+    const lock = JSON.parse(readFileSync(join(tmp, 'skills-lock.json'), 'utf8'));
+    expect(lock.skills).toEqual({});
+  });
+
+  it('--stealth-mode is the long form of -sm', () => {
+    seed3();
+    const r = rmAll(['--yes', '--stealth-mode']);
+    expect(r.status).toBe(0);
+    expect(r.stdout).toBe('Executed 0/3/3 skills\n');
+  });
+
+  it('-sm without -y keeps the plan and prompts, replaces only the summary', () => {
+    seed3();
+    const r = rmAll(['-sm'], 'y\nn\n');
+    expect(r.status).toBe(0);
+    expect(r.stdout).toContain('will be removed from:');
+    expect(r.stdout).toContain('Proceed?');
+    expect(r.stdout).not.toContain('3 skills bar baz foo removed from:');
+    expect(r.stdout.trimEnd().endsWith('Executed 0/3/0 skills')).toBe(true);
+  });
+
+  it('-sm with --lock-only reports 0 for untouched locations', () => {
+    seed3();
+    const r = rmAll(['--lock-only', '-y', '-sm']);
+    expect(r.status).toBe(0);
+    expect(r.stdout).toBe('Executed 0/0/3 skills\n');
+    expect(existsSync(join(tmp, '.claude', 'skills', 'foo', 'SKILL.md'))).toBe(true);
+  });
+
+  it('-x stops collecting names at -sm', () => {
+    seed3();
+    const r = rmAll(['-x', 'foo', '-sm', '-y']);
+    expect(r.status).toBe(0);
+    expect(r.stdout).toBe('Executed 0/2/2 skills\n');
+    expect(existsSync(join(tmp, '.claude', 'skills', 'foo', 'SKILL.md'))).toBe(true);
+  });
 });
