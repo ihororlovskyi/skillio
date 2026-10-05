@@ -159,7 +159,7 @@ export const completionCommand = defineCommand({
         process.stdout.write(FISH);
         return;
       default:
-        console.error(`unknown shell: ${shell || '(none)'} — supported: bash, zsh, fish`);
+        console.error(`unknown shell: ${shell || '(none)'} - supported: bash, zsh, fish`);
         process.exit(1);
     }
   },

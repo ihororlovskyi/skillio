@@ -27,19 +27,19 @@ async function pickRemoveTargets(args: PickerArgs): Promise<string[] | null> {
   ];
 
   return await multiSelect({
-    title: 'skillio — pick skills to remove (Space toggle, Enter confirm)',
+    title: 'skillio - pick skills to remove (Space toggle, Enter confirm)',
     options,
   });
 }
 
 export async function runPicker(args: PickerArgs): Promise<number> {
   const choice = await select({
-    title: 'skillio — pick a command',
+    title: 'skillio - pick a command',
     options: [
-      { value: 'usage', label: 'usage  — count of skill invocations' },
-      { value: 'cost', label: 'cost   — per-skill ambient tokens' },
-      { value: 'list', label: 'list   — installed skills per source' },
-      { value: 'remove', label: 'remove — delete a skill (asks about lock cleanup)' },
+      { value: 'usage', label: 'usage - count of skill invocations' },
+      { value: 'cost', label: 'cost - per-skill ambient tokens' },
+      { value: 'list', label: 'list - installed skills per source' },
+      { value: 'remove', label: 'remove - delete a skill (asks about lock cleanup)' },
       { value: 'quit', label: 'quit' },
     ],
   });

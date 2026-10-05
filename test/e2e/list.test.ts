@@ -82,7 +82,7 @@ describe('skl ls', () => {
     const tmpDir = mkdtempSync(join(tmpdir(), 'skl-ls-broken-'));
     writeFileSync(join(tmpDir, 'skills-lock.json'), JSON.stringify({ skills: {} }));
     mkdirSync(join(tmpDir, '.claude', 'skills'), { recursive: true });
-    // target under .agents/skills does not exist — the symlink is dangling
+    // target under .agents/skills does not exist - the symlink is dangling
     symlinkSync(
       join(tmpDir, '.agents', 'skills', 'ghost'),
       join(tmpDir, '.claude', 'skills', 'ghost'),

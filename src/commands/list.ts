@@ -27,7 +27,7 @@ function rootFor(isGlobal: boolean, lockPath: string, kind: '.claude' | '.agents
 
 function getInstall(root: string, name: string): Install | undefined {
   const dir = join(root, name);
-  // lstat (not existsSync) so dangling symlinks are still classified — a symlink
+  // lstat (not existsSync) so dangling symlinks are still classified - a symlink
   // whose target no longer resolves is 'broken', a live one is 'symlink'.
   const stat = lstatSync(dir, { throwIfNoEntry: false });
   if (!stat) return undefined;
@@ -75,7 +75,7 @@ export const listCommand = defineCommand({
     names: {
       type: 'boolean',
       default: false,
-      description: 'Print one skill name per line (no header, no colors) — for completion scripts',
+      description: 'Print one skill name per line (no header, no colors) - for completion scripts',
     },
   },
   run({ args }) {

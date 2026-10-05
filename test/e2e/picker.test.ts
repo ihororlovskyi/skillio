@@ -17,7 +17,7 @@ describe('bare skl', () => {
 
 const CLI = resolve(process.cwd(), 'dist', 'cli.js');
 
-describe('picker — non-TTY fallback (remove sub-picker)', () => {
+describe('picker - non-TTY fallback (remove sub-picker)', () => {
   let tmp: string;
   beforeEach(() => {
     tmp = mkdtempSync(join(tmpdir(), 'skl-picker-'));
@@ -26,7 +26,7 @@ describe('picker — non-TTY fallback (remove sub-picker)', () => {
     rmSync(tmp, { recursive: true, force: true });
   });
 
-  it('non-TTY pipe — bare skl runs cost fallback (regression: 0.1.10)', () => {
+  it('non-TTY pipe - bare skl runs cost fallback (regression: 0.1.10)', () => {
     writeFileSync(join(tmp, 'skills-lock.json'), JSON.stringify({ skills: {} }));
     const r = spawnSync(process.execPath, [CLI], { cwd: tmp, encoding: 'utf8' });
     expect(r.status).toBe(0);

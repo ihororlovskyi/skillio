@@ -70,7 +70,7 @@ describe('discoverSkills (local scope)', () => {
     writeLock(TMP, []);
     const claudeSkills = join(TMP, '.claude', 'skills');
     mkdirSync(claudeSkills, { recursive: true });
-    // symlink whose target does not exist — SKILL.md never resolves
+    // symlink whose target does not exist - SKILL.md never resolves
     symlinkSync(join(TMP, '.agents', 'skills', 'ghost'), join(claudeSkills, 'ghost'));
 
     const map = discoverSkills({

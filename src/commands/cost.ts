@@ -11,10 +11,10 @@ function classify(total: number): {
   message: string;
   paint: (s: string) => string;
 } {
-  if (total < 1000) return { verdict: 'ok', message: 'OK — keep it lean', paint: green };
+  if (total < 1000) return { verdict: 'ok', message: 'OK - keep it lean', paint: green };
   if (total <= 1500)
     return { verdict: 'plan', message: 'time to plan some cleanup', paint: yellow };
-  return { verdict: 'cleanup', message: 'ballast — clean it up', paint: red };
+  return { verdict: 'cleanup', message: 'ballast - clean it up', paint: red };
 }
 
 function sortRows(records: SkillRecord[]): SkillRecord[] {
