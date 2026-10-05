@@ -143,26 +143,21 @@ export const listCommand = defineCommand({
       console.log(line.trimEnd());
     }
 
-    const claudeNames = rows.claude.names.map((n) => n.name);
-    const agentsNames = rows.agents.names.map((n) => n.name);
-    const lockNames = rows.lock.names.map((n) => n.name);
-    const claudeNotInLock = claudeNames.filter((n) => !lockNames.includes(n));
-    const agentsNotInLock = agentsNames.filter((n) => !lockNames.includes(n));
+    const lockNames = new Set(rows.lock.names.map((n) => n.name));
+    const claudeNotInLock = rows.claude.names.filter((n) => !lockNames.has(n.name));
+    const agentsNotInLock = rows.agents.names.filter((n) => !lockNames.has(n.name));
 
     const diffs: string[] = [];
     if (claudeNotInLock.length) {
       diffs.push(
-        `.claude/skills has ${claudeNotInLock.length} skill${claudeNotInLock.length === 1 ? '' : 's'} not in lock: ${claudeNotInLock.map(cyan).join(', ')}`,
+        `.claude/skills has ${claudeNotInLock.length} skill${claudeNotInLock.length === 1 ? '' : 's'} not in lock: ${claudeNotInLock.map(paintDisk).join(', ')}`,
       );
     }
     if (agentsNotInLock.length) {
       diffs.push(
-        `.agents/skills has ${agentsNotInLock.length} skill${agentsNotInLock.length === 1 ? '' : 's'} not in lock: ${agentsNotInLock.map(cyan).join(', ')}`,
+        `.agents/skills has ${agentsNotInLock.length} skill${agentsNotInLock.length === 1 ? '' : 's'} not in lock: ${agentsNotInLock.map(paintDisk).join(', ')}`,
       );
     }
-    if (diffs.length) {
-      console.log('');
-      for (const line of diffs) console.log(line);
-    }
+    for (const line of diffs) console.log(line);
   },
 });

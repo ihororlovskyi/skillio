@@ -215,11 +215,17 @@ describe('skl rm', () => {
     );
 
     // without --yes, so the plan block (green/yellow) is printed
+    const env: NodeJS.ProcessEnv = {
+      ...process.env,
+      SKILLIO_NO_UPDATE_CHECK: '1',
+      FORCE_COLOR: '1',
+    };
+    delete env.NO_COLOR;
     const r = spawnSync(process.execPath, [CLI, 'rm', 'foo'], {
       cwd: tmpDir,
       encoding: 'utf8',
       input: 'y\n',
-      env: { ...process.env, SKILLIO_NO_UPDATE_CHECK: '1', FORCE_COLOR: '1' },
+      env,
     });
     expect(r.status).toBe(0);
     expect(r.stdout).toContain('\x1b[32m');

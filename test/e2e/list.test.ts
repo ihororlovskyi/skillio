@@ -3,19 +3,10 @@ import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { run } from './helpers';
+import { run, runWithColor } from './helpers';
 
 const LOCK_DIR = join(process.cwd(), 'test', 'fixtures', 'lock');
 const CLI = resolve(process.cwd(), 'dist', 'cli.js');
-
-// Helper that forces ANSI color output for assertions on colored text
-function runWithColor(args: string[], cwd: string) {
-  return spawnSync(process.execPath, [CLI, ...args], {
-    cwd,
-    encoding: 'utf8' as const,
-    env: { ...process.env, FORCE_COLOR: '1', SKILLIO_NO_UPDATE_CHECK: '1' },
-  });
-}
 
 describe('skl ls', () => {
   it('renders compact per-source one-liner: label : N skills : names', () => {
@@ -51,7 +42,7 @@ describe('skl ls', () => {
   it('all-onboard fixture lists lock names uncolored in lock row', () => {
     const fix = resolve(__dirname, '..', 'fixtures', 'list', 'all-onboard');
     const r = runWithColor(['list'], fix);
-    expect(r.status).toBe(0);
+    expect(r.exitCode).toBe(0);
     const plain = r.stdout.replace(/\x1b\[[0-9;]*m/g, '');
     expect(plain).toMatch(/skills-lock\.json\s*:\s*2 skills\s*:\s*bar\s+foo/);
     expect(plain).not.toContain('All skills onboard!');
@@ -63,7 +54,7 @@ describe('skl ls', () => {
   it('missing-in-lock fixture renders orphan name red in lock row', () => {
     const fix = resolve(__dirname, '..', 'fixtures', 'list', 'missing-in-lock');
     const r = runWithColor(['list'], fix);
-    expect(r.status).toBe(0);
+    expect(r.exitCode).toBe(0);
     const plain = r.stdout.replace(/\x1b\[[0-9;]*m/g, '');
     expect(plain).toMatch(/skills-lock\.json\s*:\s*2 skills\s*:\s*foo\s+phantom/);
     expect(r.stdout).toMatch(/\x1b\[31m[^\x1b]*phantom/);
@@ -74,7 +65,7 @@ describe('skl ls', () => {
   it('symlinked-skill fixture renders disk name yellow', () => {
     const fix = resolve(__dirname, '..', 'fixtures', 'list', 'symlinked-skill');
     const r = runWithColor(['list'], fix);
-    expect(r.status).toBe(0);
+    expect(r.exitCode).toBe(0);
     expect(r.stdout).toMatch(/\.claude\/skills[^\n]*\x1b\[33m[^\x1b]*foo/);
   });
 
@@ -89,7 +80,7 @@ describe('skl ls', () => {
     );
 
     const r = runWithColor(['list'], tmpDir);
-    expect(r.status).toBe(0);
+    expect(r.exitCode).toBe(0);
     const plain = r.stdout.replace(/\x1b\[[0-9;]*m/g, '');
     expect(plain).toMatch(/\.claude\/skills\s*:\s*1 skill\s*:\s*ghost/);
     expect(r.stdout).toMatch(/\.claude\/skills[^\n]*\x1b\[31m[^\x1b]*ghost/);
@@ -97,10 +88,35 @@ describe('skl ls', () => {
     rmSync(tmpDir, { recursive: true, force: true });
   });
 
+  it('paints not-in-lock names in their disk color, with no blank line before them', () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), 'skl-ls-notinlock-'));
+    try {
+      writeFileSync(join(tmpDir, 'skills-lock.json'), JSON.stringify({ skills: {} }));
+      const external = join(tmpDir, 'external', 'ext');
+      mkdirSync(external, { recursive: true });
+      writeFileSync(join(external, 'SKILL.md'), '---\nname: ext\n---\n');
+      mkdirSync(join(tmpDir, '.claude', 'skills'), { recursive: true });
+      symlinkSync(external, join(tmpDir, '.claude', 'skills', 'ext'));
+
+      const r = runWithColor(['list'], tmpDir);
+      expect(r.exitCode).toBe(0);
+      expect(r.stdout).toContain('.claude/skills has 1 skill not in lock: \x1b[33mext\x1b[0m');
+      expect(r.stdout.trimEnd().split('\n')).not.toContain('');
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it('prints the scope header in bold with FORCE_COLOR', () => {
+    const fix = resolve(__dirname, '..', 'fixtures', 'list', 'empty-local');
+    const r = runWithColor(['ls'], fix);
+    expect(r.stdout.split('\n')[0]).toBe('\x1b[1mProject Scope\x1b[22m');
+  });
+
   it('reorder fixture renders .agents row before .claude', () => {
     const fix = resolve(__dirname, '..', 'fixtures', 'list', 'reorder');
     const r = runWithColor(['list'], fix);
-    expect(r.status).toBe(0);
+    expect(r.exitCode).toBe(0);
     const plain = r.stdout.replace(/\x1b\[[0-9;]*m/g, '');
     const agentsIdx = plain.indexOf('.agents/skills');
     const claudeIdx = plain.indexOf('.claude/skills');
@@ -162,7 +178,7 @@ describe('skl ls', () => {
 
   it('--names prints one name per line, sorted, no header, no colors', () => {
     const r = runWithColor(['ls', '--names'], LOCK_DIR);
-    expect(r.status).toBe(0);
+    expect(r.exitCode).toBe(0);
     const lines = r.stdout.split('\n').filter((l) => l.length > 0);
     expect(lines).toEqual(['skill-bar', 'skill-baz', 'skill-foo']);
     // no ANSI sequences

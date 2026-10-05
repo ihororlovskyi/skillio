@@ -49,7 +49,7 @@ _skillio() {
     'ls:Alias for list'
     'remove:Delete on-disk skill dirs'
     'rm:Alias for remove'
-    'cost:Show ambient ballast cost'
+    'cost:Show ambient context cost'
     'cs:Alias for cost'
     'cst:Alias for cost'
     'usage:Show skill usage'

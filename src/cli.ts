@@ -86,7 +86,7 @@ function printRootHelp(): void {
     '',
     '  list, ls         List skills per source: install type, lock orphans, disk/lock diff',
     '  remove, rm       Delete on-disk skill dirs and/or skills-lock.json (interactive)',
-    '  cost, cs, cst    Show ambient ballast cost (per-skill frontmatter tokens) sorted desc',
+    '  cost, cs, cst    Show ambient context cost (per-skill name + description tokens) sorted desc',
     '  usage, us, usg   Show skill usage × cost (consumption) with missed rows',
     '  completion       Print shell completion script (bash, zsh, fish)',
   ];
