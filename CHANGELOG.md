@@ -1,5 +1,39 @@
 # Changelog
 
+## 0.1.20 (2026-10-05)
+
+### Changed
+
+- **Breaking: `skl cost` estimates from `name` + `description` at 3 chars per
+  token.** Calibrated against Claude Code `/skills`, it now matches per skill;
+  the old whole-frontmatter chars/4 estimate matched only in the sum (long
+  `compatibility:` / `metadata` overcounted, long descriptions undercounted).
+  The method label is now `· method: chars/3, name+description`. The same
+  number feeds `tokensPerSkill` and `consumption` in `skl usage --format json`.
+- **`skl cost` shows skills with `disable-model-invocation: true` as `-`.**
+  Claude Code keeps them out of the always-loaded context, so they are left out
+  of `Total`; they still count in `across N skills`. In `skl usage --format json`
+  their `tokensPerSkill` is `null`.
+- **Breaking: no verdict in the `skl cost` total.** `OK - keep it lean` /
+  `time to plan some cleanup` / `ballast - clean it up` are gone; how many skills
+  to keep is the user's call.
+- **Breaking: no blank lines in `skl ls`, `skl cost` and `skl usage`.** The empty
+  line before the scope header, before `Total:` and before the `not in lock`
+  lines is gone, so a sequence of commands reads as one report.
+- **Scope header is bold** (`Project Scope` / `Global Scope`) in all three
+  commands when color is on.
+- **`not in lock` names in `skl ls` use their disk color** (green for a real
+  folder, yellow for a symlink, red for a dangling one) instead of cyan.
+
+### Fixed
+
+- **`skl usage` rejects unknown `--mode` and `--format` values** with exit 1 and
+  a one-line error, before reading any session. A typo like `--mode merge` used
+  to print zero usage, and `--format yaml` silently printed text.
+- **e2e color tests pass with `NO_COLOR=1` in the environment** (as set by
+  Codex). `NO_COLOR` still wins over `FORCE_COLOR`; the tests now drop an
+  inherited `NO_COLOR`.
+
 ## 0.1.19 (2026-10-03)
 
 ### Added
@@ -160,8 +194,8 @@
   have usage records but are no longer present in lock or on disk are tagged
   with a red `(missing)` suffix in text output; JSON output gains an
   `installed` field. Sort is `installed-first`.
-- **`mo` period unit (30 days).** Use `6mo` to mean "the last 6 calendar
-  months" (180 days). `m` continues to mean minute — the new `mo` unit
+- **`mo` period unit (30 days).** A fixed 30-day month unit: `6mo` = 180 days,
+  not calendar months. `m` continues to mean minute — the new `mo` unit
   removes the ambiguity around month-vs-minute in `-p`.
 - **`rm --all` typed-phrase guard in TTY.** Interactive `rm --all` now
   requires typing the word `all` to confirm, even with `--yes`. Non-TTY

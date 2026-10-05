@@ -4,9 +4,11 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   countFrontmatterTokens,
+  estimateContextTokens,
   extractFrontmatter,
   findSkillFile,
   getSkillPathCandidates,
+  parseSkillMeta,
 } from './skill-files';
 
 describe('extractFrontmatter', () => {
@@ -20,6 +22,57 @@ describe('extractFrontmatter', () => {
   it('handles CRLF line endings', () => {
     const fm = extractFrontmatter('---\r\nname: x\r\n---\r\n\r\n# Body');
     expect(fm).toBe('name: x');
+  });
+});
+
+describe('parseSkillMeta', () => {
+  it('reads single-line name and description', () => {
+    expect(parseSkillMeta('name: foo\ndescription: Does foo.')).toEqual({
+      name: 'foo',
+      description: 'Does foo.',
+      disableModelInvocation: false,
+    });
+  });
+  it('joins indented continuation lines with a space', () => {
+    const meta = parseSkillMeta('name: foo\ndescription: Line one\n  line two\nlicense: MIT');
+    expect(meta.description).toBe('Line one line two');
+  });
+  it('drops folded and literal block indicators', () => {
+    expect(parseSkillMeta('description: >\n  folded\n  text').description).toBe('folded text');
+    expect(parseSkillMeta('description: |-\n  literal\n  text').description).toBe('literal text');
+  });
+  it('strips surrounding quotes', () => {
+    expect(parseSkillMeta('name: "foo"\ndescription: \'Does: foo\'')).toMatchObject({
+      name: 'foo',
+      description: 'Does: foo',
+    });
+  });
+  it('ignores nested keys with the same name', () => {
+    const meta = parseSkillMeta('name: foo\nmetadata:\n  description: nested\n  name: bar');
+    expect(meta).toMatchObject({ name: 'foo', description: undefined });
+  });
+  it('reads disable-model-invocation', () => {
+    expect(parseSkillMeta('disable-model-invocation: true').disableModelInvocation).toBe(true);
+    expect(parseSkillMeta('disable-model-invocation: false').disableModelInvocation).toBe(false);
+    expect(parseSkillMeta('name: foo').disableModelInvocation).toBe(false);
+  });
+  it('handles CRLF line endings', () => {
+    expect(parseSkillMeta('name: foo\r\ndescription: bar\r\n').description).toBe('bar');
+  });
+});
+
+describe('estimateContextTokens', () => {
+  it('counts name + description at 3 chars per token', () => {
+    // 3 + 9 = 12 chars -> 4 tokens
+    expect(estimateContextTokens({ name: 'foo', description: 'Does foo.' }, 'dir')).toBe(4);
+  });
+  it('falls back to the directory name when name is absent', () => {
+    // 6 + 0 = 6 chars -> 2 tokens
+    expect(estimateContextTokens({}, 'foobar')).toBe(2);
+  });
+  it('ignores fields other than name and description', () => {
+    const fm = 'name: foo\ndescription: Does foo.\ncompatibility: a very long field value';
+    expect(estimateContextTokens(parseSkillMeta(fm), 'foo')).toBe(4);
   });
 });
 
@@ -57,10 +110,9 @@ describe('findSkillFile + countFrontmatterTokens', () => {
     const f = findSkillFile('absent', join(TMP, 'skills-lock.json'), false);
     expect(f).toBeUndefined();
   });
-  it('counts tokens in frontmatter only', () => {
+  it('counts context tokens from name + description', () => {
     const f = findSkillFile('present', join(TMP, 'skills-lock.json'), false);
-    const n = countFrontmatterTokens(f as string);
-    expect(typeof n).toBe('number');
-    expect(n).toBeGreaterThan(0);
+    // 'present' + 'hi' = 9 chars -> 3 tokens
+    expect(countFrontmatterTokens(f as string)).toBe(3);
   });
 });

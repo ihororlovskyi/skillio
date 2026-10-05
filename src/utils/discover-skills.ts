@@ -2,7 +2,7 @@ import { existsSync, lstatSync, readdirSync, readFileSync, statSync } from 'node
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { readLock } from '../lock/file';
-import { CHARS_PER_TOKEN, estimateTokens, extractFrontmatter } from './skill-files';
+import { estimateContextTokens, extractFrontmatter, parseSkillMeta } from './skill-files';
 
 export type SkillSource = 'lock' | '.claude' | '.agents';
 
@@ -11,6 +11,8 @@ export interface SkillRecord {
   sources: SkillSource[];
   skillFile?: string;
   frontmatterTokens?: number;
+  // Claude Code keeps such skills out of the always-loaded context
+  disableModelInvocation?: boolean;
   status: 'ok' | 'missing' | 'no-frontmatter';
 }
 
@@ -51,11 +53,19 @@ function listSkillNames(root: string | undefined): string[] {
   });
 }
 
-function tokensFromFile(path: string): { tokens?: number; status: 'ok' | 'no-frontmatter' } {
+function tokensFromFile(
+  path: string,
+  name: string,
+): Pick<SkillRecord, 'frontmatterTokens' | 'disableModelInvocation' | 'status'> {
   const content = readFileSync(path, 'utf8');
   const fm = extractFrontmatter(content);
   if (fm === undefined) return { status: 'no-frontmatter' };
-  return { tokens: estimateTokens(fm), status: 'ok' };
+  const meta = parseSkillMeta(fm);
+  return {
+    frontmatterTokens: estimateContextTokens(meta, name),
+    disableModelInvocation: meta.disableModelInvocation,
+    status: 'ok',
+  };
 }
 
 export function discoverSkills(input: DiscoverInput): Map<string, SkillRecord> {
@@ -88,11 +98,8 @@ export function discoverSkills(input: DiscoverInput): Map<string, SkillRecord> {
       out.set(name, { name, sources, status: 'missing' });
       continue;
     }
-    const { tokens, status } = tokensFromFile(skillFile);
-    out.set(name, { name, sources, skillFile, frontmatterTokens: tokens, status });
+    out.set(name, { name, sources, skillFile, ...tokensFromFile(skillFile, name) });
   }
 
-  // expose CHARS_PER_TOKEN consumers via a re-export to avoid double-import elsewhere
-  void CHARS_PER_TOKEN;
   return out;
 }

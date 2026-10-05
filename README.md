@@ -71,15 +71,15 @@ audits both Claude Code and Codex over all time).
 ## Usage
 
 ```sh
-# bare command — per-skill ambient token cost, sorted desc, with verdict
+# bare command - per-skill ambient token cost, sorted desc
 skl
 skillio                                # equivalent
 
 # subcommands
 skl ls                                 # list skills per source with diffs
-skl cost                               # ambient ballast cost (frontmatter tokens) per skill
+skl cost                               # ambient context cost (name + description tokens) per skill
 skl cs                                 # alias for cost (also: cst)
-skl usage                              # consumption: usage count × frontmatter tokens
+skl usage                              # consumption: usage count × name + description tokens
 skl usg                                # alias for usage
 skl rm brainstorming                   # colored plan, Proceed? [y/n], then Clean lock? [y/n]
 skl rm brainstorming writing-plans     # remove multiple, one pair of prompts
@@ -111,7 +111,7 @@ skl usage -a claude -a codex           # equivalent: repeated --agent flag
 
 ## What it does
 
-- **Cost** (`skl`) — per-skill ambient token cost sorted descending, with a cleanup verdict. Bare `skl` = `skl cost` in local scope; `skl -g` = global scope.
+- **Cost** (`skl`) - per-skill ambient token cost (`name` + `description`, chars/3) sorted descending; skills with `disable-model-invocation: true` show `-` and stay out of the total. Bare `skl` = `skl cost` in local scope; `skl -g` = global scope.
 - **Audit skill usage** (`skl usage`) — parse agent session logs and count which skills were invoked, when, and how often.
 - **Manage a skills lock** (`skl ls`, `skl rm`) — inspect and remove skills from a local or global lock file.
 
@@ -164,7 +164,7 @@ skillio list --global   # ~/.agents/.skill-lock.json
 ### `skillio cost` / `cs`
 
 ```sh
-skillio cost            # local: per-skill frontmatter tokens with verdict
+skillio cost            # local: per-skill name + description tokens
 skillio cost --global   # same, against ~/.agents/.skill-lock.json
 ```
 
