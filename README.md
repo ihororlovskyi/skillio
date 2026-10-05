@@ -17,7 +17,7 @@ Audit and manage AI agent skills for Claude Code and OpenAI Codex.
 npx skillio --agent claude --period 7d
 pnpm dlx skillio --agent codex --period 2w
 
-# global install — provides both `skillio` and `skl` commands in $PATH
+# global install - provides both `skillio` and `skl` commands in $PATH
 npm install -g skillio       # recommended
 pnpm add -g skillio
 ```
@@ -34,7 +34,7 @@ yarn add -D skillio
 bun add -d skillio
 ```
 
-Then run via your package manager — both `skillio` and `skl` are exposed:
+Then run via your package manager - both `skillio` and `skl` are exposed:
 
 ```sh
 npx skillio                  # works from any subdir of the project
@@ -64,14 +64,14 @@ npm install -g skillio@latest        # recommended
 pnpm add -g skillio@latest
 ```
 
-If you're on `0.1.3` or older — please upgrade. Newer versions add per-repo
+If you're on `0.1.3` or older - please upgrade. Newer versions add per-repo
 scoping, the `skl` short alias, and saner defaults (`skillio` with no flags now
 audits both Claude Code and Codex over all time).
 
 ## Usage
 
 ```sh
-# bare command — per-skill ambient token cost, sorted desc, with verdict
+# bare command - per-skill ambient token cost, sorted desc, with verdict
 skl
 skillio                                # equivalent
 
@@ -105,15 +105,15 @@ skl usage -a claude -a codex           # equivalent: repeated --agent flag
 | where you run it | scope |
 |------------------|-------|
 | inside a git repo | that repo only (data filtered to its path) |
-| in `$HOME` exactly | global — all repos on this machine |
+| in `$HOME` exactly | global - all repos on this machine |
 | anywhere with `-g` / `--global` | global override |
 | with `--root <dir>` | that exact dir, treated as global |
 
 ## What it does
 
-- **Cost** (`skl`) — per-skill ambient token cost sorted descending, with a cleanup verdict. Bare `skl` = `skl cost` in local scope; `skl -g` = global scope.
-- **Audit skill usage** (`skl usage`) — parse agent session logs and count which skills were invoked, when, and how often.
-- **Manage a skills lock** (`skl ls`, `skl rm`) — inspect and remove skills from a local or global lock file.
+- **Cost** (`skl`) - per-skill ambient token cost sorted descending, with a cleanup verdict. Bare `skl` = `skl cost` in local scope; `skl -g` = global scope.
+- **Audit skill usage** (`skl usage`) - parse agent session logs and count which skills were invoked, when, and how often.
+- **Manage a skills lock** (`skl ls`, `skl rm`) - inspect and remove skills from a local or global lock file.
 
 ## Options
 
@@ -121,11 +121,11 @@ skl usage -a claude -a codex           # equivalent: repeated --agent flag
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `-h, --help` | — | Show help and exit |
-| `-v, --version` | — | Show version and exit |
+| `-h, --help` | - | Show help and exit |
+| `-v, --version` | - | Show version and exit |
 | `-g, --global` | `false` | Use global scope (ignore current directory) |
 | `-p, --period` | `all` | Period for `usage`: `60s`, `30m`, `12h`, `7d`, `2w`, `6mo`, `all` (note: `1m` = 1 minute, `1mo` = 30 days) |
-| `-a, --agent` | both | Agent for `usage`: `claude-code` (alias `claude`), `codex` — pass both space-separated (`-a claude-code codex`) or repeat the flag |
+| `-a, --agent` | both | Agent for `usage`: `claude-code` (alias `claude`), `codex` - pass both space-separated (`-a claude-code codex`) or repeat the flag |
 
 ### `skillio usage` / `us`
 
@@ -140,19 +140,19 @@ skillio usage --agent codex --mode activations
 |------|---------|-------------|
 | `-a, --agent` | both | `claude-code`/`claude`, `codex` |
 | `-p, --period` | `all` | `60s`, `30m`, `24h`, `7d`, `2w`, `6mo`, `all` |
-| `--since` | — | `yyyy-mm-dd`, overrides `--period` |
+| `--since` | - | `yyyy-mm-dd`, overrides `--period` |
 | `--mode` | `merged` (claude) / `activations` (codex) | `merged` \| `attributed` \| `activations` \| `mentions` |
 | `--format` | `text` | `text` \| `json` |
 | `-g, --global` | `false` | Force global scope (ignore current directory) |
-| `--root` | — | Override agent sessions directory; implies global |
-| `--scan-all-files` | — | Ignore file mtime, read everything |
+| `--root` | - | Override agent sessions directory; implies global |
+| `--scan-all-files` | - | Ignore file mtime, read everything |
 
 ### Modes
 
-- **`merged`** — per-session union of `attributed` and `activations` (`max` per skill). Default for Claude.
-- **`attributed`** — entries with an `attributionSkill` field set by Claude Code.
-- **`activations`** — explicit `Skill` tool invocations (Claude) or read-like `exec_command_end` events / `<skill>` XML (Codex). Default for Codex.
-- **`mentions`** — skill paths (`foo/SKILL.md`) or `superpowers:name` strings found anywhere. Broadest signal; can include matches from prompts, specs, or documentation.
+- **`merged`** - per-session union of `attributed` and `activations` (`max` per skill). Default for Claude.
+- **`attributed`** - entries with an `attributionSkill` field set by Claude Code.
+- **`activations`** - explicit `Skill` tool invocations (Claude) or read-like `exec_command_end` events / `<skill>` XML (Codex). Default for Codex.
+- **`mentions`** - skill paths (`foo/SKILL.md`) or `superpowers:name` strings found anywhere. Broadest signal; can include matches from prompts, specs, or documentation.
 
 ### `skillio list` / `ls`
 

@@ -30,7 +30,7 @@
 
 ### Added
 
-- **`skl rm . -x <name> …` / `--reject` — exclusions for remove-all.** When
+- **`skl rm . -x <name> …` / `--reject` - exclusions for remove-all.** When
   removing all skills with `.`, listed skills are kept on disk and in
   `skills-lock.json`, e.g. `skl rm . -x web-debug typescript`. Accepts multiple
   space-separated names, repeated flags, and `--reject=<name>`. Only valid
@@ -43,7 +43,7 @@
 
 - **`skl ls` and `skl rm` now see dangling skill symlinks.** Skill discovery
   detected a skill by resolving `<name>/SKILL.md` with `existsSync`, which
-  follows symlinks — so a `.claude/skills/<name>` symlink whose target no longer
+  follows symlinks - so a `.claude/skills/<name>` symlink whose target no longer
   exists resolved to nothing and was skipped entirely. Such skills were invisible
   to `skl ls` (counted as `0 skills`) and untouched by `skl rm .`. A symlink
   entry is now treated as a skill regardless of whether its target resolves, so
@@ -54,7 +54,7 @@
   (live symlink), so a symlink pointing nowhere is visually distinct.
 - **Build now emits `dist/index.*` (library exports were broken).** Both bunup
   entries share `outDir: dist`, and bunup cleans the outDir at the start of each
-  entry build — so the `cli` entry wiped the `index` entry's `dist/index.js`,
+  entry build - so the `cli` entry wiped the `index` entry's `dist/index.js`,
   `.cjs`, `.d.ts`, `.d.cts`, shipping a package whose `exports` pointed at
   missing files (the CLI still worked via `bin`, but `import` of the library did
   not). Per-entry `clean` is now off and the build script removes `dist` once up
@@ -77,7 +77,7 @@
 ### Fixed
 
 - **`skl rm` no longer leaves dangling symlinks.** Removal checked existence
-  with `existsSync`, which follows symlinks — after the real
+  with `existsSync`, which follows symlinks - after the real
   `.agents/skills/<name>/` directory was deleted, the `.claude/skills/<name>`
   symlink became dangling, reported as missing, and was silently kept on disk
   (while the summary claimed it was removed). Existence is now checked with
@@ -115,7 +115,7 @@
 - **`--dry-run` removed.** The plan is always printed before every
   confirmation, so a separate preview mode was redundant. **Breaking**.
 - **New scoped flags**: `--lock-only`/`--lo` (unchanged behavior, new alias),
-  `--agents-only`/`--ao`, and `--claude-only`/`--co` — each restricts `rm` to
+  `--agents-only`/`--ao`, and `--claude-only`/`--co` - each restricts `rm` to
   exactly one location (disk side or lock) with a single confirmation and no
   second question. Mutually exclusive with each other.
 - **Confirmation prompts now read `[y/n]`** (was `[y/N]`); behavior for
@@ -132,8 +132,8 @@
   entries. The `--all` flag is **removed**. **Breaking.**
 - **`-fl` short alias for `--force-lock`.**
 - **`rm` result block reformatted.** A blank line precedes the results; each
-  skill prints a `"name"` header followed by per-source lines —
-  `removed` (red), `kept` (green), `skipped` (yellow) — in the order
+  skill prints a `"name"` header followed by per-source lines -
+  `removed` (red), `kept` (green), `skipped` (yellow) - in the order
   `.agents/skills`, `.claude/skills`, `skills-lock.json`.
 - **`skl ls` drops the "skills-lock.json has N skills missing on disk" line.**
   Lock orphans are already shown inline (red) in the lock row.
@@ -161,7 +161,7 @@
   with a red `(missing)` suffix in text output; JSON output gains an
   `installed` field. Sort is `installed-first`.
 - **`mo` period unit (30 days).** Use `6mo` to mean "the last 6 calendar
-  months" (180 days). `m` continues to mean minute — the new `mo` unit
+  months" (180 days). `m` continues to mean minute - the new `mo` unit
   removes the ambiguity around month-vs-minute in `-p`.
 - **`rm --all` typed-phrase guard in TTY.** Interactive `rm --all` now
   requires typing the word `all` to confirm, even with `--yes`. Non-TTY
@@ -205,7 +205,7 @@
 
 ## 0.1.12 (2026-05-15)
 
-Version bump only — the substantive changes drafted for this slot landed in
+Version bump only - the substantive changes drafted for this slot landed in
 0.1.13. 0.1.12 on npm is identical to 0.1.11 except for the version field.
 
 ## 0.1.11 (2026-05-14)
@@ -227,7 +227,7 @@ Version bump only — the substantive changes drafted for this slot landed in
   selecting it opens a secondary picker listing every skill in scope. Orphans-on-disk
   (present on disk, missing from `skills-lock.json`) are labeled with a red `(orphan)`
   suffix to distinguish them from `cost`'s `missing` (in-lock, no `SKILL.md`).
-- **Instant `y/N` confirm.** `skl rm` in a TTY resolves on a single keystroke — no Enter
+- **Instant `y/N` confirm.** `skl rm` in a TTY resolves on a single keystroke - no Enter
   required. Pipes and CI still use the line-based readline fallback unchanged.
 
 ### Changed
@@ -243,14 +243,14 @@ Version bump only — the substantive changes drafted for this slot landed in
 
 ### Removed
 
-- `src/utils/git.ts` (`isTrackedByGit`) — no longer used after the `rm` rewrite.
+- `src/utils/git.ts` (`isTrackedByGit`) - no longer used after the `rm` rewrite.
 
 ### History
 
 The repository history of `.gitignore` is rewritten via `git filter-repo --blob-callback`
 to drop seven legacy patterns from every historical revision. Existing clones must
 `git fetch --all --tags --force && git reset --hard origin/main`. Provenance attestations
-for v0.1.0–v0.1.10 reference pre-rewrite SHAs that no longer exist (Sigstore signatures
+for v0.1.0-v0.1.10 reference pre-rewrite SHAs that no longer exist (Sigstore signatures
 remain valid; repo-SHA chain is broken for those versions). v0.1.11 establishes a fresh
 chain.
 
