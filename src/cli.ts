@@ -144,7 +144,7 @@ function printRemoveHelp(): void {
     '  -y, --yes            Skip confirmation prompts (answers yes to both the',
     '                       "Proceed?" and "Clean skills-lock.json?" questions)',
     '                       and the plan; only the summary is printed',
-    '  -sm, --stealth-mode  Print one "Executed A/B/C skills" line instead of the',
+    '  -m, --mode silent    Print one "Executed A/B/C skills" line instead of the',
     '                       summary (.agents/skills / .claude/skills / lock counts)',
     '  -x, --reject         With ".": skill names to keep (space-separated)',
     '      --lock-only      Only remove the skills-lock.json entry',
@@ -157,7 +157,7 @@ function printRemoveHelp(): void {
     '  skillio rm brainstorming writing-plans --yes',
     '  skillio rm .',
     '  skillio rm . -x web-debug typescript',
-    '  skillio rm . -y -sm',
+    '  skillio rm . -y -m s',
     '  skillio rm brainstorming --agents-only',
     '  skillio rm brainstorming --lock-only',
   ];
