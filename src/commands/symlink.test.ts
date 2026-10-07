@@ -413,6 +413,13 @@ describe('planSymlinks / runSymlink', () => {
     expect(console.log).toHaveBeenCalledWith('tdd           symlinked  symlinked  -');
   });
 
+  it('prints no table when every -s name is skipped', async () => {
+    expect(await runSymlink(['../clone', '-s', ' tdd', '-y'], { cwd: proj })).toBe(0);
+    expect(console.log).toHaveBeenCalledWith('Symlinked 0 skills from ../clone');
+    const lines = vi.mocked(console.log).mock.calls.map((c) => String(c[0]));
+    expect(lines.some((l) => l.startsWith('skill '))).toBe(false);
+  });
+
   it('links an internal skill named with -s', async () => {
     seedInternal(clone, 'hidden');
     expect(await runSymlink(['../clone', '-s', 'hidden', '-y'], { cwd: proj })).toBe(0);

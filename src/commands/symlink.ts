@@ -313,6 +313,7 @@ export async function runSymlink(argv: string[], deps: SymlinkDeps = {}): Promis
   }
   applySymlinks(steps);
   console.log(`Symlinked ${plural(names.length, 'skill')} from ${source}`);
+  if (names.length === 0) return 0;
   const roots = {
     agents: join(cwd, AGENT_DIRS.codex),
     claude: join(cwd, AGENT_DIRS['claude-code']),
