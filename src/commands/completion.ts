@@ -87,6 +87,8 @@ _skillio() {
           '--lock-only[only remove lock entry]' \\
           '--agents-only[only remove from .agents/skills]' \\
           '--claude-only[only remove from .claude/skills]'
+      elif [[ \${words[CURRENT-1]} == -m || \${words[CURRENT-1]} == --mode ]]; then
+        _values 'mode' silent
       else
         local scope=""
         for w in \${words[@]}; do

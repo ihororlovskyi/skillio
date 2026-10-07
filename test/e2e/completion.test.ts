@@ -42,6 +42,8 @@ describe('skl completion', () => {
     expect(zsh).toContain("'install:Install skills or symlink a local clone'");
     expect(zsh).toContain('install|i)');
     expect(zsh).toContain("'-ln[symlink a local clone]'");
+    // install and rm both complete silent after -m/--mode
+    expect(zsh.split("_values 'mode' silent").length - 1).toBe(2);
     expect(zsh).not.toMatch(/symlink:|stealth|-sm\[|'cs:|'us:/);
     const fish = run(['completion', 'fish'], process.cwd()).stdout;
     expect(fish).toContain("-a 'list ls remove rm cost cst usage usg completion install i'");
