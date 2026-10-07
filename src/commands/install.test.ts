@@ -5,6 +5,7 @@ import {
   realpathSync,
   rmSync,
   symlinkSync,
+  utimesSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -171,6 +172,12 @@ describe('runInstall - silent mode', () => {
 
   it('counts a reinstalled skill and skips an untouched one', async () => {
     fakeInstall('tdd');
+    // pin old mtimes so the reinstall is detected even if ext4 reuses the inode within one clock tick
+    for (const p of [
+      join(proj, '.agents', 'skills', 'tdd'),
+      join(proj, '.agents', 'skills', 'tdd', 'SKILL.md'),
+    ])
+      utimesSync(p, new Date(0), new Date(0));
     seedSkill(join(proj, '.agents'), 'untouched');
     const spawn = vi.fn(() => {
       rmSync(join(proj, '.agents', 'skills', 'tdd'), { recursive: true });
@@ -181,6 +188,28 @@ describe('runInstall - silent mode', () => {
     expect(await runInstall(['sentimony/skills', '-y', '-m', 's'], { spawn, cwd: proj })).toBe(0);
     expect(console.log).toHaveBeenCalledWith('Installed 1 skill from sentimony/skills');
     expect(console.log).toHaveBeenCalledWith('tdd    universal  symlinked  +');
+  });
+
+  it('snapshots the global dirs under deps.home with -g', async () => {
+    const home = join(tmp, 'home');
+    const spawn = vi.fn(() => {
+      mkdirSync(join(home, '.agents', 'skills', 'g1'), { recursive: true });
+      writeFileSync(join(home, '.agents', 'skills', 'g1', 'SKILL.md'), '---\nname: g1\n---\n');
+      writeFileSync(
+        join(home, '.agents', '.skill-lock.json'),
+        JSON.stringify({ skills: { g1: {} } }),
+      );
+      return ok();
+    });
+    expect(
+      await runInstall(['sentimony/skills', '-g', '-y', '-m', 's'], { spawn, cwd: proj, home }),
+    ).toBe(0);
+    const lines = vi.mocked(console.log).mock.calls.map((c) => String(c[0]));
+    expect(lines).toContain('Installed 1 skill from sentimony/skills');
+    expect(lines.some((l) => l.startsWith('skill') && l.includes('.agents/.skill-lock.json'))).toBe(
+      true,
+    );
+    expect(lines.some((l) => l.startsWith('g1 ') && l.endsWith('+'))).toBe(true);
   });
 
   it('counts a skill whose only change is its lock entry', async () => {
