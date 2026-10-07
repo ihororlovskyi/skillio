@@ -26,11 +26,23 @@ describe('extractFrontmatter', () => {
 });
 
 describe('parseSkillMeta', () => {
+  it('reads internal from the metadata block', () => {
+    const fm = (v: string) => `name: a\nmetadata:\n  author: x\n  internal: ${v}\nlicense: MIT`;
+    expect(parseSkillMeta(fm('true')).internal).toBe(true);
+    expect(parseSkillMeta(fm('"true"')).internal).toBe(true);
+    expect(parseSkillMeta(fm('false')).internal).toBe(false);
+    expect(parseSkillMeta(fm('true # private')).internal).toBe(true);
+    expect(parseSkillMeta(fm("'true' # c")).internal).toBe(true);
+    expect(parseSkillMeta(fm('"true # x"')).internal).toBe(false);
+    expect(parseSkillMeta('name: a\ninternal: true').internal).toBe(false);
+    expect(parseSkillMeta('name: a').internal).toBe(false);
+  });
   it('reads single-line name and description', () => {
     expect(parseSkillMeta('name: foo\ndescription: Does foo.')).toEqual({
       name: 'foo',
       description: 'Does foo.',
       disableModelInvocation: false,
+      internal: false,
     });
   });
   it('joins indented continuation lines with a space', () => {

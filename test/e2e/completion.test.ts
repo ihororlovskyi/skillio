@@ -30,16 +30,26 @@ describe('skl completion', () => {
     expect(stderr).toContain('unknown shell: ohmyzsh');
   });
 
-  it('completes install/symlink commands and symlink flags in every shell', () => {
+  it('completes commands and install/rm flags in every shell', () => {
     const bash = run(['completion', 'bash'], process.cwd()).stdout;
-    expect(bash).toContain('local cmds="list ls remove rm cost cs cst usage us usg completion install i symlink sym sl"');
-    expect(bash).toContain('symlink|sym|sl)');
+    expect(bash).toContain('local cmds="list ls remove rm cost cst usage usg completion install i"');
+    expect(bash).toContain('install|i)');
+    expect(bash).toContain('-ln --link -s --skill -x --reject -a --agent -y --yes -m --mode');
     expect(bash).toContain('compgen -W "codex claude-code"');
+    expect(bash).toContain('compgen -W "silent"');
+    expect(bash).not.toMatch(/symlink|stealth|-sm/);
     const zsh = run(['completion', 'zsh'], process.cwd()).stdout;
-    expect(zsh).toContain("'symlink:Symlink skills from a local clone'");
-    expect(zsh).toContain('symlink|sym|sl)');
+    expect(zsh).toContain("'install:Install skills or symlink a local clone'");
+    expect(zsh).toContain('install|i)');
+    expect(zsh).toContain("'-ln[symlink a local clone]'");
+    // install and rm both complete silent after -m/--mode
+    expect(zsh.split("_values 'mode' silent").length - 1).toBe(2);
+    expect(zsh).not.toMatch(/symlink:|stealth|-sm\[|'cs:|'us:/);
     const fish = run(['completion', 'fish'], process.cwd()).stdout;
-    expect(fish).toContain("-a 'list ls remove rm cost cs cst usage us usg completion install i symlink sym sl'");
+    expect(fish).toContain("-a 'list ls remove rm cost cst usage usg completion install i'");
+    expect(fish).toContain("-o ln -l link -d 'Symlink from a local clone'");
     expect(fish).toContain("-s a -l agent -xa 'codex claude-code'");
+    expect(fish).toContain("-s m -l mode -xa 'silent'");
+    expect(fish).not.toMatch(/symlink sym sl|stealth/);
   });
 });
