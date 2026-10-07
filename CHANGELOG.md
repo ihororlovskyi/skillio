@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.1.22 (2026-10-07)
+
+### Added
+
+- **`skl i -ln <path>` / `skl install --link <path>`** symlinks skills from a local clone (what
+  `skl sl` did). Without `-s` it links every `<path>/skills/<name>/SKILL.md` except skills with
+  `metadata.internal: true`, as `npx skills add` does. `-x`/`--reject <names...>` links every skill
+  except the listed ones. The summary is `Symlinked N skills from <path>` and a table.
+- **`skl i ... -y -m s` / `--mode silent`** hides the `npx skills add` output and prints
+  `Installed N skills from <source>` and a table of the skills that were added or reinstalled.
+  Needs `-y`. When `npx` fails, its full output is printed and its exit code returned.
+
+### Changed
+
+- **Breaking: `skl ls` is a table** - one row per skill with `.agents`, `.claude` and lock columns
+  (`universal` / `copied` / `symlinked` / `broken` / `-`, lock `+` / `-`) and a total row. The
+  `<label> : N skills : names` rows and the `not in lock` lines are gone; an empty scope prints
+  `No skills in scope.`
+
+### Removed
+
+- **Breaking: `skl symlink` / `skl sym` / `skl sl`** - use `skl i -ln <path>`.
+- **Breaking: `skl cs`** - use `skl cost` or `skl cst`.
+- **Breaking: `skl us`** - use `skl usage` or `skl usg`.
+- **Breaking: `skl rm -sm` / `--stealth-mode`** - use `skl rm -m s` / `--mode silent`.
+
 ## 0.1.21 (2026-10-07)
 
 ### Added
