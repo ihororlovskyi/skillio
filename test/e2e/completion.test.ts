@@ -29,4 +29,17 @@ describe('skl completion', () => {
     expect(exitCode).toBe(1);
     expect(stderr).toContain('unknown shell: ohmyzsh');
   });
+
+  it('completes install/symlink commands and symlink flags in every shell', () => {
+    const bash = run(['completion', 'bash'], process.cwd()).stdout;
+    expect(bash).toContain('local cmds="list ls remove rm cost cs cst usage us usg completion install i symlink sym sl"');
+    expect(bash).toContain('symlink|sym|sl)');
+    expect(bash).toContain('compgen -W "codex claude-code"');
+    const zsh = run(['completion', 'zsh'], process.cwd()).stdout;
+    expect(zsh).toContain("'symlink:Symlink skills from a local clone'");
+    expect(zsh).toContain('symlink|sym|sl)');
+    const fish = run(['completion', 'fish'], process.cwd()).stdout;
+    expect(fish).toContain("-a 'list ls remove rm cost cs cst usage us usg completion install i symlink sym sl'");
+    expect(fish).toContain("-s a -l agent -xa 'codex claude-code'");
+  });
 });

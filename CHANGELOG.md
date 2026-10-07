@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.1.21 (2026-10-07)
+
+### Added
+
+- **`skl install` / `skl i`** runs `npx -y skills add` with the same arguments in the same
+  order and returns its exit code, so `-s a b c` and `-a codex claude-code` work as in
+  `npx skills add`. `skl i -h` prints its own short help.
+- **`skl symlink` / `skl sym` / `skl sl <path> -s <names...>`** symlinks `<path>/skills/<name>` into
+  `.agents/skills` and `.claude/skills` (`-a codex` / `-a claude-code` picks one), straight
+  to the clone, so edits in the clone show up at once. A copy or another symlink with the same
+  name is replaced after a `Replace N existing skills?` prompt, or at once with `-y`. A name
+  starting with a space is skipped. `skills-lock.json` is not changed; `-g` is not supported yet.
+
 ## 0.1.20 (2026-10-05)
 
 ### Changed

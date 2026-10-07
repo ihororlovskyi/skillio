@@ -90,6 +90,9 @@ skl rm . -y -sm                        # one line: Executed 25/25/25 skills
 skl rm brainstorming --lock-only       # only the lock entry
 skl rm brainstorming --agents-only     # only .agents/skills
 skl rm brainstorming --claude-only     # only .claude/skills
+skl i sentimony/skills -s tdd -a codex claude-code -y   # = npx -y skills add …, same args
+skl sl ../skills -s tdd cross-review    # symlink skills from a local clone (asks before replacing)
+skl sl ../skills -s tdd -a claude-code -y   # only .claude/skills, replace without asking
 
 # scope flags
 skl -g                                 # force global scope on any subcommand
@@ -182,6 +185,24 @@ skillio remove --global <skill-name>
 skillio remove --yes <skill-name>         # skip both confirmation prompts and the plan
 skillio remove . -y --stealth-mode        # one line: Executed A/B/C skills (alias -sm)
 ```
+
+### `skillio install` / `i`
+
+```sh
+skillio install <source> [args...]       # runs npx -y skills add <source> [args...] unchanged
+skillio i sentimony/skills -s tdd cross-review -a codex claude-code -y
+```
+
+### `skillio symlink` / `sym` / `sl`
+
+```sh
+skillio symlink <path> -s <skill...>     # symlink <path>/skills/<skill> into .agents/skills and .claude/skills
+skillio sl <path> -s <skill...> -a codex # only .agents/skills (claude-code: only .claude/skills)
+skillio sl <path> -s <skill...> -y       # replace existing copies without asking
+```
+
+Symlinks point straight at the clone, so edits there show up without reinstalling.
+`skills-lock.json` is not changed: run `skl i` first if the skill should stay in the lock.
 
 ### Shell completion
 

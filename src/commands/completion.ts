@@ -8,7 +8,7 @@ _skillio_completions() {
   cur="\${COMP_WORDS[COMP_CWORD]}"
   prev="\${COMP_WORDS[COMP_CWORD-1]}"
 
-  local cmds="list ls remove rm cost cs cst usage us usg completion"
+  local cmds="list ls remove rm cost cs cst usage us usg completion install i symlink sym sl"
   if [ "\${COMP_CWORD}" -eq 1 ]; then
     COMPREPLY=( $(compgen -W "\${cmds} -h --help -v --version" -- "\${cur}") )
     return 0
@@ -27,6 +27,16 @@ _skillio_completions() {
         done
         names="$(skl list --names \${scope} 2>/dev/null)"
         COMPREPLY=( $(compgen -W "\${names}" -- "\${cur}") )
+      fi
+      return 0
+      ;;
+    symlink|sym|sl)
+      if [[ "\${cur}" == -* ]]; then
+        COMPREPLY=( $(compgen -W "-s --skill -a --agent -y --yes -h --help" -- "\${cur}") )
+      elif [ "\${prev}" = "-a" ] || [ "\${prev}" = "--agent" ]; then
+        COMPREPLY=( $(compgen -W "codex claude-code" -- "\${cur}") )
+      else
+        COMPREPLY=( $(compgen -d -- "\${cur}") )
       fi
       return 0
       ;;
@@ -56,6 +66,11 @@ _skillio() {
     'us:Alias for usage'
     'usg:Alias for usage'
     'completion:Print shell completion script'
+    'install:Install published skills via npx skills add'
+    'i:Alias for install'
+    'symlink:Symlink skills from a local clone'
+    'sym:Alias for symlink'
+    'sl:Alias for symlink'
   )
   if (( CURRENT == 2 )); then
     _describe 'command' cmds
@@ -81,6 +96,18 @@ _skillio() {
         local -a names
         names=(\${(f)"$(skl list --names $scope 2>/dev/null)"})
         compadd -- $names
+      fi
+      ;;
+    symlink|sym|sl)
+      if [[ \${words[CURRENT]} == -* ]]; then
+        _values 'flag' \\
+          '-s[skill names]' '--skill[skill names]' \\
+          '-a[codex or claude-code]' '--agent[codex or claude-code]' \\
+          '-y[replace without asking]' '--yes[replace without asking]'
+      elif [[ \${words[CURRENT-1]} == -a || \${words[CURRENT-1]} == --agent ]]; then
+        _values 'agent' codex claude-code
+      else
+        _files -/
       fi
       ;;
     completion)
@@ -114,8 +141,8 @@ function __skillio_using_subcommand
   test "$cmd[2]" = "$argv[1]"
 end
 
-complete -c skl -n __skillio_needs_command -a 'list ls remove rm cost cs cst usage us usg completion'
-complete -c skillio -n __skillio_needs_command -a 'list ls remove rm cost cs cst usage us usg completion'
+complete -c skl -n __skillio_needs_command -a 'list ls remove rm cost cs cst usage us usg completion install i symlink sym sl'
+complete -c skillio -n __skillio_needs_command -a 'list ls remove rm cost cs cst usage us usg completion install i symlink sym sl'
 
 for sub in rm remove
   complete -c skl -n "__skillio_using_subcommand $sub" -f -a '(__skillio_skill_names)'
@@ -127,6 +154,14 @@ for sub in rm remove
   complete -c skl -n "__skillio_using_subcommand $sub" -l lock-only -d 'Only remove lock entry'
   complete -c skl -n "__skillio_using_subcommand $sub" -l agents-only -d 'Only remove from .agents/skills'
   complete -c skl -n "__skillio_using_subcommand $sub" -l claude-only -d 'Only remove from .claude/skills'
+end
+
+for sub in symlink sym sl
+  for bin in skl skillio
+    complete -c $bin -n "__skillio_using_subcommand $sub" -s s -l skill -d 'Skill names in <path>/skills'
+    complete -c $bin -n "__skillio_using_subcommand $sub" -s a -l agent -xa 'codex claude-code' -d 'Target agent'
+    complete -c $bin -n "__skillio_using_subcommand $sub" -s y -l yes -d 'Replace without asking'
+  end
 end
 
 for sub in completion
