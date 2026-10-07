@@ -8,7 +8,7 @@ _skillio_completions() {
   cur="\${COMP_WORDS[COMP_CWORD]}"
   prev="\${COMP_WORDS[COMP_CWORD-1]}"
 
-  local cmds="list ls remove rm cost cs cst usage us usg completion install i symlink sym sl"
+  local cmds="list ls remove rm cost cst usage usg completion install i"
   if [ "\${COMP_CWORD}" -eq 1 ]; then
     COMPREPLY=( $(compgen -W "\${cmds} -h --help -v --version" -- "\${cur}") )
     return 0
@@ -18,7 +18,9 @@ _skillio_completions() {
   case "\${sub}" in
     rm|remove)
       if [[ "\${cur}" == -* ]]; then
-        COMPREPLY=( $(compgen -W "-g --global -y --yes -x --reject -sm --stealth-mode --lock-only --agents-only --claude-only -h --help" -- "\${cur}") )
+        COMPREPLY=( $(compgen -W "-g --global -y --yes -x --reject -m --mode --lock-only --agents-only --claude-only -h --help" -- "\${cur}") )
+      elif [ "\${prev}" = "-m" ] || [ "\${prev}" = "--mode" ]; then
+        COMPREPLY=( $(compgen -W "silent" -- "\${cur}") )
       else
         local names
         local scope=""
@@ -30,11 +32,13 @@ _skillio_completions() {
       fi
       return 0
       ;;
-    symlink|sym|sl)
+    install|i)
       if [[ "\${cur}" == -* ]]; then
-        COMPREPLY=( $(compgen -W "-s --skill -a --agent -y --yes -h --help" -- "\${cur}") )
+        COMPREPLY=( $(compgen -W "-ln --link -s --skill -x --reject -a --agent -y --yes -m --mode -h --help" -- "\${cur}") )
       elif [ "\${prev}" = "-a" ] || [ "\${prev}" = "--agent" ]; then
         COMPREPLY=( $(compgen -W "codex claude-code" -- "\${cur}") )
+      elif [ "\${prev}" = "-m" ] || [ "\${prev}" = "--mode" ]; then
+        COMPREPLY=( $(compgen -W "silent" -- "\${cur}") )
       else
         COMPREPLY=( $(compgen -d -- "\${cur}") )
       fi
@@ -60,17 +64,12 @@ _skillio() {
     'remove:Delete on-disk skill dirs'
     'rm:Alias for remove'
     'cost:Show ambient context cost'
-    'cs:Alias for cost'
     'cst:Alias for cost'
     'usage:Show skill usage'
-    'us:Alias for usage'
     'usg:Alias for usage'
     'completion:Print shell completion script'
-    'install:Install published skills via npx skills add'
+    'install:Install skills or symlink a local clone'
     'i:Alias for install'
-    'symlink:Symlink skills from a local clone'
-    'sym:Alias for symlink'
-    'sl:Alias for symlink'
   )
   if (( CURRENT == 2 )); then
     _describe 'command' cmds
@@ -84,7 +83,7 @@ _skillio() {
           '-g[global scope]' '--global[global scope]' \\
           '-y[skip confirmation]' '--yes[skip confirmation]' \\
           '-x[with .: skills to keep]' '--reject[with .: skills to keep]' \\
-          '-sm[one-line summary]' '--stealth-mode[one-line summary]' \\
+          '-m[silent: one-line summary]' '--mode[silent: one-line summary]' \\
           '--lock-only[only remove lock entry]' \\
           '--agents-only[only remove from .agents/skills]' \\
           '--claude-only[only remove from .claude/skills]'
@@ -98,14 +97,19 @@ _skillio() {
         compadd -- $names
       fi
       ;;
-    symlink|sym|sl)
+    install|i)
       if [[ \${words[CURRENT]} == -* ]]; then
         _values 'flag' \\
+          '-ln[symlink a local clone]' '--link[symlink a local clone]' \\
           '-s[skill names]' '--skill[skill names]' \\
+          '-x[every skill except these]' '--reject[every skill except these]' \\
           '-a[codex or claude-code]' '--agent[codex or claude-code]' \\
-          '-y[replace without asking]' '--yes[replace without asking]'
+          '-y[skip prompts]' '--yes[skip prompts]' \\
+          '-m[silent: hide npx output]' '--mode[silent: hide npx output]'
       elif [[ \${words[CURRENT-1]} == -a || \${words[CURRENT-1]} == --agent ]]; then
         _values 'agent' codex claude-code
+      elif [[ \${words[CURRENT-1]} == -m || \${words[CURRENT-1]} == --mode ]]; then
+        _values 'mode' silent
       else
         _files -/
       fi
@@ -141,8 +145,8 @@ function __skillio_using_subcommand
   test "$cmd[2]" = "$argv[1]"
 end
 
-complete -c skl -n __skillio_needs_command -a 'list ls remove rm cost cs cst usage us usg completion install i symlink sym sl'
-complete -c skillio -n __skillio_needs_command -a 'list ls remove rm cost cs cst usage us usg completion install i symlink sym sl'
+complete -c skl -n __skillio_needs_command -a 'list ls remove rm cost cst usage usg completion install i'
+complete -c skillio -n __skillio_needs_command -a 'list ls remove rm cost cst usage usg completion install i'
 
 for sub in rm remove
   complete -c skl -n "__skillio_using_subcommand $sub" -f -a '(__skillio_skill_names)'
@@ -150,17 +154,20 @@ for sub in rm remove
   complete -c skl -n "__skillio_using_subcommand $sub" -s g -l global -d 'Use global scope'
   complete -c skl -n "__skillio_using_subcommand $sub" -s y -l yes -d 'Skip confirmation prompt'
   complete -c skl -n "__skillio_using_subcommand $sub" -s x -l reject -d 'With .: skills to keep'
-  complete -c skl -n "__skillio_using_subcommand $sub" -o sm -l stealth-mode -d 'One-line summary'
+  complete -c skl -n "__skillio_using_subcommand $sub" -s m -l mode -xa 'silent' -d 'One-line summary'
   complete -c skl -n "__skillio_using_subcommand $sub" -l lock-only -d 'Only remove lock entry'
   complete -c skl -n "__skillio_using_subcommand $sub" -l agents-only -d 'Only remove from .agents/skills'
   complete -c skl -n "__skillio_using_subcommand $sub" -l claude-only -d 'Only remove from .claude/skills'
 end
 
-for sub in symlink sym sl
+for sub in install i
   for bin in skl skillio
-    complete -c $bin -n "__skillio_using_subcommand $sub" -s s -l skill -d 'Skill names in <path>/skills'
+    complete -c $bin -n "__skillio_using_subcommand $sub" -o ln -l link -d 'Symlink from a local clone'
+    complete -c $bin -n "__skillio_using_subcommand $sub" -s s -l skill -d 'Skill names'
+    complete -c $bin -n "__skillio_using_subcommand $sub" -s x -l reject -d 'Every skill except these'
     complete -c $bin -n "__skillio_using_subcommand $sub" -s a -l agent -xa 'codex claude-code' -d 'Target agent'
-    complete -c $bin -n "__skillio_using_subcommand $sub" -s y -l yes -d 'Replace without asking'
+    complete -c $bin -n "__skillio_using_subcommand $sub" -s y -l yes -d 'Skip prompts'
+    complete -c $bin -n "__skillio_using_subcommand $sub" -s m -l mode -xa 'silent' -d 'Hide npx output'
   end
 end
 
@@ -194,7 +201,7 @@ export const completionCommand = defineCommand({
         process.stdout.write(FISH);
         return;
       default:
-        console.error(`unknown shell: ${shell || '(none)'} — supported: bash, zsh, fish`);
+        console.error(`unknown shell: ${shell || '(none)'} - supported: bash, zsh, fish`);
         process.exit(1);
     }
   },

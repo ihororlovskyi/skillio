@@ -6,7 +6,6 @@ import { costCommand } from './commands/cost';
 import { runInstall } from './commands/install';
 import { listCommand } from './commands/list';
 import { removeCommand } from './commands/remove';
-import { runSymlink } from './commands/symlink';
 import { usageCommand } from './commands/usage';
 import { detectColorSupport, setColorEnabled } from './utils/ansi';
 import { maybePrintUpdateNotice } from './utils/update-check';
@@ -49,10 +48,8 @@ const SUBCOMMAND_NAMES = new Set([
   'remove',
   'rm',
   'cost',
-  'cs',
   'cst',
   'usage',
-  'us',
   'usg',
   'completion',
 ]);
@@ -68,11 +65,11 @@ function reorderRootFlagsToSubcommand(argv: string[]): string[] {
   return [argv[0] ?? '', argv[1] ?? '', sub, ...before, ...after];
 }
 
-// install/symlink take raw argv: mergeAgentArgs would join -a values with \x1f and citty
-// cannot hold several -s values. Only -g/--global may precede them, so an option value
+// install takes raw argv: mergeAgentArgs would join -a values with \x1f and citty
+// cannot hold several -s values. Only -g/--global may precede it, so an option value
 // such as `--root i` never turns into a command; these names stay out of SUBCOMMAND_NAMES
 // for the same reason.
-const RAW_COMMANDS = new Set(['install', 'i', 'symlink', 'sym', 'sl']);
+const RAW_COMMANDS = new Set(['install', 'i']);
 
 function detectRawCommand(argv: string[]): { command: string; args: string[] } | null {
   const tail = argv.slice(2);
@@ -102,12 +99,11 @@ function printRootHelp(): void {
     '',
     'COMMANDS',
     '',
-    '  list, ls         List skills per source: install type, lock orphans, disk/lock diff',
+    '  list, ls         List skills as a table: .agents, .claude and lock per skill',
     '  remove, rm       Delete on-disk skill dirs and/or skills-lock.json (interactive)',
-    '  cost, cs, cst    Show ambient context cost (per-skill name + description tokens) sorted desc',
-    '  usage, us, usg   Show skill usage × cost (consumption) with missed rows',
-    '  install, i       Install published skills via `npx skills add` (arguments passed through)',
-    '  symlink, sym, sl Symlink skills from a local clone into .agents/skills and .claude/skills',
+    '  cost, cst        Show ambient context cost (per-skill name + description tokens) sorted desc',
+    '  usage, usg       Show skill usage × cost (consumption) with missed rows',
+    '  install, i       Install skills via `npx skills add`, or -ln to symlink a local clone',
     '  completion       Print shell completion script (bash, zsh, fish)',
   ];
   console.log(lines.join('\n'));
@@ -226,10 +222,8 @@ const main = defineCommand({
     remove: removeCommand,
     rm: removeCommand,
     cost: costCommand,
-    cs: costCommand,
     cst: costCommand,
     usage: usageCommand,
-    us: usageCommand,
     usg: usageCommand,
     completion: completionCommand,
   },
@@ -239,11 +233,7 @@ const main = defineCommand({
   if (raw) {
     setColorEnabled(detectColorSupport());
     await maybePrintUpdateNotice(version);
-    const status =
-      raw.command === 'symlink' || raw.command === 'sym' || raw.command === 'sl'
-        ? await runSymlink(raw.args)
-        : runInstall(raw.args);
-    process.exit(status);
+    process.exit(await runInstall(raw.args));
   }
   if (isRootHelp(process.argv)) {
     printRootHelp();

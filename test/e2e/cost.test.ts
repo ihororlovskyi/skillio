@@ -25,12 +25,6 @@ describe('skl cost', () => {
     expect(stdout).not.toMatch(/keep it lean|cleanup|clean it up/);
   });
 
-  it('cs alias works', () => {
-    const { stdout, exitCode } = run(['cs'], COST_DIR);
-    expect(exitCode).toBe(0);
-    expect(stdout).toMatch(/Total: ~\d+ tok across 3 skills/);
-  });
-
   it('bare skl with no args runs cost', () => {
     const { stdout, exitCode } = run([], COST_DIR);
     expect(exitCode).toBe(0);
