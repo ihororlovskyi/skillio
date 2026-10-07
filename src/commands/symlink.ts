@@ -2,6 +2,8 @@ import {
   existsSync,
   lstatSync,
   mkdirSync,
+  readdirSync,
+  readFileSync,
   readlinkSync,
   realpathSync,
   rmSync,
@@ -9,7 +11,10 @@ import {
   symlinkSync,
 } from 'node:fs';
 import { basename, dirname, isAbsolute, join, parse, relative, resolve, sep } from 'node:path';
+import { readLock } from '../lock/file';
 import { createConfirmer } from '../utils/confirm';
+import { extractFrontmatter, parseSkillMeta } from '../utils/skill-files';
+import { collectRows, renderSkillTable } from '../utils/skill-table';
 
 export type Agent = 'codex' | 'claude-code';
 
@@ -18,15 +23,18 @@ export const AGENT_DIRS: Record<Agent, string> = {
   'claude-code': '.claude/skills',
 };
 
+const PREFIX = 'skl install --link';
+
 export interface SymlinkArgs {
   source: string;
-  skills: string[];
+  // null: every skill in <path>/skills
+  skills: string[] | null;
+  rejects: string[];
   agents: Agent[];
   yes: boolean;
 }
 
 export type ParsedSymlinkArgs =
-  | { kind: 'help' }
   | { kind: 'error'; message: string }
   | { kind: 'ok'; args: SymlinkArgs };
 
@@ -39,9 +47,11 @@ function fail(message: string): ParsedSymlinkArgs {
 }
 
 export function parseSymlinkArgs(argv: string[]): ParsedSymlinkArgs {
-  if (argv.includes('-h') || argv.includes('--help')) return { kind: 'help' };
   let source: string | null = null;
   const skills: string[] = [];
+  const rejects: string[] = [];
+  let skillFlag = false;
+  let rejectFlag = false;
   const agents: Agent[] = [];
   let yes = false;
   let i = 0;
@@ -53,41 +63,54 @@ export function parseSymlinkArgs(argv: string[]): ParsedSymlinkArgs {
       continue;
     }
     if (tok === '-g' || tok === '--global')
-      return fail('skl symlink: -g/--global is not supported yet');
-    if (tok === '-s' || tok === '--skill' || tok === '-a' || tok === '--agent') {
+      return fail(`${PREFIX}: -g/--global is not supported yet`);
+    if (['-s', '--skill', '-x', '--reject', '-a', '--agent'].includes(tok)) {
       const values: string[] = [];
       // a " name" value (shell "\ name") does not start with "-", so it is collected and skipped later
       while (i < argv.length && !(argv[i] ?? '').startsWith('-')) {
         values.push(argv[i] ?? '');
         i++;
       }
-      if (values.length === 0) return fail(`skl symlink: ${tok} needs at least one value`);
-      if (tok === '-s' || tok === '--skill') {
-        // a name is one path segment: ".." or a slash would escape <path>/skills and the target dirs,
-        // and a replace would then rm -rf .agents itself
-        const bad = values.find(
-          (v) => !v.startsWith(' ') && (v === '' || v === '.' || v === '..' || /[\\/]/.test(v)),
-        );
-        if (bad !== undefined) return fail(`skl symlink: invalid skill name "${bad}"`);
-        skills.push(...values);
+      if (values.length === 0) return fail(`${PREFIX}: ${tok} needs at least one value`);
+      if (tok === '-a' || tok === '--agent') {
+        for (const value of values) {
+          if (!isAgent(value))
+            return fail(`Unknown agent: "${value}". Use "codex" or "claude-code".`);
+          if (!agents.includes(value)) agents.push(value);
+        }
         continue;
       }
-      for (const value of values) {
-        if (!isAgent(value))
-          return fail(`Unknown agent: "${value}". Use "codex" or "claude-code".`);
-        if (!agents.includes(value)) agents.push(value);
+      // a name is one path segment: ".." or a slash would escape <path>/skills and the target dirs,
+      // and a replace would then rm -rf .agents itself
+      const bad = values.find(
+        (v) => !v.startsWith(' ') && (v === '' || v === '.' || v === '..' || /[\\/]/.test(v)),
+      );
+      if (bad !== undefined) return fail(`${PREFIX}: invalid skill name "${bad}"`);
+      if (tok === '-s' || tok === '--skill') {
+        skillFlag = true;
+        skills.push(...values);
+      } else {
+        rejectFlag = true;
+        rejects.push(...values.filter((v) => !v.startsWith(' ')));
       }
       continue;
     }
     if (tok.startsWith('-')) return fail(`Unknown option: ${tok}`);
-    if (source !== null) return fail(`skl symlink takes one source, got "${source}" and "${tok}"`);
+    if (source !== null) return fail(`${PREFIX} takes one source, got "${source}" and "${tok}"`);
     source = tok;
   }
-  if (source === null) return fail('skl symlink: missing <path>');
-  if (skills.length === 0) return fail('skl symlink: missing -s <names...>');
+  if (source === null) return fail(`${PREFIX}: missing <path>`);
+  if (skillFlag && rejectFlag)
+    return fail(`${PREFIX}: -x/--reject cannot be combined with -s/--skill`);
   return {
     kind: 'ok',
-    args: { source, skills, agents: agents.length > 0 ? agents : ['codex', 'claude-code'], yes },
+    args: {
+      source,
+      skills: skillFlag ? skills : null,
+      rejects,
+      agents: agents.length > 0 ? agents : ['codex', 'claude-code'],
+      yes,
+    },
   };
 }
 
@@ -158,7 +181,7 @@ export function planSymlinks(opts: {
 // Collect every directory entry (physical parent + name) that resolving p walks through,
 // following symlinks segment by segment, so an entry reached via any alias is seen
 function walkEntries(p: string, out: Set<string>, depth = 0): string {
-  if (depth > 40) throw new Error(`skl symlink: too many levels of symbolic links in ${p}`);
+  if (depth > 40) throw new Error(`${PREFIX}: too many levels of symbolic links in ${p}`);
   const root = parse(p).root;
   let cur = root;
   for (const seg of p.slice(root.length).split(sep)) {
@@ -206,30 +229,18 @@ export function applySymlinks(steps: SymlinkStep[]): void {
   }
 }
 
-export const SYMLINK_HELP = [
-  'Symlink skills from a local clone into .agents/skills and .claude/skills.',
-  '',
-  'USAGE skillio symlink <path> -s <SKILL...> [OPTIONS]',
-  '       skillio sym <path> -s <SKILL...> [OPTIONS]',
-  '       skillio sl <path> -s <SKILL...> [OPTIONS]',
-  '',
-  'ARGUMENTS',
-  '',
-  '  <path>              Local clone; skills are read from <path>/skills/<name>/SKILL.md',
-  '',
-  'OPTIONS',
-  '',
-  '  -s, --skill         Skill names (space-separated); a name starting with a space is skipped',
-  '  -a, --agent         codex (.agents/skills), claude-code (.claude/skills) (default: both)',
-  '  -y, --yes           Replace existing copies or other symlinks without asking',
-  '',
-  'skills-lock.json is not changed. Global scope (-g) is not supported yet.',
-  '',
-  'EXAMPLES',
-  '',
-  '  skl sl ../skills -s tdd cross-review',
-  '  skl sl repositories/skills -s tdd -a claude-code -y',
-].join('\n');
+// Every <source>/skills/<name>/SKILL.md, sorted, with metadata.internal read from its frontmatter
+export function listCandidates(sourceAbs: string): { name: string; internal: boolean }[] {
+  const root = join(sourceAbs, 'skills');
+  if (!statSync(root, { throwIfNoEntry: false })?.isDirectory()) return [];
+  return readdirSync(root)
+    .filter((n) => statSync(join(root, n, 'SKILL.md'), { throwIfNoEntry: false })?.isFile())
+    .sort()
+    .map((name) => {
+      const fm = extractFrontmatter(readFileSync(join(root, name, 'SKILL.md'), 'utf8'));
+      return { name, internal: fm !== undefined && parseSkillMeta(fm).internal };
+    });
+}
 
 export interface SymlinkDeps {
   cwd?: string;
@@ -246,30 +257,44 @@ function plural(n: number, word: string): string {
 
 export async function runSymlink(argv: string[], deps: SymlinkDeps = {}): Promise<number> {
   const parsed = parseSymlinkArgs(argv);
-  if (parsed.kind === 'help') {
-    console.log(SYMLINK_HELP);
-    return 0;
-  }
   if (parsed.kind === 'error') {
     console.error(parsed.message);
     return 1;
   }
-  const { source, skills, agents, yes } = parsed.args;
+  const { source, skills, rejects, agents, yes } = parsed.args;
   const cwd = deps.cwd ?? process.cwd();
   // createConfirmer, not confirm: on non-TTY stdin it reads to EOF and answers no instead of hanging
   const ask = deps.confirm ?? createConfirmer();
 
   const sourceAbs = resolve(cwd, source);
   if (!statSync(sourceAbs, { throwIfNoEntry: false })?.isDirectory()) {
-    console.error(`skl symlink: ${source} is not a directory`);
+    console.error(`${PREFIX}: ${source} is not a local directory`);
     return 1;
   }
-  const names = [...new Set(skills.filter((n) => !n.startsWith(' ')))];
-  const missing = names.filter((n) => !existsSync(join(sourceAbs, 'skills', n, 'SKILL.md')));
-  if (missing.length > 0) {
-    for (const n of missing)
-      console.error(`skl symlink: ${join(source, 'skills', n, 'SKILL.md')} not found`);
-    return 1;
+  let names: string[];
+  if (skills === null) {
+    const candidates = listCandidates(sourceAbs);
+    const known = new Set(candidates.map((c) => c.name));
+    const unknown = rejects.filter((n) => !known.has(n));
+    if (unknown.length > 0) {
+      for (const n of unknown)
+        console.error(`${PREFIX}: --reject: "${n}" is not in ${join(source, 'skills')}`);
+      return 1;
+    }
+    const rejected = new Set(rejects);
+    names = candidates.filter((c) => !c.internal && !rejected.has(c.name)).map((c) => c.name);
+    if (names.length === 0) {
+      console.log(`No skills to symlink in ${source}.`);
+      return 0;
+    }
+  } else {
+    names = [...new Set(skills.filter((n) => !n.startsWith(' ')))];
+    const missing = names.filter((n) => !existsSync(join(sourceAbs, 'skills', n, 'SKILL.md')));
+    if (missing.length > 0) {
+      for (const n of missing)
+        console.error(`${PREFIX}: ${join(source, 'skills', n, 'SKILL.md')} not found`);
+      return 1;
+    }
   }
 
   const dirs = agents.map((a) => AGENT_DIRS[a]);
@@ -277,7 +302,7 @@ export async function runSymlink(argv: string[], deps: SymlinkDeps = {}): Promis
   const unsafe = overlapsSource(steps, sourceAbs, names);
   if (unsafe.length > 0) {
     for (const s of unsafe)
-      console.error(`skl symlink: ${s.dir}/${s.name} is the source itself, not replacing it`);
+      console.error(`${PREFIX}: ${s.dir}/${s.name} is the source itself, not replacing it`);
     return 1;
   }
   const replaced = steps.filter((s) => s.action === 'replace');
@@ -287,6 +312,14 @@ export async function runSymlink(argv: string[], deps: SymlinkDeps = {}): Promis
     if (!(await ask(`Replace ${plural(count, 'existing skill')}?`))) return 1;
   }
   applySymlinks(steps);
-  console.log(`Symlinked ${plural(names.length, 'skill')} from ${source} into ${dirs.join(', ')}`);
+  console.log(`Symlinked ${plural(names.length, 'skill')} from ${source}`);
+  const roots = {
+    agents: join(cwd, AGENT_DIRS.codex),
+    claude: join(cwd, AGENT_DIRS['claude-code']),
+  };
+  const lockNames = new Set(Object.keys(readLock(join(cwd, 'skills-lock.json')).skills));
+  const rows = collectRows(names, roots, lockNames);
+  for (const line of renderSkillTable(rows, { lockLabel: 'skills-lock.json', total: false }))
+    console.log(line);
   return 0;
 }

@@ -10,6 +10,8 @@ export interface SkillMeta {
   name?: string;
   description?: string;
   disableModelInvocation: boolean;
+  // metadata.internal: true hides a skill from `npx skills add` without -s
+  internal: boolean;
 }
 
 export function getSkillPathCandidates(
@@ -73,6 +75,8 @@ export function parseSkillMeta(frontmatter: string): SkillMeta {
     name: read('name'),
     description: read('description'),
     disableModelInvocation: read('disable-model-invocation') === 'true',
+    // nested metadata lines are kept trimmed as continuation lines of `metadata:`
+    internal: (fields.get('metadata') ?? []).some((l) => /^internal:\s*(["']?)true\1$/.test(l)),
   };
 }
 
