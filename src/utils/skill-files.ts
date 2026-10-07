@@ -75,8 +75,11 @@ export function parseSkillMeta(frontmatter: string): SkillMeta {
     name: read('name'),
     description: read('description'),
     disableModelInvocation: read('disable-model-invocation') === 'true',
-    // nested metadata lines are kept trimmed as continuation lines of `metadata:`
-    internal: (fields.get('metadata') ?? []).some((l) => /^internal:\s*(["']?)true\1$/.test(l)),
+    // nested metadata lines are kept trimmed as continuation lines of `metadata:`;
+    // a YAML comment needs whitespace before `#`
+    internal: (fields.get('metadata') ?? []).some((l) =>
+      /^internal:\s*(["']?)true\1(?:\s+#.*)?$/.test(l),
+    ),
   };
 }
 

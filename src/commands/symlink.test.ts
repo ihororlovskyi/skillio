@@ -426,6 +426,19 @@ describe('planSymlinks / runSymlink', () => {
     expect(existsSync(join(proj, '.agents/skills/hidden'))).toBe(true);
   });
 
+  it('without -s skips an internal skill marked with a trailing YAML comment', async () => {
+    mkdirSync(join(clone, 'skills', 'hidden'), { recursive: true });
+    writeFileSync(
+      join(clone, 'skills', 'hidden', 'SKILL.md'),
+      '---\nname: hidden\nmetadata:\n  internal: true # private\n---\n',
+    );
+    expect(await runSymlink(['../clone', '-y'], { cwd: proj })).toBe(0);
+    for (const dir of BOTH) {
+      expect(existsSync(join(proj, dir, 'tdd'))).toBe(true);
+      expect(existsSync(join(proj, dir, 'hidden'))).toBe(false);
+    }
+  });
+
   it('-x skips the listed skills', async () => {
     expect(await runSymlink(['../clone', '-x', 'tdd', '-y'], { cwd: proj })).toBe(0);
     expect(existsSync(join(proj, '.agents/skills/cross-review'))).toBe(true);

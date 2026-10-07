@@ -31,6 +31,9 @@ describe('parseSkillMeta', () => {
     expect(parseSkillMeta(fm('true')).internal).toBe(true);
     expect(parseSkillMeta(fm('"true"')).internal).toBe(true);
     expect(parseSkillMeta(fm('false')).internal).toBe(false);
+    expect(parseSkillMeta(fm('true # private')).internal).toBe(true);
+    expect(parseSkillMeta(fm("'true' # c")).internal).toBe(true);
+    expect(parseSkillMeta(fm('"true # x"')).internal).toBe(false);
     expect(parseSkillMeta('name: a\ninternal: true').internal).toBe(false);
     expect(parseSkillMeta('name: a').internal).toBe(false);
   });
