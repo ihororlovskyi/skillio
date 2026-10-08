@@ -17,15 +17,15 @@ describe('compareVersions', () => {
 });
 
 describe('getCachePath', () => {
-  it('stores the cache under ~/.cache/sklx', () => {
-    expect(getCachePath()).toBe(join(homedir(), '.cache', 'sklx', 'version.json'));
+  it('stores the cache under ~/.cache/skl-x', () => {
+    expect(getCachePath()).toBe(join(homedir(), '.cache', 'skl-x', 'version.json'));
   });
 });
 
 describe('cache read/write', () => {
   let TMP = '';
   beforeEach(() => {
-    TMP = join(tmpdir(), `sklx-uc-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    TMP = join(tmpdir(), `skl-x-uc-${Date.now()}-${Math.random().toString(36).slice(2)}`);
     mkdirSync(TMP, { recursive: true });
   });
   afterEach(() => rmSync(TMP, { recursive: true, force: true }));

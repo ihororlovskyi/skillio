@@ -5,27 +5,27 @@ describe('skl completion', () => {
   it('prints bash completion script', () => {
     const { stdout, exitCode } = run(['completion', 'bash'], process.cwd());
     expect(exitCode).toBe(0);
-    expect(stdout).toContain('_sklx_completions()');
-    expect(stdout).toContain('complete -F _sklx_completions skl');
-    expect(stdout).toContain('complete -F _sklx_completions sklx');
-    expect(stdout).not.toContain('skillio');
+    expect(stdout).toContain('_skl_x_completions()');
+    expect(stdout).toContain('complete -F _skl_x_completions skl\n');
+    expect(stdout).toContain('complete -F _skl_x_completions skl-x\n');
+    expect(stdout).not.toMatch(/skillio|sklx/);
     expect(stdout).toContain('skl list --names');
   });
 
   it('prints zsh completion script', () => {
     const { stdout, exitCode } = run(['completion', 'zsh'], process.cwd());
     expect(exitCode).toBe(0);
-    expect(stdout).toContain('compdef _sklx skl sklx');
-    expect(stdout).not.toContain('skillio');
+    expect(stdout).toContain('compdef _skl_x skl skl-x');
+    expect(stdout).not.toMatch(/skillio|sklx/);
     expect(stdout).toContain('skl list --names');
   });
 
   it('prints fish completion script', () => {
     const { stdout, exitCode } = run(['completion', 'fish'], process.cwd());
     expect(exitCode).toBe(0);
-    expect(stdout).toContain('__sklx_skill_names');
-    expect(stdout).toContain('complete -c sklx -n __sklx_needs_command');
-    expect(stdout).not.toContain('skillio');
+    expect(stdout).toContain('__skl_x_skill_names');
+    expect(stdout).toContain('complete -c skl-x -n __skl_x_needs_command');
+    expect(stdout).not.toMatch(/skillio|sklx/);
     expect(stdout).toContain('skl list --names');
   });
 

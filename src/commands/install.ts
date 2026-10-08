@@ -37,9 +37,9 @@ const defaultSpawn: Spawner = (command, args, capture) => {
 export const INSTALL_HELP = [
   'Install skills: run `npx -y skills add`, or symlink a local clone with -ln.',
   '',
-  'USAGE sklx install <source> [OPTIONS]',
-  '       sklx i <source> [OPTIONS]',
-  '       sklx i -ln <path> [-s <SKILL...> | -x <SKILL...>] [-a <AGENT...>] [-y]',
+  'USAGE skl-x install <source> [OPTIONS]',
+  '       skl-x i <source> [OPTIONS]',
+  '       skl-x i -ln <path> [-s <SKILL...> | -x <SKILL...>] [-a <AGENT...>] [-y]',
   '',
   'Without -ln every argument except -m/--mode is passed to `npx skills add` unchanged;',
   'see `npx skills add --help`.',

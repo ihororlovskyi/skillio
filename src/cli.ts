@@ -85,9 +85,9 @@ if (!raw) process.argv = reorderRootFlagsToSubcommand(mergeAgentArgs(process.arg
 
 function printRootHelp(): void {
   const lines = [
-    `Audit and manage AI agent skills (sklx v${version})`,
+    `Audit and manage AI agent skills (skl-x v${version})`,
     '',
-    'USAGE sklx [OPTIONS] [COMMAND]',
+    'USAGE skl-x [OPTIONS] [COMMAND]',
     '',
     'OPTIONS',
     '',
@@ -127,8 +127,8 @@ function printRemoveHelp(): void {
   const lines = [
     'Remove skills from on-disk dirs and/or skills-lock.json.',
     '',
-    'USAGE sklx remove [SKILL...] [OPTIONS]',
-    '       sklx rm [SKILL...] [OPTIONS]',
+    'USAGE skl-x remove [SKILL...] [OPTIONS]',
+    '       skl-x rm [SKILL...] [OPTIONS]',
     '',
     'ARGUMENTS',
     '',
@@ -149,13 +149,13 @@ function printRemoveHelp(): void {
     '',
     'EXAMPLES',
     '',
-    '  sklx rm brainstorming',
-    '  sklx rm brainstorming writing-plans --yes',
-    '  sklx rm .',
-    '  sklx rm . -x web-debug typescript',
-    '  sklx rm . -y -m s',
-    '  sklx rm brainstorming --agents-only',
-    '  sklx rm brainstorming --lock-only',
+    '  skl-x rm brainstorming',
+    '  skl-x rm brainstorming writing-plans --yes',
+    '  skl-x rm .',
+    '  skl-x rm . -x web-debug typescript',
+    '  skl-x rm . -y -m s',
+    '  skl-x rm brainstorming --agents-only',
+    '  skl-x rm brainstorming --lock-only',
   ];
   console.log(lines.join('\n'));
 }
@@ -195,7 +195,7 @@ function isRootVersion(argv: string[]): boolean {
 
 const main = defineCommand({
   meta: {
-    name: 'sklx',
+    name: 'skl-x',
     version,
     description: 'Audit and manage AI agent skills',
   },

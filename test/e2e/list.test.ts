@@ -94,7 +94,7 @@ describe('skl ls', () => {
     const r = spawnSync(process.execPath, [CLI, 'ls', '-g'], {
       encoding: 'utf8',
       cwd: EMPTY,
-      env: { ...process.env, HOME: tmp, SKLX_NO_UPDATE_CHECK: '1', NO_COLOR: '1' },
+      env: { ...process.env, HOME: tmp, SKL_X_NO_UPDATE_CHECK: '1', NO_COLOR: '1' },
     });
     expect(r.status).toBe(0);
     expect(r.stdout).toBe(

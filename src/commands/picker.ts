@@ -27,14 +27,14 @@ async function pickRemoveTargets(args: PickerArgs): Promise<string[] | null> {
   ];
 
   return await multiSelect({
-    title: 'sklx - pick skills to remove (Space toggle, Enter confirm)',
+    title: 'skl-x - pick skills to remove (Space toggle, Enter confirm)',
     options,
   });
 }
 
 export async function runPicker(args: PickerArgs): Promise<number> {
   const choice = await select({
-    title: 'sklx - pick a command',
+    title: 'skl-x - pick a command',
     options: [
       { value: 'usage', label: 'usage  - count of skill invocations' },
       { value: 'cost', label: 'cost   - per-skill ambient tokens' },
@@ -48,7 +48,7 @@ export async function runPicker(args: PickerArgs): Promise<number> {
 
   const cliPath = process.argv[1];
   if (!cliPath) {
-    console.error('sklx: cannot resolve CLI path (process.argv[1] missing)');
+    console.error('skl-x: cannot resolve CLI path (process.argv[1] missing)');
     return 1;
   }
 
