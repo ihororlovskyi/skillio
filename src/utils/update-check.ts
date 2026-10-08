@@ -8,7 +8,7 @@ const TTL_MS = 24 * 60 * 60 * 1000;
 const FETCH_TIMEOUT_MS = 1500;
 
 export function getCachePath(): string {
-  return join(homedir(), '.cache', 'sklx', 'version.json');
+  return join(homedir(), '.cache', 'skl-x', 'version.json');
 }
 
 interface Cache {
@@ -79,7 +79,8 @@ function fetchLatest(): Promise<string | undefined> {
 }
 
 export async function maybePrintUpdateNotice(currentVersion: string): Promise<void> {
-  if (process.env.SKLX_NO_UPDATE_CHECK) return;
+  // SKLX_NO_UPDATE_CHECK is the pre-0.4.0 name, still honored so existing setups keep working
+  if (process.env.SKL_X_NO_UPDATE_CHECK || process.env.SKLX_NO_UPDATE_CHECK) return;
 
   const now = Date.now();
   const cache = readCache();

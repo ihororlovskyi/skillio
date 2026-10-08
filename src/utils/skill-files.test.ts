@@ -104,7 +104,7 @@ describe('getSkillPathCandidates', () => {
 describe('findSkillFile + countFrontmatterTokens', () => {
   let TMP = '';
   beforeEach(() => {
-    TMP = join(tmpdir(), `sklx-skf-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    TMP = join(tmpdir(), `skl-x-skf-${Date.now()}-${Math.random().toString(36).slice(2)}`);
     mkdirSync(join(TMP, '.claude', 'skills', 'present'), { recursive: true });
     writeFileSync(
       join(TMP, '.claude', 'skills', 'present', 'SKILL.md'),

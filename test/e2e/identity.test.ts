@@ -5,26 +5,26 @@ import { run } from './helpers';
 
 const EMPTY = resolve(__dirname, '..', 'fixtures', 'list', 'empty-local');
 
-describe('sklx identity', () => {
+describe('skl-x identity', () => {
   it.each([[['-v']], [['-h']], [['ls']]])('prints no deprecation line for %j', (args) => {
     const { stderr } = run(args, EMPTY);
     expect(stderr).not.toMatch(/deprecated|skillio/);
   });
 
-  it('names sklx in root help', () => {
+  it('names skl-x in root help', () => {
     const { stdout } = run(['-h'], EMPTY);
-    expect(stdout).toContain('(sklx v');
-    expect(stdout).toContain('USAGE sklx [OPTIONS] [COMMAND]');
-    expect(stdout).not.toContain('skillio');
+    expect(stdout).toContain('(skl-x v');
+    expect(stdout).toContain('USAGE skl-x [OPTIONS] [COMMAND]');
+    expect(stdout).not.toMatch(/skillio|sklx/);
   });
 
-  it('names sklx in rm and install help', () => {
+  it('names skl-x in rm and install help', () => {
     const rm = run(['rm', '-h'], EMPTY).stdout;
-    expect(rm).toContain('USAGE sklx remove');
-    expect(rm).not.toContain('skillio');
+    expect(rm).toContain('USAGE skl-x remove');
+    expect(rm).not.toMatch(/skillio|sklx/);
     const install = run(['i', '-h'], EMPTY).stdout;
-    expect(install).toContain('USAGE sklx install');
-    expect(install).not.toContain('skillio');
+    expect(install).toContain('USAGE skl-x install');
+    expect(install).not.toMatch(/skillio|sklx/);
   });
 });
 
@@ -40,6 +40,6 @@ describe('skl-x package', () => {
 
   // npx runs the bin named after the package when there are several
   it('has a bin named after the package for npx', () => {
-    expect(pkg.bin).toEqual({ 'skl-x': 'dist/cli.js', sklx: 'dist/cli.js', skl: 'dist/cli.js' });
+    expect(pkg.bin).toEqual({ 'skl-x': 'dist/cli.js', skl: 'dist/cli.js' });
   });
 });

@@ -1,4 +1,4 @@
-# sklx
+# skl-x
 
 [![npm version](https://img.shields.io/npm/v/skl-x)](https://www.npmjs.com/package/skl-x)
 [![CI](https://github.com/sentimony/skl-x/actions/workflows/ci.yml/badge.svg)](https://github.com/sentimony/skl-x/actions/workflows/ci.yml)
@@ -13,7 +13,7 @@ Install, audit and manage AI agent skills for Claude Code and Codex.
 ## Quick start
 
 ```sh
-npm install -g skl-x                              # provides `skl-x`, `sklx` and `skl`
+npm install -g skl-x                              # provides `skl-x` and `skl`
 
 skl i sentimony/skills -a codex claude-code -y    # install published skills (npx skills add)
 skl i -ln ../skills -a codex claude-code -y       # or symlink every skill from a local clone
@@ -25,14 +25,15 @@ skl rm tdd                                        # remove a skill from disk and
 
 ## Migrating from @sentimony/sklx or skillio
 
-`skillio` and `@sentimony/sklx` are renamed to `skl-x` (commands `skl-x`, `sklx` and `skl`). All
-three packages install the `skl` bin, so remove the old one first:
+`skillio` and `@sentimony/sklx` are renamed to `skl-x` (commands `skl-x` and `skl`). All three
+packages install the `skl` bin, so remove the old one first:
 
 ```sh
 npm rm -g @sentimony/sklx skillio && npm i -g skl-x
 ```
 
-`SKILLIO_NO_UPDATE_CHECK` is now `SKLX_NO_UPDATE_CHECK`.
+To skip the update check set `SKL_X_NO_UPDATE_CHECK=1`. The older `SKLX_NO_UPDATE_CHECK` still
+works; `SKILLIO_NO_UPDATE_CHECK` does not.
 
 ## Install skills
 
@@ -228,7 +229,7 @@ is what the completion script calls under the hood.
 
 ## Scope
 
-`sklx` / `skl` automatically picks a scope based on your current directory:
+`skl-x` / `skl` automatically picks a scope based on your current directory:
 
 | where you run it | scope |
 |------------------|-------|
@@ -247,20 +248,20 @@ is what the completion script calls under the hood.
 | `-p, --period` | `all` | Period for `usage`: `60s`, `30m`, `12h`, `7d`, `2w`, `6mo`, `all` (note: `1m` = 1 minute, `1mo` = 30 days) |
 | `-a, --agent` | both | Agent for `usage`: `claude-code` (alias `claude`), `codex` - pass both space-separated (`-a claude-code codex`) or repeat the flag |
 
-## Installing sklx
+## Installing skl-x
 ```sh
 # one-off (no install needed)
 npx -y skl-x --agent claude --period 7d
 pnpm dlx skl-x --agent codex --period 2w
 
-# global install - provides `skl-x`, `sklx` and `skl` commands in $PATH
+# global install - provides `skl-x` and `skl` commands in $PATH
 npm install -g skl-x  # recommended
 pnpm add -g skl-x
 ```
 
 ### Local install (per-project)
 
-If you'd rather pin `sklx` to a single project (e.g. for CI) instead of
+If you'd rather pin `skl-x` to a single project (e.g. for CI) instead of
 installing globally:
 
 ```sh
@@ -270,13 +271,13 @@ yarn add -D skl-x
 bun add -d skl-x
 ```
 
-Then run via your package manager - both `sklx` and `skl` are exposed:
+Then run via your package manager - both `skl-x` and `skl` are exposed:
 
 ```sh
-npx sklx                     # works from any subdir of the project
+npx skl-x                    # works from any subdir of the project
 pnpm exec skl                # short alias
 yarn skl
-bun x sklx
+bun x skl-x
 ```
 
 You can also wire it into `package.json` scripts:
@@ -293,7 +294,7 @@ You can also wire it into `package.json` scripts:
 
 ## Updating
 
-> Already have `sklx` installed? Get the latest version:
+> Already have `skl-x` installed? Get the latest version:
 
 ```sh
 npm install -g skl-x@latest  # recommended

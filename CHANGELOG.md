@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.4.0 (2026-10-08)
+
+### Changed
+
+- **Breaking: the `sklx` bin is gone** - use `skl-x` or `skl`. Help, the bare `skl` menu and error
+  messages call the CLI `skl-x`.
+- **The update check reads `SKL_X_NO_UPDATE_CHECK`** and caches in `~/.cache/skl-x/`. The old
+  `SKLX_NO_UPDATE_CHECK` still disables it.
+- Shell completion functions are renamed to `_skl_x*` / `__skl_x_*` and complete `skl` and `skl-x`;
+  re-source `skl completion <shell>`.
+
 ## 0.3.0 (2026-10-08)
 
 ### Changed
