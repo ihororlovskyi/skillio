@@ -4,11 +4,12 @@
 
 ### Changed
 
-- **Breaking: the package is renamed from `skillio` to `sklx`** and the repository moved to
-  `sentimony/sklx`. Install with `npm rm -g skillio && npm i -g sklx`.
+- **Breaking: the package is renamed from `skillio` to `@sentimony/sklx`** and the repository
+  moved to `sentimony/sklx`. Install with `npm rm -g skillio && npm i -g @sentimony/sklx`. npm
+  rejects the unscoped name `sklx` as too similar to existing packages.
 - **Breaking: the `skillio` bin is gone** - use `sklx` or `skl`.
 - **Breaking: `SKILLIO_NO_UPDATE_CHECK` is now `SKLX_NO_UPDATE_CHECK`**; the update check
-  asks npm for `sklx` and caches in `~/.cache/sklx/`.
+  asks npm for `@sentimony/sklx` and caches in `~/.cache/sklx/`.
 - Shell completion functions are renamed to `_sklx*` / `__sklx_*`; re-source
   `skl completion <shell>`.
 

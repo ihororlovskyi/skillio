@@ -3,7 +3,7 @@
   "configVersion": 0,
   "workspaces": {
     "": {
-      "name": "sklx",
+      "name": "@sentimony/sklx",
       "devDependencies": {
         "@biomejs/biome": "^2.5.3",
         "@changesets/cli": "^2.31.0",
