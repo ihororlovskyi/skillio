@@ -1,19 +1,19 @@
-# skillio
+# sklx
 
-[![npm version](https://img.shields.io/npm/v/skillio)](https://www.npmjs.com/package/skillio)
-[![CI](https://github.com/ihororlovskyi/skillio/actions/workflows/ci.yml/badge.svg)](https://github.com/ihororlovskyi/skillio/actions/workflows/ci.yml)
-[![CodeQL](https://github.com/ihororlovskyi/skillio/actions/workflows/codeql.yml/badge.svg)](https://github.com/ihororlovskyi/skillio/actions/workflows/codeql.yml)
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/ihororlovskyi/skillio/badge)](https://securityscorecards.dev/viewer/?uri=github.com/ihororlovskyi/skillio)
-[![codecov](https://codecov.io/gh/ihororlovskyi/skillio/branch/main/graph/badge.svg)](https://codecov.io/gh/ihororlovskyi/skillio)
-[![license](https://img.shields.io/npm/l/skillio)](https://github.com/ihororlovskyi/skillio/blob/main/LICENSE)
-[![node](https://img.shields.io/node/v/skillio)](https://www.npmjs.com/package/skillio)
+[![npm version](https://img.shields.io/npm/v/sklx)](https://www.npmjs.com/package/sklx)
+[![CI](https://github.com/sentimony/sklx/actions/workflows/ci.yml/badge.svg)](https://github.com/sentimony/sklx/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/sentimony/sklx/actions/workflows/codeql.yml/badge.svg)](https://github.com/sentimony/sklx/actions/workflows/codeql.yml)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/sentimony/sklx/badge)](https://securityscorecards.dev/viewer/?uri=github.com/sentimony/sklx)
+[![codecov](https://codecov.io/gh/sentimony/sklx/branch/main/graph/badge.svg)](https://codecov.io/gh/sentimony/sklx)
+[![license](https://img.shields.io/npm/l/sklx)](https://github.com/sentimony/sklx/blob/main/LICENSE)
+[![node](https://img.shields.io/node/v/sklx)](https://www.npmjs.com/package/sklx)
 
 Install, audit and manage AI agent skills for Claude Code and Codex.
 
 ## Quick start
 
 ```sh
-npm install -g skillio                            # provides `skillio` and `skl`
+npm install -g sklx                               # provides `sklx` and `skl`
 
 skl i sentimony/skills -a codex claude-code -y    # install published skills (npx skills add)
 skl i -ln ../skills -a codex claude-code -y       # or symlink every skill from a local clone
@@ -22,6 +22,17 @@ skl ls                                            # which skills are where
 skl usage -p 7d                                   # which skills were used last week
 skl rm tdd                                        # remove a skill from disk and lock
 ```
+
+## Migrating from skillio
+
+`skillio` is renamed to `sklx`. Both packages install the `skl` bin, so remove the old one
+first:
+
+```sh
+npm rm -g skillio && npm i -g sklx
+```
+
+`SKILLIO_NO_UPDATE_CHECK` is now `SKLX_NO_UPDATE_CHECK`.
 
 ## Install skills
 
@@ -217,7 +228,7 @@ is what the completion script calls under the hood.
 
 ## Scope
 
-`skillio` / `skl` automatically picks a scope based on your current directory:
+`sklx` / `skl` automatically picks a scope based on your current directory:
 
 | where you run it | scope |
 |------------------|-------|
@@ -236,36 +247,36 @@ is what the completion script calls under the hood.
 | `-p, --period` | `all` | Period for `usage`: `60s`, `30m`, `12h`, `7d`, `2w`, `6mo`, `all` (note: `1m` = 1 minute, `1mo` = 30 days) |
 | `-a, --agent` | both | Agent for `usage`: `claude-code` (alias `claude`), `codex` - pass both space-separated (`-a claude-code codex`) or repeat the flag |
 
-## Installing skillio
+## Installing sklx
 ```sh
 # one-off (no install needed)
-npx skillio --agent claude --period 7d
-pnpm dlx skillio --agent codex --period 2w
+npx sklx --agent claude --period 7d
+pnpm dlx sklx --agent codex --period 2w
 
-# global install - provides both `skillio` and `skl` commands in $PATH
-npm install -g skillio       # recommended
-pnpm add -g skillio
+# global install - provides both `sklx` and `skl` commands in $PATH
+npm install -g sklx       # recommended
+pnpm add -g sklx
 ```
 
 ### Local install (per-project)
 
-If you'd rather pin `skillio` to a single project (e.g. for CI) instead of
+If you'd rather pin `sklx` to a single project (e.g. for CI) instead of
 installing globally:
 
 ```sh
-npm install -D skillio       # adds to devDependencies
-pnpm add -D skillio
-yarn add -D skillio
-bun add -d skillio
+npm install -D sklx       # adds to devDependencies
+pnpm add -D sklx
+yarn add -D sklx
+bun add -d sklx
 ```
 
-Then run via your package manager - both `skillio` and `skl` are exposed:
+Then run via your package manager - both `sklx` and `skl` are exposed:
 
 ```sh
-npx skillio                  # works from any subdir of the project
+npx sklx                     # works from any subdir of the project
 pnpm exec skl                # short alias
 yarn skl
-bun x skillio
+bun x sklx
 ```
 
 You can also wire it into `package.json` scripts:
@@ -282,11 +293,11 @@ You can also wire it into `package.json` scripts:
 
 ## Updating
 
-> Already have `skillio` installed? Get the latest version:
+> Already have `sklx` installed? Get the latest version:
 
 ```sh
-npm install -g skillio@latest        # recommended
-pnpm add -g skillio@latest
+npm install -g sklx@latest        # recommended
+pnpm add -g sklx@latest
 ```
 
 ## Requirements
