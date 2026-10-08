@@ -31,7 +31,7 @@ describe('skl rm .', () => {
     const r = spawnSync(process.execPath, [CLI, 'rm', '.', '--yes'], {
       cwd: tmp,
       encoding: 'utf8',
-      env: { ...process.env, SKILLIO_NO_UPDATE_CHECK: '1' },
+      env: { ...process.env, SKLX_NO_UPDATE_CHECK: '1' },
     });
     expect(r.status).toBe(0);
     expect(r.stdout).toContain('3 skills');
@@ -48,7 +48,7 @@ describe('skl rm .', () => {
       cwd: tmp,
       encoding: 'utf8',
       input: 'y\nn\n',
-      env: { ...process.env, SKILLIO_NO_UPDATE_CHECK: '1' },
+      env: { ...process.env, SKLX_NO_UPDATE_CHECK: '1' },
     });
     expect(r.status).toBe(0);
     expect(existsSync(join(tmp, '.claude', 'skills', 'foo'))).toBe(false);
@@ -61,7 +61,7 @@ describe('skl rm .', () => {
     const r = spawnSync(process.execPath, [CLI, 'rm', '.', 'foo', '--yes'], {
       cwd: tmp,
       encoding: 'utf8',
-      env: { ...process.env, SKILLIO_NO_UPDATE_CHECK: '1' },
+      env: { ...process.env, SKLX_NO_UPDATE_CHECK: '1' },
     });
     expect(r.status).toBe(1);
     expect(r.stderr).toContain('mutually exclusive');
@@ -72,7 +72,7 @@ describe('skl rm .', () => {
     const r = spawnSync(process.execPath, [CLI, 'rm', '.', '--yes'], {
       cwd: tmp,
       encoding: 'utf8',
-      env: { ...process.env, SKILLIO_NO_UPDATE_CHECK: '1' },
+      env: { ...process.env, SKLX_NO_UPDATE_CHECK: '1' },
     });
     expect(r.status).toBe(0);
     expect(r.stdout).toContain('No skills to remove');
@@ -83,7 +83,7 @@ describe('skl rm .', () => {
     const r = spawnSync(process.execPath, [CLI, 'rm', '.', '-x', 'foo', '--yes'], {
       cwd: tmp,
       encoding: 'utf8',
-      env: { ...process.env, SKILLIO_NO_UPDATE_CHECK: '1' },
+      env: { ...process.env, SKLX_NO_UPDATE_CHECK: '1' },
     });
     expect(r.status).toBe(0);
     expect(r.stdout).toContain('2 skills');
@@ -99,7 +99,7 @@ describe('skl rm .', () => {
     const r = spawnSync(process.execPath, [CLI, 'rm', '.', '--reject', 'foo', 'bar', '--yes'], {
       cwd: tmp,
       encoding: 'utf8',
-      env: { ...process.env, SKILLIO_NO_UPDATE_CHECK: '1' },
+      env: { ...process.env, SKLX_NO_UPDATE_CHECK: '1' },
     });
     expect(r.status).toBe(0);
     expect(r.stdout).toContain('1 skill');
@@ -115,7 +115,7 @@ describe('skl rm .', () => {
     const r = spawnSync(process.execPath, [CLI, 'rm', 'foo', '-x', 'bar', '--yes'], {
       cwd: tmp,
       encoding: 'utf8',
-      env: { ...process.env, SKILLIO_NO_UPDATE_CHECK: '1' },
+      env: { ...process.env, SKLX_NO_UPDATE_CHECK: '1' },
     });
     expect(r.status).toBe(1);
     expect(r.stderr).toContain('--reject');
@@ -126,7 +126,7 @@ describe('skl rm .', () => {
     const r = spawnSync(process.execPath, [CLI, 'rm', '.', '-x', '--yes'], {
       cwd: tmp,
       encoding: 'utf8',
-      env: { ...process.env, SKILLIO_NO_UPDATE_CHECK: '1' },
+      env: { ...process.env, SKLX_NO_UPDATE_CHECK: '1' },
     });
     expect(r.status).toBe(1);
     expect(r.stderr).toContain('--reject');
@@ -137,7 +137,7 @@ describe('skl rm .', () => {
     const r = spawnSync(process.execPath, [CLI, 'rm', '.', '-x', 'nope', '--yes'], {
       cwd: tmp,
       encoding: 'utf8',
-      env: { ...process.env, SKILLIO_NO_UPDATE_CHECK: '1' },
+      env: { ...process.env, SKLX_NO_UPDATE_CHECK: '1' },
     });
     expect(r.status).toBe(1);
     expect(r.stderr).toContain('nope');
@@ -152,7 +152,7 @@ describe('skl rm .', () => {
       {
         cwd: tmp,
         encoding: 'utf8',
-        env: { ...process.env, SKILLIO_NO_UPDATE_CHECK: '1' },
+        env: { ...process.env, SKLX_NO_UPDATE_CHECK: '1' },
       },
     );
     expect(r.status).toBe(0);
@@ -165,7 +165,7 @@ describe('skl rm .', () => {
     const r = spawnSync(process.execPath, [CLI, 'rm', '.', '--lock-only', '--yes'], {
       cwd: tmp,
       encoding: 'utf8',
-      env: { ...process.env, SKILLIO_NO_UPDATE_CHECK: '1' },
+      env: { ...process.env, SKLX_NO_UPDATE_CHECK: '1' },
     });
     expect(r.status).toBe(0);
     const lock = JSON.parse(readFileSync(join(tmp, 'skills-lock.json'), 'utf8'));
@@ -178,7 +178,7 @@ describe('skl rm .', () => {
       cwd: tmp,
       encoding: 'utf8',
       input,
-      env: { ...process.env, SKILLIO_NO_UPDATE_CHECK: '1' },
+      env: { ...process.env, SKLX_NO_UPDATE_CHECK: '1' },
     });
   }
 
