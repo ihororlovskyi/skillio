@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.0 (YYYY-MM-DD)
+## 0.2.0 (2026-10-08)
 
 ### Changed
 
