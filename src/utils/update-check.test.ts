@@ -1,8 +1,8 @@
 import { mkdirSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { compareVersions, readCache, writeCache } from './update-check';
+import { compareVersions, getCachePath, readCache, writeCache } from './update-check';
 
 describe('compareVersions', () => {
   it('detects patch bump', () => expect(compareVersions('0.1.5', '0.1.4')).toBeGreaterThan(0));
@@ -16,10 +16,16 @@ describe('compareVersions', () => {
   it('treats missing parts as 0', () => expect(compareVersions('1.0', '1.0.0')).toBe(0));
 });
 
+describe('getCachePath', () => {
+  it('stores the cache under ~/.cache/sklx', () => {
+    expect(getCachePath()).toBe(join(homedir(), '.cache', 'sklx', 'version.json'));
+  });
+});
+
 describe('cache read/write', () => {
   let TMP = '';
   beforeEach(() => {
-    TMP = join(tmpdir(), `skillio-uc-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    TMP = join(tmpdir(), `sklx-uc-${Date.now()}-${Math.random().toString(36).slice(2)}`);
     mkdirSync(TMP, { recursive: true });
   });
   afterEach(() => rmSync(TMP, { recursive: true, force: true }));

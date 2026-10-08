@@ -1,4 +1,4 @@
-name: skillio checks
+name: sklx checks
 description: Install, lint, typecheck, unit tests, build, e2e tests
 inputs:
   node-version:
