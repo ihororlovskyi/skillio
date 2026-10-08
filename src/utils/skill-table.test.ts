@@ -45,9 +45,11 @@ describe('renderSkillTable', () => {
     setColorEnabled(true);
     const lines = renderSkillTable(ROWS, { lockLabel: 'skills-lock.json', total: false });
     expect(lines[0]).toContain('\x1b[1mskill\x1b[22m');
-    expect(lines[1]).toBe('cross-review     \x1b[32muniversal\x1b[0m  \x1b[33msymlinked\x1b[0m  +');
+    expect(lines[1]).toBe(
+      '\x1b[36mcross-review\x1b[0m     \x1b[32muniversal\x1b[0m  \x1b[33msymlinked\x1b[0m  +',
+    );
     expect(lines[2]).toContain('\x1b[32mcopied\x1b[0m');
-    expect(lines[3]).toBe('old-skill        -          -          \x1b[31m+\x1b[0m');
+    expect(lines[3]).toBe('\x1b[36mold-skill\x1b[0m        -          -          \x1b[31m+\x1b[0m');
     expect(lines[4]).toContain('\x1b[31mbroken\x1b[0m');
   });
 });
