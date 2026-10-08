@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.24 (2026-10-08)
+
+### Fixed
+
+- **The rename notice points to the published package.** npm rejected the unscoped name `sklx`,
+  so the package is `@sentimony/sklx`. Every run now prints
+  `skillio is deprecated, renamed to @sentimony/sklx: npm rm -g skillio && npm i -g @sentimony/sklx`
+  to stderr; 0.1.23 pointed to `sklx`, which does not exist.
+
 ## 0.1.23 (2026-10-08)
 
 ### Deprecated

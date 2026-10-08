@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { run } from './helpers';
 
 const NOTICE =
-  'skillio is deprecated, renamed to sklx: npm rm -g skillio && npm i -g sklx\n';
+  'skillio is deprecated, renamed to @sentimony/sklx: npm rm -g skillio && npm i -g @sentimony/sklx\n';
 const EMPTY = resolve(__dirname, '..', 'fixtures', 'list', 'empty-local');
 const { version } = JSON.parse(readFileSync(join(process.cwd(), 'package.json'), 'utf8')) as {
   version: string;

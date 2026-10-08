@@ -231,7 +231,7 @@ const main = defineCommand({
 
 (async () => {
   process.stderr.write(
-    'skillio is deprecated, renamed to sklx: npm rm -g skillio && npm i -g sklx\n',
+    'skillio is deprecated, renamed to @sentimony/sklx: npm rm -g skillio && npm i -g @sentimony/sklx\n',
   );
   if (raw) {
     setColorEnabled(detectColorSupport());
