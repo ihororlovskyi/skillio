@@ -230,6 +230,9 @@ const main = defineCommand({
 });
 
 (async () => {
+  process.stderr.write(
+    'skillio is deprecated, renamed to sklx: npm rm -g skillio && npm i -g sklx\n',
+  );
   if (raw) {
     setColorEnabled(detectColorSupport());
     await maybePrintUpdateNotice(version);
