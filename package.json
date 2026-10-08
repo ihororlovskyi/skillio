@@ -1,5 +1,5 @@
 {
-  "name": "sklx",
+  "name": "@sentimony/sklx",
   "version": "0.2.0",
   "description": "Audit and manage AI agent skills for Claude Code and Codex",
   "license": "MIT",

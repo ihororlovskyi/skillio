@@ -3,7 +3,7 @@ import { get } from 'node:https';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 
-const PKG = 'sklx';
+const PKG = '@sentimony/sklx';
 const TTL_MS = 24 * 60 * 60 * 1000;
 const FETCH_TIMEOUT_MS = 1500;
 
@@ -95,7 +95,7 @@ export async function maybePrintUpdateNotice(currentVersion: string): Promise<vo
 
   if (latest && compareVersions(latest, currentVersion) > 0) {
     process.stderr.write(
-      `\nUpdate available: ${currentVersion} → ${latest}\nRun: npm i -g sklx\n\n`,
+      `\nUpdate available: ${currentVersion} → ${latest}\nRun: npm i -g ${PKG}\n\n`,
     );
   }
 }
