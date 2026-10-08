@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { run } from './helpers';
@@ -24,5 +25,21 @@ describe('sklx identity', () => {
     const install = run(['i', '-h'], EMPTY).stdout;
     expect(install).toContain('USAGE sklx install');
     expect(install).not.toContain('skillio');
+  });
+});
+
+describe('skl-x package', () => {
+  const pkg = JSON.parse(readFileSync(resolve(__dirname, '..', '..', 'package.json'), 'utf8')) as {
+    name: string;
+    bin: Record<string, string>;
+  };
+
+  it('is published as skl-x', () => {
+    expect(pkg.name).toBe('skl-x');
+  });
+
+  // npx runs the bin named after the package when there are several
+  it('has a bin named after the package for npx', () => {
+    expect(pkg.bin).toEqual({ 'skl-x': 'dist/cli.js', sklx: 'dist/cli.js', skl: 'dist/cli.js' });
   });
 });

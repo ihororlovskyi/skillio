@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0 (2026-10-08)
+
+### Changed
+
+- **Breaking: the package is renamed from `@sentimony/sklx` to `skl-x`** and the repository
+  to `sentimony/skl-x`. Install with `npm rm -g @sentimony/sklx && npm i -g skl-x`;
+  `npx -y skl-x` runs it without installing.
+- New `skl-x` bin next to `sklx` and `skl`; the update check asks npm for `skl-x`.
+
 ## 0.2.1 (2026-10-08)
 
 ### Changed

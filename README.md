@@ -1,19 +1,19 @@
 # sklx
 
-[![npm version](https://img.shields.io/npm/v/@sentimony/sklx)](https://www.npmjs.com/package/@sentimony/sklx)
-[![CI](https://github.com/sentimony/sklx/actions/workflows/ci.yml/badge.svg)](https://github.com/sentimony/sklx/actions/workflows/ci.yml)
-[![CodeQL](https://github.com/sentimony/sklx/actions/workflows/codeql.yml/badge.svg)](https://github.com/sentimony/sklx/actions/workflows/codeql.yml)
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/sentimony/sklx/badge)](https://securityscorecards.dev/viewer/?uri=github.com/sentimony/sklx)
-[![codecov](https://codecov.io/gh/sentimony/sklx/branch/main/graph/badge.svg)](https://codecov.io/gh/sentimony/sklx)
-[![license](https://img.shields.io/npm/l/@sentimony/sklx)](https://github.com/sentimony/sklx/blob/main/LICENSE)
-[![node](https://img.shields.io/node/v/@sentimony/sklx)](https://www.npmjs.com/package/@sentimony/sklx)
+[![npm version](https://img.shields.io/npm/v/skl-x)](https://www.npmjs.com/package/skl-x)
+[![CI](https://github.com/sentimony/skl-x/actions/workflows/ci.yml/badge.svg)](https://github.com/sentimony/skl-x/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/sentimony/skl-x/actions/workflows/codeql.yml/badge.svg)](https://github.com/sentimony/skl-x/actions/workflows/codeql.yml)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/sentimony/skl-x/badge)](https://securityscorecards.dev/viewer/?uri=github.com/sentimony/skl-x)
+[![codecov](https://codecov.io/gh/sentimony/skl-x/branch/main/graph/badge.svg)](https://codecov.io/gh/sentimony/skl-x)
+[![license](https://img.shields.io/npm/l/skl-x)](https://github.com/sentimony/skl-x/blob/main/LICENSE)
+[![node](https://img.shields.io/node/v/skl-x)](https://www.npmjs.com/package/skl-x)
 
 Install, audit and manage AI agent skills for Claude Code and Codex.
 
 ## Quick start
 
 ```sh
-npm install -g @sentimony/sklx                    # provides `sklx` and `skl`
+npm install -g skl-x                              # provides `skl-x`, `sklx` and `skl`
 
 skl i sentimony/skills -a codex claude-code -y    # install published skills (npx skills add)
 skl i -ln ../skills -a codex claude-code -y       # or symlink every skill from a local clone
@@ -23,13 +23,13 @@ skl usage -p 7d                                   # which skills were used last 
 skl rm tdd                                        # remove a skill from disk and lock
 ```
 
-## Migrating from skillio
+## Migrating from @sentimony/sklx or skillio
 
-`skillio` is renamed to `@sentimony/sklx` (commands `sklx` and `skl`). Both packages install the
-`skl` bin, so remove the old one first:
+`skillio` and `@sentimony/sklx` are renamed to `skl-x` (commands `skl-x`, `sklx` and `skl`). All
+three packages install the `skl` bin, so remove the old one first:
 
 ```sh
-npm rm -g skillio && npm i -g @sentimony/sklx
+npm rm -g @sentimony/sklx skillio && npm i -g skl-x
 ```
 
 `SKILLIO_NO_UPDATE_CHECK` is now `SKLX_NO_UPDATE_CHECK`.
@@ -250,12 +250,12 @@ is what the completion script calls under the hood.
 ## Installing sklx
 ```sh
 # one-off (no install needed)
-npx @sentimony/sklx --agent claude --period 7d
-pnpm dlx @sentimony/sklx --agent codex --period 2w
+npx -y skl-x --agent claude --period 7d
+pnpm dlx skl-x --agent codex --period 2w
 
-# global install - provides both `sklx` and `skl` commands in $PATH
-npm install -g @sentimony/sklx  # recommended
-pnpm add -g @sentimony/sklx
+# global install - provides `skl-x`, `sklx` and `skl` commands in $PATH
+npm install -g skl-x  # recommended
+pnpm add -g skl-x
 ```
 
 ### Local install (per-project)
@@ -264,10 +264,10 @@ If you'd rather pin `sklx` to a single project (e.g. for CI) instead of
 installing globally:
 
 ```sh
-npm install -D @sentimony/sklx  # adds to devDependencies
-pnpm add -D @sentimony/sklx
-yarn add -D @sentimony/sklx
-bun add -d @sentimony/sklx
+npm install -D skl-x  # adds to devDependencies
+pnpm add -D skl-x
+yarn add -D skl-x
+bun add -d skl-x
 ```
 
 Then run via your package manager - both `sklx` and `skl` are exposed:
@@ -296,8 +296,8 @@ You can also wire it into `package.json` scripts:
 > Already have `sklx` installed? Get the latest version:
 
 ```sh
-npm install -g @sentimony/sklx@latest  # recommended
-pnpm add -g @sentimony/sklx@latest
+npm install -g skl-x@latest  # recommended
+pnpm add -g skl-x@latest
 ```
 
 ## Requirements
