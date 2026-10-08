@@ -45,7 +45,7 @@ function listSkillNames(root: string | undefined): string[] {
   if (!root || !existsSync(root)) return [];
   return readdirSync(root).filter((name) => {
     const entry = join(root, name);
-    // A symlink entry is a skill regardless of whether its target resolves —
+    // A symlink entry is a skill regardless of whether its target resolves -
     // dangling symlinks must still be listed so ls/rm can see and clean them up.
     if (lstatSync(entry).isSymbolicLink()) return true;
     const skill = join(entry, 'SKILL.md');

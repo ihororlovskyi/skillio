@@ -28,7 +28,7 @@ describe('skl cost', () => {
   it('bare skl with no args runs cost', () => {
     const { stdout, exitCode } = run([], COST_DIR);
     expect(exitCode).toBe(0);
-    // cost format — NOT the old summary "Total: N skills ~M tok" format
+    // cost format - NOT the old summary "Total: N skills ~M tok" format
     expect(stdout).toMatch(/Total: ~\d+ tok across 3 skills/);
     // summary printed both Global + Local sections; cost only prints one header
     expect(stdout).not.toContain('Global Scope');

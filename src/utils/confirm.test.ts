@@ -10,7 +10,7 @@ function nullSink(): Writable {
   return new Writable({ write: (_chunk, _enc, cb) => cb() });
 }
 
-describe('confirm — non-TTY (line-based fallback)', () => {
+describe('confirm - non-TTY (line-based fallback)', () => {
   it('returns true on "y"', async () => {
     const result = await confirm('Proceed?', {
       input: streamFromString('y\n'),
@@ -44,7 +44,7 @@ describe('confirm — non-TTY (line-based fallback)', () => {
   });
 });
 
-describe('confirm — TTY raw-mode (single keypress)', () => {
+describe('confirm - TTY raw-mode (single keypress)', () => {
   it('single "y" keypress resolves true without Enter', async () => {
     const mockInput = new PassThrough() as unknown as NodeJS.ReadStream;
     mockInput.isTTY = true;
@@ -87,7 +87,7 @@ describe('confirm — TTY raw-mode (single keypress)', () => {
   });
 });
 
-describe('confirm — [y/n] prompt text', () => {
+describe('confirm - [y/n] prompt text', () => {
   it('writes the [y/n] suffix (non-TTY)', async () => {
     const chunks: string[] = [];
     const output = new Writable({
@@ -121,7 +121,7 @@ describe('confirm — [y/n] prompt text', () => {
   });
 });
 
-describe('createConfirmer — non-TTY sequential questions', () => {
+describe('createConfirmer - non-TTY sequential questions', () => {
   it('answers two sequential questions from one piped multi-line input', async () => {
     const ask = createConfirmer({ input: streamFromString('y\nn\n'), output: nullSink() });
     expect(await ask('Q1?')).toBe(true);
@@ -141,7 +141,7 @@ describe('createConfirmer — non-TTY sequential questions', () => {
   });
 });
 
-describe('createConfirmer — TTY delegates to confirm()', () => {
+describe('createConfirmer - TTY delegates to confirm()', () => {
   it('single "y" keypress resolves true', async () => {
     const mockInput = new PassThrough() as unknown as NodeJS.ReadStream;
     mockInput.isTTY = true;

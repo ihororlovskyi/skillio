@@ -14,7 +14,7 @@ vi.mock('../utils/prompt', () => ({
 
 import { setColorEnabled } from '../utils/ansi';
 
-describe('runPicker — remove sub-picker (unit)', () => {
+describe('runPicker - remove sub-picker (unit)', () => {
   let tmp: string;
   beforeEach(() => {
     tmp = mkdtempSync(join(tmpdir(), 'skl-picker-unit-'));

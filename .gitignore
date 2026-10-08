@@ -1,5 +1,9 @@
 Thumbs.db
 .DS_Store
+.idea/
+__pycache__/
+
+*.local*
 
 /node_modules
 /dist

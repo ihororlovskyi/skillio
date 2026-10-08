@@ -17,7 +17,7 @@ describe('readClaudeUsage attributed mode (rising-edge)', () => {
   });
 
   it('counts skill that spans a no-attribution gap as 1 continuous invocation', () => {
-    // [foo, foo, no-attr, foo, foo] — the gap is user-input within one active skill,
+    // [foo, foo, no-attr, foo, foo] - the gap is user-input within one active skill,
     // not an end-of-invocation. Should count as 1, not 2.
     const { counts } = readClaudeUsage({
       since: new Date(0),
@@ -69,7 +69,7 @@ describe('readClaudeUsage merged mode (default for claude-code)', () => {
     // Fixture sequence: foo, foo, tool_use:Skill(bar) (no attribution), qux, foo
     // - skill-foo: 2 rising edges (start, then after qux interrupts), 0 tool_use → max 2
     // - skill-qux: 1 rising edge → max 1
-    // - skill-bar: 0 attribution (Claude Code did not stamp it — simulates nested Skill
+    // - skill-bar: 0 attribution (Claude Code did not stamp it - simulates nested Skill
     //   invocation), 1 tool_use:Skill record → max 1
     const { counts } = readClaudeUsage({
       since: new Date(0),
