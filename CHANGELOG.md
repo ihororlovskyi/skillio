@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.1 (2026-10-08)
+
+### Changed
+
+- The bare `skl` command menu separates each command from its description with `-`, as the
+  menu titles do since 0.2.0.
+- First release published from CI as `@sentimony/sklx` (0.2.0 was published by hand).
+
 ## 0.2.0 (2026-10-08)
 
 ### Changed
