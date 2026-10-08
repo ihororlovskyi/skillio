@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.2 (2026-10-08)
+
+### Changed
+
+- README leads with `npx -y skl-x`: installing skills, local clones, cost and usage first.
+- npm keywords and a downloads badge.
+- Dev tooling: `@biomejs/biome` 2.5.15, `@types/node` 26.6.4; unused `@changesets/cli`
+  removed.
+
 ## 0.4.1 (2026-10-08)
 
 ### Changed

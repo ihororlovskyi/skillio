@@ -1,6 +1,9 @@
 # skl-x
 
+Install, audit and manage AI agent skills for Claude Code and Codex.
+
 [![npm version](https://img.shields.io/npm/v/skl-x)](https://www.npmjs.com/package/skl-x)
+[![npm downloads](https://img.shields.io/npm/dm/skl-x)](https://www.npmjs.com/package/skl-x)
 [![CI](https://github.com/sentimony/skl-x/actions/workflows/ci.yml/badge.svg)](https://github.com/sentimony/skl-x/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/sentimony/skl-x/actions/workflows/codeql.yml/badge.svg)](https://github.com/sentimony/skl-x/actions/workflows/codeql.yml)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/sentimony/skl-x/badge)](https://securityscorecards.dev/viewer/?uri=github.com/sentimony/skl-x)
@@ -8,61 +11,26 @@
 [![license](https://img.shields.io/npm/l/skl-x)](https://github.com/sentimony/skl-x/blob/main/LICENSE)
 [![node](https://img.shields.io/node/v/skl-x)](https://www.npmjs.com/package/skl-x)
 
-Install, audit and manage AI agent skills for Claude Code and Codex.
-
-## Quick start
-
-```sh
-npm install -g skl-x                              # provides `skl-x` and `skl`
-
-skl i sentimony/skills -a codex claude-code -y    # install published skills (npx skills add)
-skl i -ln ../skills -a codex claude-code -y       # or symlink every skill from a local clone
-skl                                               # ambient token cost per skill
-skl ls                                            # which skills are where
-skl usage -p 7d                                   # which skills were used last week
-skl rm tdd                                        # remove a skill from disk and lock
-```
-
-## Migrating from @sentimony/sklx or skillio
-
-`skillio` and `@sentimony/sklx` are renamed to `skl-x` (commands `skl-x` and `skl`). All three
-packages install the `skl` bin, so remove the old one first:
-
-```sh
-npm rm -g @sentimony/sklx skillio && npm i -g skl-x
-```
-
-To skip the update check set `SKL_X_NO_UPDATE_CHECK=1`. The older `SKLX_NO_UPDATE_CHECK` still
-works; `SKILLIO_NO_UPDATE_CHECK` does not.
-
 ## Install skills
 
-`skl install` / `skl i` works in one of two modes.
-
-### Published skills
-
-Without `-ln`, `skl i` runs `npx -y skills add` with the same arguments in the same order and
-returns its exit code. Every [source format](https://github.com/vercel-labs/skills#source-formats)
-and option of `npx skills add` works as is.
-
 ```sh
-# GitHub shorthand (owner/repo)
-skl i sentimony/skills
-
-# Full GitHub URL
-skl i https://github.com/sentimony/skills
-
-# List skills in a repository
-skl i sentimony/skills -l
-
-# Install specific skills to specific agents, non-interactive
-skl i sentimony/skills -s tdd cross-review -a codex claude-code -y
-
-# Hide the npx skills output, print a summary and a table
-skl i sentimony/skills -s tdd -a codex claude-code -y -m s
+npx -y skl-x i sentimony/skills
 ```
 
-With `-m s` (`--mode silent`):
+`skl-x i` runs `npx -y skills add` with the same arguments, so every
+[source format](https://github.com/vercel-labs/skills#source-formats) and option of
+`npx skills add` works as is.
+
+```sh
+# List skills in a repository
+npx -y skl-x i sentimony/skills -l
+
+# Specific skills to specific agents, non-interactive
+npx -y skl-x i sentimony/skills -s tdd cross-review -a codex claude-code -y
+
+# Hide the npx skills output, print a summary and a table (needs -y)
+npx -y skl-x i sentimony/skills -s tdd -a codex claude-code -y -m s
+```
 
 ```text
 Installing from sentimony/skills...
@@ -71,27 +39,23 @@ skill  .agents    .claude    skills-lock.json
 tdd    universal  symlinked  +
 ```
 
-`-m s` needs `-y`: otherwise `npx skills add` asks questions. If `npx` fails, its full output is
-printed.
+If `npx` fails, its full output is printed.
 
-### Local clone
+### Local skills
 
-`skl i -ln <path>` (`--link`) symlinks `<path>/skills/<name>` into `.agents/skills` and
+`-ln <path>` (`--link`) symlinks `<path>/skills/<name>` into `.agents/skills` and
 `.claude/skills`. The links point straight at the clone, so edits there show up without
 reinstalling.
 
 ```sh
 # Every skill in the clone
-skl i -ln ../skills -a codex claude-code -y
+npx -y skl-x i -ln ../skills -a codex claude-code -y
 
 # Every skill except the listed ones
-skl i -ln ../skills -x scope-check echarts -y
+npx -y skl-x i -ln ../skills -x scope-check echarts -y
 
-# Only the listed skills
-skl i -ln ../skills -s tdd cross-review
-
-# Only .claude/skills
-skl i -ln ../skills -s tdd -a claude-code -y
+# Only the listed skills, only .claude/skills
+npx -y skl-x i -ln ../skills -s tdd cross-review -a claude-code
 ```
 
 ```text
@@ -103,7 +67,7 @@ tdd           symlinked  symlinked  -
 
 - Without `-s`, every `<path>/skills/<name>/SKILL.md` is linked, except skills with
   `metadata.internal: true` (as `npx skills add` does).
-- An existing copy or another symlink with the same name is replaced after a
+- An existing copy or symlink with the same name is replaced after a
   `Replace N existing skills?` prompt, or at once with `-y`.
 - `skills-lock.json` is not changed. Global scope (`-g`) is not supported yet.
 
@@ -116,33 +80,54 @@ tdd           symlinked  symlinked  -
 | `-y, --yes` | Skip `npx` prompts; with `-ln`: replace existing copies without asking |
 | `-m, --mode silent` | Hide the `npx` output (needs `-y`); no effect with `-ln` |
 
-## Commands
-
-| Command | Alias | Description |
-|---|---|---|
-| `skl install` | `i` | Install published skills or symlink a local clone |
-| `skl list` | `ls` | Table of skills: `.agents`, `.claude` and lock per skill |
-| `skl cost` | `cst` | Ambient context cost per skill (also `skl` with no command) |
-| `skl usage` | `usg` | Skill usage from agent session logs × cost |
-| `skl remove` | `rm` | Remove skills from disk and `skills-lock.json` |
-| `skl completion` | | Print a shell completion script |
-
-### `skl cost`
+## Cost
 
 ```sh
-skl                  # same as skl cost
-skl cost -g          # global scope
+npx -y skl-x cost       # project scope
+npx -y skl-x cost -g    # global scope
 ```
 
 Per-skill ambient token cost (`name` + `description`, chars/3), sorted descending. Skills with
 `disable-model-invocation: true` show `-` and stay out of the total.
 
-### `skl list`
+## Usage
+
+Skill usage from agent session logs, multiplied by cost.
 
 ```sh
-skl ls
-skl ls -g
+npx -y skl-x usage -a claude -p 7d
+npx -y skl-x usage -a codex --mode activations
 ```
+
+| Flag | Default | Description |
+|---|---|---|
+| `-a, --agent` | both | `claude-code` (`claude`), `codex` |
+| `-p, --period` | `all` | `60s`, `30m`, `24h`, `7d`, `2w`, `6mo`, `all` (`1m` is a minute, `1mo` is 30 days) |
+| `--since` | - | `yyyy-mm-dd`, overrides `--period` |
+| `--mode` | `merged` (claude) / `activations` (codex) | `merged`, `attributed`, `activations`, `mentions` |
+| `--format` | `text` | `text`, `json` |
+| `-g, --global` | `false` | Global scope |
+| `--root` | - | Agent sessions directory; implies global |
+| `--scan-all-files` | - | Ignore file mtime, read everything |
+
+- **`merged`** - per-session union of `attributed` and `activations` (`max` per skill).
+- **`attributed`** - entries with an `attributionSkill` field set by Claude Code.
+- **`activations`** - `Skill` tool calls (Claude), read-like `exec_command_end` events or
+  `<skill>` XML (Codex).
+- **`mentions`** - `foo/SKILL.md` paths or `superpowers:name` strings anywhere. The broadest
+  signal; can match prompts, specs or docs.
+
+## Other commands
+
+| Command | Alias | Description |
+|---|---|---|
+| `skl-x list` | `ls` | Table of skills: `.agents`, `.claude` and lock per skill |
+| `skl-x remove` | `rm` | Remove skills from disk and `skills-lock.json` |
+| `skl-x completion` | | Print a shell completion script |
+
+`skl-x` with no command opens a menu in a terminal and prints `cost` otherwise.
+
+### `skl-x list`
 
 ```text
 Project Scope
@@ -163,144 +148,57 @@ webapp-debugger  symlinked  broken     -
 | `-` | not there |
 | `+` | in the lock; red when the skill is on neither disk |
 
-`skl ls --names` prints one name per line; the completion scripts use it.
+`skl-x ls --names` prints one name per line, for scripts and completion.
 
-### `skl usage`
-
-Audits skill usage from agent session logs.
+### `skl-x remove`
 
 ```sh
-skl usage --agent claude --period 7d
-skl usage --agent codex --mode activations
+skl-x rm tdd                     # plan, Proceed? [y/n], then Clean lock? [y/n]
+skl-x rm .                       # every skill in scope
+skl-x rm . -x tdd cross-review   # every skill except the listed ones
+skl-x rm tdd -y                  # no prompts, no plan
+skl-x rm . -y -m s               # one line: Executed A/B/C skills
+skl-x rm tdd --lock-only         # also --agents-only, --claude-only
+skl-x rm tdd -g                  # global scope
 ```
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `-a, --agent` | both | `claude-code`/`claude`, `codex` |
-| `-p, --period` | `all` | `60s`, `30m`, `24h`, `7d`, `2w`, `6mo`, `all` |
-| `--since` | - | `yyyy-mm-dd`, overrides `--period` |
-| `--mode` | `merged` (claude) / `activations` (codex) | `merged` \| `attributed` \| `activations` \| `mentions` |
-| `--format` | `text` | `text` \| `json` |
-| `-g, --global` | `false` | Force global scope (ignore current directory) |
-| `--root` | - | Override agent sessions directory; implies global |
-| `--scan-all-files` | - | Ignore file mtime, read everything |
+### `skl-x completion`
 
-#### Modes
-
-- **`merged`** - per-session union of `attributed` and `activations` (`max` per skill). Default for Claude.
-- **`attributed`** - entries with an `attributionSkill` field set by Claude Code.
-- **`activations`** - explicit `Skill` tool invocations (Claude) or read-like `exec_command_end` events / `<skill>` XML (Codex). Default for Codex.
-- **`mentions`** - skill paths (`foo/SKILL.md`) or `superpowers:name` strings found anywhere. Broadest signal; can include matches from prompts, specs, or documentation.
-
-### `skl remove`
+Tab-completes subcommands and skill names for `rm`. Needs a global install.
 
 ```sh
-skl rm <skill-name>                 # colored plan, Proceed? [y/n], then Clean lock? [y/n]
-skl rm <skill-one> <skill-two>      # one pair of prompts
-skl rm .                            # every skill in scope
-skl rm . -x <one> <two>             # every skill except the listed ones (alias --reject)
-skl rm --yes <skill-name>           # skip both prompts and the plan
-skl rm . -y -m s                    # one line: Executed A/B/C skills (--mode silent)
-skl rm --lock-only <skill-name>     # only the lock entry; keep on disk
-skl rm --agents-only <skill-name>   # only .agents/skills; keep .claude/skills and lock
-skl rm --claude-only <skill-name>   # only .claude/skills; keep .agents/skills and lock
-skl rm -g <skill-name>              # global scope
+skl-x completion bash >> ~/.bashrc
+skl-x completion zsh >> ~/.zshrc
+skl-x completion fish > ~/.config/fish/completions/skl.fish
 ```
-
-### Shell completion
-
-`skl completion <shell>` prints a completion script. Sourced once in your
-rc-file, it tab-completes subcommands and dynamic skill names for `skl rm`.
-
-```sh
-# bash (one-time setup)
-skl completion bash >> ~/.bashrc
-
-# zsh
-skl completion zsh >> ~/.zshrc
-
-# fish
-skl completion fish | source            # one-off in current shell
-skl completion fish > ~/.config/fish/completions/skl.fish
-```
-
-`skl list --names` prints one skill name per line (no headers, no colors) and
-is what the completion script calls under the hood.
 
 ## Scope
 
-`skl-x` / `skl` automatically picks a scope based on your current directory:
+| Where you run it | Scope |
+|---|---|
+| inside a git repo | that repo |
+| in `$HOME` | global: every repo on this machine |
+| with `-g` / `--global` | global |
+| with `--root <dir>` | that directory, as global |
 
-| where you run it | scope |
-|------------------|-------|
-| inside a git repo | that repo only (data filtered to its path) |
-| in `$HOME` exactly | global - all repos on this machine |
-| anywhere with `-g` / `--global` | global override |
-| with `--root <dir>` | that exact dir, treated as global |
-
-## Global flags
-
-| Flag | Default | Description |
-|------|---------|-------------|
-| `-h, --help` | - | Show help and exit |
-| `-v, --version` | - | Show version and exit |
-| `-g, --global` | `false` | Use global scope (ignore current directory) |
-| `-p, --period` | `all` | Period for `usage`: `60s`, `30m`, `12h`, `7d`, `2w`, `6mo`, `all` (note: `1m` = 1 minute, `1mo` = 30 days) |
-| `-a, --agent` | both | Agent for `usage`: `claude-code` (alias `claude`), `codex` - pass both space-separated (`-a claude-code codex`) or repeat the flag |
-
-## Installing skl-x
-```sh
-# one-off (no install needed)
-npx -y skl-x --agent claude --period 7d
-pnpm dlx skl-x --agent codex --period 2w
-
-# global install - provides `skl-x` and `skl` commands in $PATH
-npm install -g skl-x  # recommended
-pnpm add -g skl-x
-```
-
-### Local install (per-project)
-
-If you'd rather pin `skl-x` to a single project (e.g. for CI) instead of
-installing globally:
+## Global install
 
 ```sh
-npm install -D skl-x  # adds to devDependencies
-pnpm add -D skl-x
-yarn add -D skl-x
-bun add -d skl-x
+npm i -g skl-x    # provides `skl-x` and the short `skl`
 ```
 
-Then run via your package manager - both `skl-x` and `skl` are exposed:
+Moving from `@sentimony/sklx` or `skillio`: all three packages install the `skl` bin, so
+remove the old one first:
 
 ```sh
-npx skl-x                    # works from any subdir of the project
-pnpm exec skl                # short alias
-yarn skl
-bun x skl-x
+npm rm -g @sentimony/sklx skillio && npm i -g skl-x
 ```
 
-You can also wire it into `package.json` scripts:
+To skip the daily update check set `SKL_X_NO_UPDATE_CHECK=1` (`SKLX_NO_UPDATE_CHECK` still
+works).
 
-```json
-{
-  "scripts": {
-    "audit:skills": "skl"
-  }
-}
-```
+Requires Node.js 20 or newer.
 
-…then `npm run audit:skills`.
+## License
 
-## Updating
-
-> Already have `skl-x` installed? Get the latest version:
-
-```sh
-npm install -g skl-x@latest  # recommended
-pnpm add -g skl-x@latest
-```
-
-## Requirements
-
-- Node.js ≥ 20
+[MIT](LICENSE)
