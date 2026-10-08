@@ -133,3 +133,18 @@ describe('runPicker - remove sub-picker (unit)', () => {
     expect(logs.some((l) => l.includes('No skills found in scope'))).toBe(true);
   });
 });
+
+describe('runPicker - command menu labels (unit)', () => {
+  beforeEach(() => selectMock.mockReset());
+
+  it('separates command and description with a hyphen', async () => {
+    selectMock.mockResolvedValueOnce('quit');
+    const { runPicker } = await import('./picker');
+    expect(await runPicker({ global: false })).toBe(0);
+    const [params] = selectMock.mock.calls[0] as [{ options: { label: string }[] }];
+    const labels = params.options.map((o) => o.label);
+    expect(labels).toContain('usage  - count of skill invocations');
+    expect(labels).toContain('remove - delete a skill (asks about lock cleanup)');
+    expect(labels.join('\n')).not.toContain('—');
+  });
+});

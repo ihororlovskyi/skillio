@@ -66,6 +66,27 @@ describe('discoverSkills (local scope)', () => {
     expect(map.get('plain')?.frontmatterTokens).toBeUndefined();
   });
 
+  it('counts name + description tokens and flags disable-model-invocation', () => {
+    writeLock(TMP, []);
+    writeSkill(TMP, 'claude', 'auto', 'name: auto\ndescription: Does it.\nlicense: MIT');
+    writeSkill(
+      TMP,
+      'claude',
+      'manual',
+      'name: manual\ndescription: x\ndisable-model-invocation: true',
+    );
+
+    const map = discoverSkills({
+      isGlobal: false,
+      cwd: TMP,
+      lockPath: join(TMP, 'skills-lock.json'),
+    });
+
+    // 'auto' + 'Does it.' = 12 chars -> 4 tokens; license is ignored
+    expect(map.get('auto')).toMatchObject({ frontmatterTokens: 4, disableModelInvocation: false });
+    expect(map.get('manual')?.disableModelInvocation).toBe(true);
+  });
+
   it('lists a dangling symlink skill in .claude/skills', () => {
     writeLock(TMP, []);
     const claudeSkills = join(TMP, '.claude', 'skills');

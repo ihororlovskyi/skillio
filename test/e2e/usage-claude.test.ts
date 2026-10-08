@@ -135,7 +135,7 @@ describe('skl usage claude', () => {
     expect(stdout).not.toMatch(/^\s*0\s+\S+/m);
   });
 
-  it('prints blank line before scope header and before Total line', () => {
+  it('prints no blank lines: header first, Total last', () => {
     const { stdout, exitCode } = run([
       'usage',
       '--agent',
@@ -147,12 +147,26 @@ describe('skl usage claude', () => {
       '--scan-all-files',
     ]);
     expect(exitCode).toBe(0);
-    const lines = stdout.split('\n');
-    expect(lines[0]).toBe('');
-    expect(lines[1]).toMatch(/^(Project|Global) Scope$/);
-    const totalIdx = lines.findIndex((l) => l.startsWith('Total:'));
-    expect(totalIdx).toBeGreaterThan(0);
-    expect(lines[totalIdx - 1]).toBe('');
+    const lines = stdout.trimEnd().split('\n');
+    expect(lines[0]).toMatch(/^(Project|Global) Scope$/);
+    expect(lines).not.toContain('');
+    expect(lines.at(-1)).toMatch(/^Total:/);
+  });
+
+  it('rejects an unknown --mode with exit 1 and no stdout', () => {
+    const { stdout, stderr, exitCode } = run(['usage', '--mode', 'merge', '--root', FIXTURES]);
+    expect(exitCode).toBe(1);
+    expect(stdout).toBe('');
+    expect(stderr).toContain(
+      'Unknown mode: "merge". Use "merged", "attributed", "activations" or "mentions".',
+    );
+  });
+
+  it('rejects an unknown --format with exit 1 and no stdout', () => {
+    const { stdout, stderr, exitCode } = run(['usage', '--format', 'yaml', '--root', FIXTURES]);
+    expect(exitCode).toBe(1);
+    expect(stdout).toBe('');
+    expect(stderr).toContain('Unknown format: "yaml". Use "text" or "json".');
   });
 
   it('filters out old entries with --period 7d', () => {

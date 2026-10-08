@@ -3,6 +3,7 @@ import { createRequire } from 'node:module';
 import { defineCommand, runMain } from 'citty';
 import { completionCommand } from './commands/completion';
 import { costCommand } from './commands/cost';
+import { runInstall } from './commands/install';
 import { listCommand } from './commands/list';
 import { removeCommand } from './commands/remove';
 import { usageCommand } from './commands/usage';
@@ -47,10 +48,8 @@ const SUBCOMMAND_NAMES = new Set([
   'remove',
   'rm',
   'cost',
-  'cs',
   'cst',
   'usage',
-  'us',
   'usg',
   'completion',
 ]);
@@ -66,13 +65,29 @@ function reorderRootFlagsToSubcommand(argv: string[]): string[] {
   return [argv[0] ?? '', argv[1] ?? '', sub, ...before, ...after];
 }
 
-process.argv = reorderRootFlagsToSubcommand(mergeAgentArgs(process.argv));
+// install takes raw argv: mergeAgentArgs would join -a values with \x1f and citty
+// cannot hold several -s values. Only -g/--global may precede it, so an option value
+// such as `--root i` never turns into a command; these names stay out of SUBCOMMAND_NAMES
+// for the same reason.
+const RAW_COMMANDS = new Set(['install', 'i']);
+
+function detectRawCommand(argv: string[]): { command: string; args: string[] } | null {
+  const tail = argv.slice(2);
+  const idx = tail.findIndex((t) => t !== '-g' && t !== '--global');
+  const command = idx === -1 ? undefined : tail[idx];
+  if (command === undefined || !RAW_COMMANDS.has(command)) return null;
+  // leading -g/--global go first, as reorderRootFlagsToSubcommand does for other commands
+  return { command, args: [...tail.slice(0, idx), ...tail.slice(idx + 1)] };
+}
+
+const raw = detectRawCommand(process.argv);
+if (!raw) process.argv = reorderRootFlagsToSubcommand(mergeAgentArgs(process.argv));
 
 function printRootHelp(): void {
   const lines = [
-    `Audit and manage AI agent skills (skillio v${version})`,
+    `Audit and manage AI agent skills (sklx v${version})`,
     '',
-    'USAGE skillio [OPTIONS] [COMMAND]',
+    'USAGE sklx [OPTIONS] [COMMAND]',
     '',
     'OPTIONS',
     '',
@@ -84,10 +99,11 @@ function printRootHelp(): void {
     '',
     'COMMANDS',
     '',
-    '  list, ls         List skills per source: install type, lock orphans, disk/lock diff',
+    '  list, ls         List skills as a table: .agents, .claude and lock per skill',
     '  remove, rm       Delete on-disk skill dirs and/or skills-lock.json (interactive)',
-    '  cost, cs, cst    Show ambient ballast cost (per-skill frontmatter tokens) sorted desc',
-    '  usage, us, usg   Show skill usage × cost (consumption) with missed rows',
+    '  cost, cst        Show ambient context cost (per-skill name + description tokens) sorted desc',
+    '  usage, usg       Show skill usage × cost (consumption) with missed rows',
+    '  install, i       Install skills via `npx skills add`, or -ln to symlink a local clone',
     '  completion       Print shell completion script (bash, zsh, fish)',
   ];
   console.log(lines.join('\n'));
@@ -111,8 +127,8 @@ function printRemoveHelp(): void {
   const lines = [
     'Remove skills from on-disk dirs and/or skills-lock.json.',
     '',
-    'USAGE skillio remove [SKILL...] [OPTIONS]',
-    '       skillio rm [SKILL...] [OPTIONS]',
+    'USAGE sklx remove [SKILL...] [OPTIONS]',
+    '       sklx rm [SKILL...] [OPTIONS]',
     '',
     'ARGUMENTS',
     '',
@@ -124,7 +140,7 @@ function printRemoveHelp(): void {
     '  -y, --yes            Skip confirmation prompts (answers yes to both the',
     '                       "Proceed?" and "Clean skills-lock.json?" questions)',
     '                       and the plan; only the summary is printed',
-    '  -sm, --stealth-mode  Print one "Executed A/B/C skills" line instead of the',
+    '  -m, --mode silent    Print one "Executed A/B/C skills" line instead of the',
     '                       summary (.agents/skills / .claude/skills / lock counts)',
     '  -x, --reject         With ".": skill names to keep (space-separated)',
     '      --lock-only      Only remove the skills-lock.json entry',
@@ -133,13 +149,13 @@ function printRemoveHelp(): void {
     '',
     'EXAMPLES',
     '',
-    '  skillio rm brainstorming',
-    '  skillio rm brainstorming writing-plans --yes',
-    '  skillio rm .',
-    '  skillio rm . -x web-debug typescript',
-    '  skillio rm . -y -sm',
-    '  skillio rm brainstorming --agents-only',
-    '  skillio rm brainstorming --lock-only',
+    '  sklx rm brainstorming',
+    '  sklx rm brainstorming writing-plans --yes',
+    '  sklx rm .',
+    '  sklx rm . -x web-debug typescript',
+    '  sklx rm . -y -m s',
+    '  sklx rm brainstorming --agents-only',
+    '  sklx rm brainstorming --lock-only',
   ];
   console.log(lines.join('\n'));
 }
@@ -179,7 +195,7 @@ function isRootVersion(argv: string[]): boolean {
 
 const main = defineCommand({
   meta: {
-    name: 'skillio',
+    name: 'sklx',
     version,
     description: 'Audit and manage AI agent skills',
   },
@@ -206,16 +222,19 @@ const main = defineCommand({
     remove: removeCommand,
     rm: removeCommand,
     cost: costCommand,
-    cs: costCommand,
     cst: costCommand,
     usage: usageCommand,
-    us: usageCommand,
     usg: usageCommand,
     completion: completionCommand,
   },
 });
 
 (async () => {
+  if (raw) {
+    setColorEnabled(detectColorSupport());
+    await maybePrintUpdateNotice(version);
+    process.exit(await runInstall(raw.args));
+  }
   if (isRootHelp(process.argv)) {
     printRootHelp();
     return;

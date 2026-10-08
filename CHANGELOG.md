@@ -1,5 +1,121 @@
 # Changelog
 
+## 0.3.0 (2026-10-08)
+
+### Changed
+
+- **Breaking: the package is renamed from `@sentimony/sklx` to `skl-x`** and the repository
+  to `sentimony/skl-x`. Install with `npm rm -g @sentimony/sklx && npm i -g skl-x`;
+  `npx -y skl-x` runs it without installing.
+- New `skl-x` bin next to `sklx` and `skl`; the update check asks npm for `skl-x`.
+
+## 0.2.1 (2026-10-08)
+
+### Changed
+
+- The bare `skl` command menu separates each command from its description with `-`, as the
+  menu titles do since 0.2.0.
+- First release published from CI as `@sentimony/sklx` (0.2.0 was published by hand).
+
+## 0.2.0 (2026-10-08)
+
+### Changed
+
+- **Breaking: the package is renamed from `skillio` to `@sentimony/sklx`** and the repository
+  moved to `sentimony/sklx`. Install with `npm rm -g skillio && npm i -g @sentimony/sklx`. npm
+  rejects the unscoped name `sklx` as too similar to existing packages.
+- **Breaking: the `skillio` bin is gone** - use `sklx` or `skl`.
+- **Breaking: `SKILLIO_NO_UPDATE_CHECK` is now `SKLX_NO_UPDATE_CHECK`**; the update check
+  asks npm for `@sentimony/sklx` and caches in `~/.cache/sklx/`.
+- Shell completion functions are renamed to `_sklx*` / `__sklx_*`; re-source
+  `skl completion <shell>`.
+
+### Removed
+
+- The 0.1.23 `skillio is deprecated` line on stderr.
+
+## 0.1.23 (2026-10-08)
+
+### Deprecated
+
+- **`skillio` is renamed to `sklx`.** This is the last `skillio` release. Every run prints
+  `skillio is deprecated, renamed to sklx: npm rm -g skillio && npm i -g sklx` to stderr,
+  regardless of `SKILLIO_NO_UPDATE_CHECK`. Remove `skillio` first: both packages install the
+  `skl` bin.
+
+## 0.1.22 (2026-10-08)
+
+### Added
+
+- **`skl i -ln <path>` / `skl install --link <path>`** symlinks skills from a local clone (what
+  `skl sl` did). Without `-s` it links every `<path>/skills/<name>/SKILL.md` except skills with
+  `metadata.internal: true`, as `npx skills add` does. `-x`/`--reject <names...>` links every skill
+  except the listed ones. The summary is `Symlinked N skills from <path>` and a table.
+- **`skl i ... -y -m s` / `--mode silent`** hides the `npx skills add` output and prints
+  `Installed N skills from <source>` and a table of the skills that were added or reinstalled.
+  Needs `-y`. When `npx` fails, its full output is printed and its exit code returned.
+
+### Changed
+
+- **Breaking: `skl ls` is a table** - one row per skill with `.agents`, `.claude` and lock columns
+  (`universal` / `copied` / `symlinked` / `broken` / `-`, lock `+` / `-`) and a total row. The
+  `<label> : N skills : names` rows and the `not in lock` lines are gone; an empty scope prints
+  `No skills in scope.`
+
+### Removed
+
+- **Breaking: `skl symlink` / `skl sym` / `skl sl`** - use `skl i -ln <path>`.
+- **Breaking: `skl cs`** - use `skl cost` or `skl cst`.
+- **Breaking: `skl us`** - use `skl usage` or `skl usg`.
+- **Breaking: `skl rm -sm` / `--stealth-mode`** - use `skl rm -m s` / `--mode silent`.
+
+## 0.1.21 (2026-10-07)
+
+### Added
+
+- **`skl install` / `skl i`** runs `npx -y skills add` with the same arguments in the same
+  order and returns its exit code, so `-s a b c` and `-a codex claude-code` work as in
+  `npx skills add`. `skl i -h` prints its own short help.
+- **`skl symlink` / `skl sym` / `skl sl <path> -s <names...>`** symlinks `<path>/skills/<name>` into
+  `.agents/skills` and `.claude/skills` (`-a codex` / `-a claude-code` picks one), straight
+  to the clone, so edits in the clone show up at once. A copy or another symlink with the same
+  name is replaced after a `Replace N existing skills?` prompt, or at once with `-y`. A name
+  starting with a space is skipped. `skills-lock.json` is not changed; `-g` is not supported yet.
+
+## 0.1.20 (2026-10-05)
+
+### Changed
+
+- **Breaking: `skl cost` estimates from `name` + `description` at 3 chars per
+  token.** Calibrated against Claude Code `/skills`, it now matches per skill;
+  the old whole-frontmatter chars/4 estimate matched only in the sum (long
+  `compatibility:` / `metadata` overcounted, long descriptions undercounted).
+  The method label is now `· method: chars/3, name+description`. The same
+  number feeds `tokensPerSkill` and `consumption` in `skl usage --format json`.
+- **`skl cost` shows skills with `disable-model-invocation: true` as `-`.**
+  Claude Code keeps them out of the always-loaded context, so they are left out
+  of `Total`; they still count in `across N skills`. In `skl usage --format json`
+  their `tokensPerSkill` is `null`.
+- **Breaking: no verdict in the `skl cost` total.** `OK - keep it lean` /
+  `time to plan some cleanup` / `ballast - clean it up` are gone; how many skills
+  to keep is the user's call.
+- **Breaking: no blank lines in `skl ls`, `skl cost` and `skl usage`.** The empty
+  line before the scope header, before `Total:` and before the `not in lock`
+  lines is gone, so a sequence of commands reads as one report.
+- **Scope header is bold** (`Project Scope` / `Global Scope`) in all three
+  commands when color is on.
+- **`not in lock` names in `skl ls` use their disk color** (green for a real
+  folder, yellow for a symlink, red for a dangling one) instead of cyan.
+
+### Fixed
+
+- **`skl usage` rejects unknown `--mode` and `--format` values** with exit 1 and
+  a one-line error, before reading any session. A typo like `--mode merge` used
+  to print zero usage, and `--format yaml` silently printed text.
+- **e2e color tests pass with `NO_COLOR=1` in the environment** (as set by
+  Codex). `NO_COLOR` still wins over `FORCE_COLOR`; the tests now drop an
+  inherited `NO_COLOR`.
+
 ## 0.1.19 (2026-10-03)
 
 ### Added
@@ -160,8 +276,8 @@
   have usage records but are no longer present in lock or on disk are tagged
   with a red `(missing)` suffix in text output; JSON output gains an
   `installed` field. Sort is `installed-first`.
-- **`mo` period unit (30 days).** Use `6mo` to mean "the last 6 calendar
-  months" (180 days). `m` continues to mean minute - the new `mo` unit
+- **`mo` period unit (30 days).** A fixed 30-day month unit: `6mo` = 180 days,
+  not calendar months. `m` continues to mean minute - the new `mo` unit
   removes the ambiguity around month-vs-minute in `-p`.
 - **`rm --all` typed-phrase guard in TTY.** Interactive `rm --all` now
   requires typing the word `all` to confirm, even with `--yes`. Non-TTY

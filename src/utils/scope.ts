@@ -1,9 +1,10 @@
 import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
+import { bold } from './ansi';
 
 export function scopeHeader(isGlobal: boolean): string {
-  return isGlobal ? 'Global Scope' : 'Project Scope';
+  return bold(isGlobal ? 'Global Scope' : 'Project Scope');
 }
 
 export interface AuditScope {

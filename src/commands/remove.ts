@@ -6,6 +6,7 @@ import { green, red, yellow } from '../utils/ansi';
 import { createConfirmer } from '../utils/confirm';
 import { discoverSkills } from '../utils/discover-skills';
 import { countFoldersAndFiles, lstatOrNull, rmSkillDir } from '../utils/fs-rm';
+import { extractMode } from '../utils/mode';
 
 type LocationKind = 'real' | 'symlink' | 'missing';
 
@@ -34,7 +35,6 @@ const KNOWN_FLAGS = new Set([
   '--lock-only',
   '--agents-only',
   '--claude-only',
-  '--stealth-mode',
   '-h',
   '--help',
 ]);
@@ -190,11 +190,6 @@ export const removeCommand = defineCommand({
       alias: 'x',
       description: 'With ".": skill names to keep (space-separated)',
     },
-    'stealth-mode': {
-      type: 'boolean',
-      default: false,
-      description: 'Print one "Executed A/B/C skills" line instead of the summary block',
-    },
   },
   async run({ args }) {
     const {
@@ -204,7 +199,6 @@ export const removeCommand = defineCommand({
       'agents-only': agentsOnly,
       'claude-only': claudeOnly,
     } = args;
-    let stealth = args['stealth-mode'];
 
     const onlyFlagCount = [lockOnly, agentsOnly, claudeOnly].filter(Boolean).length;
     if (onlyFlagCount > 1) {
@@ -222,7 +216,13 @@ export const removeCommand = defineCommand({
     // Manual argv parse: citty can't collect multiple space-separated values
     // for positionals or for -x/--reject
     const subcmdIdx = process.argv.findIndex((a) => a === 'remove' || a === 'rm');
-    const tokens = process.argv.slice(subcmdIdx + 1);
+    const mode = extractMode(process.argv.slice(subcmdIdx + 1));
+    if (mode.kind === 'error') {
+      console.error(`skl rm: ${mode.message}`);
+      process.exit(1);
+    }
+    const stealth = mode.silent;
+    const tokens = mode.rest;
     const rawNames: string[] = [];
     const rejects: string[] = [];
     let rejectFlagSeen = false;
@@ -237,11 +237,6 @@ export const removeCommand = defineCommand({
           i++;
           next = tokens[i + 1];
         }
-        continue;
-      }
-      // citty splits "-sm" into "-s -m", so the short form is matched here
-      if (tok === '-sm') {
-        stealth = true;
         continue;
       }
       if (tok.startsWith('--reject=')) {

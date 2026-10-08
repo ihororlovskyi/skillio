@@ -1,11 +1,13 @@
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { run } from './helpers';
+import { run, runWithColor } from './helpers';
 
 const COST_DIR = join(process.cwd(), 'test', 'fixtures', 'cost');
 
 describe('skl cost', () => {
-  it('lists per-skill cost sorted desc with verdict line', () => {
+  it('lists per-skill cost sorted desc without a verdict', () => {
     const { stdout, exitCode } = run(['cost'], COST_DIR);
     expect(exitCode).toBe(0);
     // skill-foo has frontmatter, comes before missing/no-frontmatter rows
@@ -15,18 +17,12 @@ describe('skl cost', () => {
     const ghostIdx = lines.findIndex((l) => l.startsWith('ghost-skill'));
     expect(brainIdx).toBeLessThan(noFmIdx);
     expect(brainIdx).toBeLessThan(ghostIdx);
-    expect(stdout).toMatch(/skill-foo\s+~\d+ tok/);
+    // 'skill-foo' + 'Tiny test description for token counting.' = 51 chars -> 17 tok
+    expect(stdout).toMatch(/skill-foo\s+~17 tok/);
     expect(stdout).toMatch(/no-fm\s+\(no frontmatter\)/);
     expect(stdout).toMatch(/ghost-skill\s+~\? tok\s+missing/);
-    expect(stdout).toMatch(/Total: ~\d+ tok across 3 skills/);
-    // small fixture → green verdict
-    expect(stdout).toMatch(/OK - keep it lean/);
-  });
-
-  it('cs alias works', () => {
-    const { stdout, exitCode } = run(['cs'], COST_DIR);
-    expect(exitCode).toBe(0);
-    expect(stdout).toMatch(/Total: ~\d+ tok across 3 skills/);
+    expect(stdout).toContain('Total: ~17 tok across 3 skills  ·  method:');
+    expect(stdout).not.toMatch(/keep it lean|cleanup|clean it up/);
   });
 
   it('bare skl with no args runs cost', () => {
@@ -38,15 +34,43 @@ describe('skl cost', () => {
     expect(stdout).not.toContain('Global Scope');
   });
 
-  it('prints blank line before Project Scope header and before Total line', () => {
+  it('prints no blank lines: header first, Total right after the rows', () => {
     const { stdout, exitCode } = run(['cost'], COST_DIR);
     expect(exitCode).toBe(0);
-    const lines = stdout.split('\n');
-    expect(lines[0]).toBe('');
-    expect(lines[1]).toBe('Project Scope');
-    const totalIdx = lines.findIndex((l) => l.startsWith('Total:'));
-    expect(totalIdx).toBeGreaterThan(0);
-    expect(lines[totalIdx - 1]).toBe('');
+    const lines = stdout.trimEnd().split('\n');
+    expect(lines[0]).toBe('Project Scope');
+    expect(lines).not.toContain('');
+    expect(lines.at(-1)).toMatch(/^Total:/);
+  });
+
+  it('shows disable-model-invocation skills as "-" and leaves them out of Total', () => {
+    const tmp = mkdtempSync(join(tmpdir(), 'skl-cost-dmi-'));
+    try {
+      writeFileSync(join(tmp, 'skills-lock.json'), JSON.stringify({ skills: {} }));
+      const write = (name: string, fm: string) => {
+        mkdirSync(join(tmp, '.claude', 'skills', name), { recursive: true });
+        writeFileSync(join(tmp, '.claude', 'skills', name, 'SKILL.md'), `---\n${fm}\n---\n`);
+      };
+      // 'auto' + 'Does it.' = 12 chars -> 4 tok
+      write('auto', 'name: auto\ndescription: Does it.');
+      write(
+        'manual',
+        'name: manual\ndescription: Long manual text\ndisable-model-invocation: true',
+      );
+      const { stdout, exitCode } = run(['cost'], tmp);
+      expect(exitCode).toBe(0);
+      const lines = stdout.trimEnd().split('\n');
+      expect(lines[1]).toMatch(/^auto\s+~4 tok$/);
+      expect(lines[2]).toMatch(/^manual\s+-$/);
+      expect(stdout).toMatch(/Total: ~4 tok across 2 skills/);
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+
+  it('prints the scope header in bold with FORCE_COLOR', () => {
+    const { stdout } = runWithColor(['cost'], COST_DIR);
+    expect(stdout.split('\n')[0]).toBe('\x1b[1mProject Scope\x1b[22m');
   });
 
   it('cst alias works', () => {
@@ -58,6 +82,6 @@ describe('skl cost', () => {
   it('summary includes method label', () => {
     const { stdout, exitCode } = run(['cost'], COST_DIR);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain('·  method: chars/4, yaml-frontmatter');
+    expect(stdout).toContain('·  method: chars/3, name+description');
   });
 });

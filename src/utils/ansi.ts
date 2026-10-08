@@ -10,6 +10,10 @@ export function detectColorSupport(): boolean {
   return Boolean(process.stdout.isTTY);
 }
 
+export function bold(s: string): string {
+  return enabled ? `\x1b[1m${s}\x1b[22m` : s;
+}
+
 export function green(s: string): string {
   return enabled ? `\x1b[32m${s}\x1b[0m` : s;
 }

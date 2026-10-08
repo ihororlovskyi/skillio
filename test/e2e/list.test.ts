@@ -2,178 +2,120 @@ import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { describe, expect, it } from 'vitest';
-import { run } from './helpers';
+import { afterEach, describe, expect, it } from 'vitest';
+import { run, runWithColor } from './helpers';
 
 const LOCK_DIR = join(process.cwd(), 'test', 'fixtures', 'lock');
+const EMPTY = resolve(__dirname, '..', 'fixtures', 'list', 'empty-local');
 const CLI = resolve(process.cwd(), 'dist', 'cli.js');
 
-// Helper that forces ANSI color output for assertions on colored text
-function runWithColor(args: string[], cwd: string) {
-  return spawnSync(process.execPath, [CLI, ...args], {
-    cwd,
-    encoding: 'utf8' as const,
-    env: { ...process.env, FORCE_COLOR: '1', SKILLIO_NO_UPDATE_CHECK: '1' },
-  });
+let tmp = '';
+afterEach(() => {
+  if (tmp) rmSync(tmp, { recursive: true, force: true });
+  tmp = '';
+});
+
+// a: real in .agents + symlink in .claude + lock; b: real in .claude; c: dangling in .claude; d: lock only
+function seedAllStates(): string {
+  tmp = mkdtempSync(join(tmpdir(), 'skl-ls-states-'));
+  writeFileSync(join(tmp, 'skills-lock.json'), JSON.stringify({ skills: { a: {}, d: {} } }));
+  mkdirSync(join(tmp, '.agents', 'skills', 'a'), { recursive: true });
+  writeFileSync(join(tmp, '.agents', 'skills', 'a', 'SKILL.md'), '---\nname: a\n---\n');
+  mkdirSync(join(tmp, '.claude', 'skills', 'b'), { recursive: true });
+  writeFileSync(join(tmp, '.claude', 'skills', 'b', 'SKILL.md'), '---\nname: b\n---\n');
+  symlinkSync('../../.agents/skills/a', join(tmp, '.claude', 'skills', 'a'));
+  symlinkSync('../../.agents/skills/gone', join(tmp, '.claude', 'skills', 'c'));
+  return tmp;
 }
 
 describe('skl ls', () => {
-  it('renders compact per-source one-liner: label : N skills : names', () => {
+  it('prints one table row per skill with a total row', () => {
     const { stdout, exitCode } = run(['ls'], LOCK_DIR);
     expect(exitCode).toBe(0);
-    // .claude has skill-bar and skill-foo (2 skills on disk)
-    expect(stdout).toMatch(/\.claude\/skills\s+:\s+2 skills\s+:\s+skill-bar\s+skill-foo/);
-    // lock row lists all lock entries; orphans (skill-baz) included
-    expect(stdout).toMatch(
-      /skills-lock\.json\s+:\s+3 skills\s+:\s+skill-bar\s+skill-baz\s+skill-foo/,
+    expect(stdout).toBe(
+      [
+        'Project Scope',
+        'skill      .agents  .claude  skills-lock.json',
+        'skill-bar  -        copied   +',
+        'skill-baz  -        -        +',
+        'skill-foo  -        copied   +',
+        '3 skills   0        2        3',
+        '',
+      ].join('\n'),
     );
-    expect(stdout).not.toMatch(/~\d+ tok/);
-  });
-
-  it('does not emit a "missing on disk" diff line (orphans shown inline in lock row)', () => {
-    const { stdout, exitCode } = run(['ls'], LOCK_DIR);
-    expect(exitCode).toBe(0);
-    expect(stdout).not.toContain('missing on disk');
   });
 
   it('list alias works', () => {
-    const { stdout, exitCode } = run(['list'], LOCK_DIR);
+    expect(run(['list'], LOCK_DIR).stdout).toContain('skill-bar  -        copied   +');
+  });
+
+  it('shows every install state and no "not in lock" lines', () => {
+    const { stdout, exitCode } = run(['ls'], seedAllStates());
     expect(exitCode).toBe(0);
-    expect(stdout).toContain('skills-lock.json');
-  });
-
-  it('always shows .agents/skills row even when empty (0 skills)', () => {
-    const { stdout, exitCode } = run(['ls'], LOCK_DIR);
-    expect(exitCode).toBe(0);
-    expect(stdout).toMatch(/\.agents\/skills\s+:\s+0 skills?/);
-  });
-
-  it('all-onboard fixture lists lock names uncolored in lock row', () => {
-    const fix = resolve(__dirname, '..', 'fixtures', 'list', 'all-onboard');
-    const r = runWithColor(['list'], fix);
-    expect(r.status).toBe(0);
-    const plain = r.stdout.replace(/\x1b\[[0-9;]*m/g, '');
-    expect(plain).toMatch(/skills-lock\.json\s*:\s*2 skills\s*:\s*bar\s+foo/);
-    expect(plain).not.toContain('All skills onboard!');
-    // lock row names carry no ANSI color
-    const lockLine = r.stdout.split('\n').find((l) => l.includes('skills-lock.json')) ?? '';
-    expect(lockLine).not.toMatch(/\x1b\[/);
-  });
-
-  it('missing-in-lock fixture renders orphan name red in lock row', () => {
-    const fix = resolve(__dirname, '..', 'fixtures', 'list', 'missing-in-lock');
-    const r = runWithColor(['list'], fix);
-    expect(r.status).toBe(0);
-    const plain = r.stdout.replace(/\x1b\[[0-9;]*m/g, '');
-    expect(plain).toMatch(/skills-lock\.json\s*:\s*2 skills\s*:\s*foo\s+phantom/);
-    expect(r.stdout).toMatch(/\x1b\[31m[^\x1b]*phantom/);
-    // non-orphan lock name stays uncolored
-    expect(r.stdout).not.toMatch(/\x1b\[31m[^\x1b]*foo/);
-  });
-
-  it('symlinked-skill fixture renders disk name yellow', () => {
-    const fix = resolve(__dirname, '..', 'fixtures', 'list', 'symlinked-skill');
-    const r = runWithColor(['list'], fix);
-    expect(r.status).toBe(0);
-    expect(r.stdout).toMatch(/\.claude\/skills[^\n]*\x1b\[33m[^\x1b]*foo/);
-  });
-
-  it('renders a dangling .claude/skills symlink name red', () => {
-    const tmpDir = mkdtempSync(join(tmpdir(), 'skl-ls-broken-'));
-    writeFileSync(join(tmpDir, 'skills-lock.json'), JSON.stringify({ skills: {} }));
-    mkdirSync(join(tmpDir, '.claude', 'skills'), { recursive: true });
-    // target under .agents/skills does not exist - the symlink is dangling
-    symlinkSync(
-      join(tmpDir, '.agents', 'skills', 'ghost'),
-      join(tmpDir, '.claude', 'skills', 'ghost'),
+    expect(stdout).toBe(
+      [
+        'Project Scope',
+        'skill     .agents    .claude    skills-lock.json',
+        'a         universal  symlinked  +',
+        'b         -          copied     -',
+        'c         -          broken     -',
+        'd         -          -          +',
+        '4 skills  1          3          2',
+        '',
+      ].join('\n'),
     );
-
-    const r = runWithColor(['list'], tmpDir);
-    expect(r.status).toBe(0);
-    const plain = r.stdout.replace(/\x1b\[[0-9;]*m/g, '');
-    expect(plain).toMatch(/\.claude\/skills\s*:\s*1 skill\s*:\s*ghost/);
-    expect(r.stdout).toMatch(/\.claude\/skills[^\n]*\x1b\[31m[^\x1b]*ghost/);
-
-    rmSync(tmpDir, { recursive: true, force: true });
+    expect(stdout).not.toContain('not in lock');
   });
 
-  it('reorder fixture renders .agents row before .claude', () => {
-    const fix = resolve(__dirname, '..', 'fixtures', 'list', 'reorder');
-    const r = runWithColor(['list'], fix);
-    expect(r.status).toBe(0);
-    const plain = r.stdout.replace(/\x1b\[[0-9;]*m/g, '');
-    const agentsIdx = plain.indexOf('.agents/skills');
-    const claudeIdx = plain.indexOf('.claude/skills');
-    expect(agentsIdx).toBeGreaterThanOrEqual(0);
-    expect(claudeIdx).toBeGreaterThan(agentsIdx);
-  });
-
-  it('prints "Project Scope" header as first line by default', () => {
-    const fix = resolve(__dirname, '..', 'fixtures', 'list', 'empty-local');
-    const r = run(['ls'], fix);
+  it('colors cells and the orphan lock mark with FORCE_COLOR', () => {
+    const r = runWithColor(['ls'], seedAllStates());
     expect(r.exitCode).toBe(0);
+    expect(r.stdout.split('\n')[0]).toBe('\x1b[1mProject Scope\x1b[22m');
+    expect(r.stdout).toContain('\x1b[1mskill\x1b[22m');
+    expect(r.stdout).toContain('\x1b[32muniversal\x1b[0m');
+    expect(r.stdout).toContain('\x1b[33msymlinked\x1b[0m');
+    expect(r.stdout).toContain('\x1b[32mcopied\x1b[0m');
+    expect(r.stdout).toContain('\x1b[31mbroken\x1b[0m');
     const lines = r.stdout.split('\n');
-    expect(lines[0]).toBe('Project Scope');
+    expect(lines.find((l) => l.startsWith('d '))).toMatch(/\x1b\[31m\+\x1b\[0m$/);
+    expect(lines.find((l) => l.startsWith('a '))).toMatch(/ \+$/);
   });
 
-  it('prints "Global Scope" header when -g is passed', () => {
-    const fix = resolve(__dirname, '..', 'fixtures', 'list', 'empty-local');
-    const home = mkdtempSync(join(tmpdir(), 'skl-ls-global-'));
-    try {
-      const r = spawnSync(process.execPath, [CLI, 'ls', '-g'], {
-        encoding: 'utf8',
-        cwd: fix,
-        env: { ...process.env, HOME: home, SKILLIO_NO_UPDATE_CHECK: '1' },
-      });
-      expect(r.status).toBe(0);
-      const lines = (r.stdout ?? '').split('\n');
-      expect(lines[0]).toBe('Global Scope');
-    } finally {
-      rmSync(home, { recursive: true, force: true });
-    }
-  });
-
-  it('global scope shows real lock filename .agents/.skill-lock.json (not skills-lock.json)', () => {
-    const fix = resolve(__dirname, '..', 'fixtures', 'list', 'empty-local');
-    const home = mkdtempSync(join(tmpdir(), 'skl-ls-global-label-'));
-    try {
-      const r = spawnSync(process.execPath, [CLI, 'ls', '-g'], {
-        encoding: 'utf8',
-        cwd: fix,
-        env: { ...process.env, HOME: home, SKILLIO_NO_UPDATE_CHECK: '1' },
-      });
-      expect(r.status).toBe(0);
-      expect(r.stdout).toMatch(/\.agents\/\.skill-lock\.json\s*:/);
-      // local label MUST NOT appear in global output
-      expect(r.stdout).not.toMatch(/^skills-lock\.json\s*:/m);
-    } finally {
-      rmSync(home, { recursive: true, force: true });
-    }
-  });
-
-  it('does not show "All skills onboard!" when lock has 0 entries', () => {
-    const fix = resolve(__dirname, '..', 'fixtures', 'list', 'empty-local');
-    const r = run(['ls'], fix);
+  it('prints "No skills in scope." for an empty scope', () => {
+    const r = run(['ls'], EMPTY);
     expect(r.exitCode).toBe(0);
-    expect(r.stdout).not.toContain('All skills onboard!');
-    // count cell still shows 0 skills
-    expect(r.stdout).toMatch(/skills-lock\.json\s+:\s+0 skills\s*$/m);
+    expect(r.stdout).toBe('Project Scope\nNo skills in scope.\n');
+  });
+
+  it('global scope uses the .agents/.skill-lock.json column label', () => {
+    tmp = mkdtempSync(join(tmpdir(), 'skl-ls-global-'));
+    mkdirSync(join(tmp, '.agents'), { recursive: true });
+    writeFileSync(join(tmp, '.agents', '.skill-lock.json'), JSON.stringify({ skills: { foo: {} } }));
+    const r = spawnSync(process.execPath, [CLI, 'ls', '-g'], {
+      encoding: 'utf8',
+      cwd: EMPTY,
+      env: { ...process.env, HOME: tmp, SKLX_NO_UPDATE_CHECK: '1', NO_COLOR: '1' },
+    });
+    expect(r.status).toBe(0);
+    expect(r.stdout).toBe(
+      [
+        'Global Scope',
+        'skill    .agents  .claude  .agents/.skill-lock.json',
+        'foo      -        -        +',
+        '1 skill  0        0        1',
+        '',
+      ].join('\n'),
+    );
   });
 
   it('--names prints one name per line, sorted, no header, no colors', () => {
     const r = runWithColor(['ls', '--names'], LOCK_DIR);
-    expect(r.status).toBe(0);
-    const lines = r.stdout.split('\n').filter((l) => l.length > 0);
-    expect(lines).toEqual(['skill-bar', 'skill-baz', 'skill-foo']);
-    // no ANSI sequences
-    expect(r.stdout).not.toMatch(/\x1b\[/);
-    // no Project/Global Scope header
-    expect(r.stdout).not.toMatch(/^(Project|Global) Scope$/m);
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout).toBe('skill-bar\nskill-baz\nskill-foo\n');
   });
 
   it('--names emits nothing when scope is empty', () => {
-    const fix = resolve(__dirname, '..', 'fixtures', 'list', 'empty-local');
-    const r = run(['ls', '--names'], fix);
+    const r = run(['ls', '--names'], EMPTY);
     expect(r.exitCode).toBe(0);
     expect(r.stdout).toBe('');
   });

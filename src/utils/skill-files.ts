@@ -1,8 +1,18 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 
-export const CHARS_PER_TOKEN = 4;
+// Calibrated against Claude Code `/skills`: name + description at 3 chars/token
+// matches per skill; whole-frontmatter at 4 chars/token matched only in sum.
+export const CHARS_PER_TOKEN = 3;
+
+export interface SkillMeta {
+  name?: string;
+  description?: string;
+  disableModelInvocation: boolean;
+  // metadata.internal: true hides a skill from `npx skills add` without -s
+  internal: boolean;
+}
 
 export function getSkillPathCandidates(
   name: string,
@@ -34,13 +44,56 @@ export function extractFrontmatter(content: string): string | undefined {
   return match?.[1];
 }
 
-export function estimateTokens(text: string): number {
-  return Math.round(text.length / CHARS_PER_TOKEN);
+function unquote(value: string): string {
+  const m = value.match(/^(["'])([\s\S]*)\1$/);
+  return m?.[2] ?? value;
+}
+
+// Minimal YAML reader for top-level scalar keys only (zero-dep by design):
+// column-0 `key: value`, indented continuation lines, `>`/`|` block indicators.
+export function parseSkillMeta(frontmatter: string): SkillMeta {
+  const fields = new Map<string, string[]>();
+  let current: string[] | undefined;
+  for (const line of frontmatter.split(/\r?\n/)) {
+    const key = line.match(/^([A-Za-z0-9_-]+):\s*(.*)$/);
+    if (key?.[1] !== undefined) {
+      current = [];
+      fields.set(key[1], current);
+      const head = (key[2] ?? '').trim();
+      if (head && !/^[>|][+-]?$/.test(head)) current.push(head);
+    } else if (current && /^\s/.test(line) && line.trim()) {
+      current.push(line.trim());
+    } else if (line.trim()) {
+      current = undefined;
+    }
+  }
+  const read = (k: string) => {
+    const parts = fields.get(k);
+    return parts ? unquote(parts.join(' ')) : undefined;
+  };
+  return {
+    name: read('name'),
+    description: read('description'),
+    disableModelInvocation: read('disable-model-invocation') === 'true',
+    // nested metadata lines are kept trimmed as continuation lines of `metadata:`;
+    // a YAML comment needs whitespace before `#`
+    internal: (fields.get('metadata') ?? []).some((l) =>
+      /^internal:\s*(["']?)true\1(?:\s+#.*)?$/.test(l),
+    ),
+  };
+}
+
+export function estimateContextTokens(
+  meta: Pick<SkillMeta, 'name' | 'description'>,
+  fallbackName: string,
+): number {
+  const chars = (meta.name ?? fallbackName).length + (meta.description ?? '').length;
+  return Math.round(chars / CHARS_PER_TOKEN);
 }
 
 export function countFrontmatterTokens(filePath: string): number | undefined {
   const content = readFileSync(filePath, 'utf8');
   const fm = extractFrontmatter(content);
   if (fm === undefined) return undefined;
-  return estimateTokens(fm);
+  return estimateContextTokens(parseSkillMeta(fm), basename(dirname(filePath)));
 }

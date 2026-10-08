@@ -79,7 +79,7 @@ describe('skl rm', () => {
       cwd: TMP,
       encoding: 'utf8',
       input: 'n\n',
-      env: { ...process.env, SKILLIO_NO_UPDATE_CHECK: '1' },
+      env: { ...process.env, SKLX_NO_UPDATE_CHECK: '1' },
     });
     expect(r.status).toBe(1);
     expect(r.stdout).toContain('\n\nProceed?');
@@ -94,7 +94,7 @@ describe('skl rm', () => {
       cwd: TMP,
       encoding: 'utf8',
       input: 'y\nn\n',
-      env: { ...process.env, SKILLIO_NO_UPDATE_CHECK: '1' },
+      env: { ...process.env, SKLX_NO_UPDATE_CHECK: '1' },
     });
     expect(r.status).toBe(0);
     expect(existsSync(join(TMP, '.claude/skills/skill-foo'))).toBe(false);
@@ -108,7 +108,7 @@ describe('skl rm', () => {
       cwd: TMP,
       encoding: 'utf8',
       input: 'y\ny\n',
-      env: { ...process.env, SKILLIO_NO_UPDATE_CHECK: '1' },
+      env: { ...process.env, SKLX_NO_UPDATE_CHECK: '1' },
     });
     expect(r.status).toBe(0);
     expect(existsSync(join(TMP, '.claude/skills/skill-foo'))).toBe(false);
@@ -126,7 +126,7 @@ describe('skl rm', () => {
       cwd: tmpDir,
       encoding: 'utf8',
       input: 'y\n',
-      env: { ...process.env, SKILLIO_NO_UPDATE_CHECK: '1' },
+      env: { ...process.env, SKLX_NO_UPDATE_CHECK: '1' },
     });
     expect(r.status).toBe(0);
     expect(r.stdout).toContain('not in lock');
@@ -180,7 +180,7 @@ describe('skl rm', () => {
     const r = spawnSync(process.execPath, [CLI, 'rm', 'foo', '--agents-only', '--yes'], {
       cwd: tmpDir,
       encoding: 'utf8',
-      env: { ...process.env, SKILLIO_NO_UPDATE_CHECK: '1' },
+      env: { ...process.env, SKLX_NO_UPDATE_CHECK: '1' },
     });
     expect(r.status).toBe(0);
     expect(r.stdout).toContain('.agents/skills');
@@ -215,11 +215,17 @@ describe('skl rm', () => {
     );
 
     // without --yes, so the plan block (green/yellow) is printed
+    const env: NodeJS.ProcessEnv = {
+      ...process.env,
+      SKLX_NO_UPDATE_CHECK: '1',
+      FORCE_COLOR: '1',
+    };
+    delete env.NO_COLOR;
     const r = spawnSync(process.execPath, [CLI, 'rm', 'foo'], {
       cwd: tmpDir,
       encoding: 'utf8',
       input: 'y\n',
-      env: { ...process.env, SKILLIO_NO_UPDATE_CHECK: '1', FORCE_COLOR: '1' },
+      env,
     });
     expect(r.status).toBe(0);
     expect(r.stdout).toContain('\x1b[32m');
@@ -237,7 +243,7 @@ describe('skl rm', () => {
     const env: NodeJS.ProcessEnv = {
       ...process.env,
       FORCE_COLOR: '1',
-      SKILLIO_NO_UPDATE_CHECK: '1',
+      SKLX_NO_UPDATE_CHECK: '1',
     };
     delete env.NO_COLOR;
     const r = spawnSync(process.execPath, [CLI, 'rm', 'skill-foo', 'skill-bar', '--yes'], {
@@ -269,7 +275,7 @@ describe('skl rm', () => {
     const r = spawnSync(process.execPath, [CLI, 'rm', 'real-one', 'symlinked-one', '--yes'], {
       cwd: tmpDir,
       encoding: 'utf8',
-      env: { ...process.env, SKILLIO_NO_UPDATE_CHECK: '1' },
+      env: { ...process.env, SKLX_NO_UPDATE_CHECK: '1' },
     });
     expect(r.status).toBe(0);
     expect(r.stdout).toContain('.claude/skills/   1 folder, 0 subfolders, 1 file, 1 symlink');

@@ -55,6 +55,17 @@ function parseAgents(agent: string | undefined): Agent[] {
   return [...new Set(out)];
 }
 
+const MODES = ['merged', 'attributed', 'activations', 'mentions'];
+const FORMATS = ['text', 'json'];
+
+function validateChoice(kind: string, value: string | undefined, allowed: string[]): void {
+  if (value === undefined || allowed.includes(value)) return;
+  const list = allowed.map((v) => `"${v}"`);
+  const hint =
+    list.length === 2 ? list.join(' or ') : `${list.slice(0, -1).join(', ')} or ${list.at(-1)}`;
+  throw new Error(`Unknown ${kind}: "${value}". Use ${hint}.`);
+}
+
 export const usageArgs = {
   agent: {
     type: 'string',
@@ -84,6 +95,8 @@ export const usageArgs = {
 } as const;
 
 export async function runUsage(args: UsageArgs): Promise<void> {
+  validateChoice('mode', args.mode, MODES);
+  validateChoice('format', args.format, FORMATS);
   const agents = parseAgents(args.agent);
   const allTime = !args.since && args.period === 'all';
   const since = args.since
@@ -157,7 +170,7 @@ export async function runUsage(args: UsageArgs): Promise<void> {
       return {
         name,
         count: counts.get(name) ?? 0,
-        tokens: rec?.frontmatterTokens,
+        tokens: rec?.disableModelInvocation ? undefined : rec?.frontmatterTokens,
         installed: rec !== undefined && rec.status !== 'missing',
       };
     });
@@ -190,7 +203,6 @@ export async function runUsage(args: UsageArgs): Promise<void> {
   }
 
   const periodLabel = args.since ? `since ${args.since}` : (args.period ?? 'all');
-  console.log('');
   console.log(scopeHeader(scope.global));
 
   const distinct = new Set<string>();
@@ -212,7 +224,6 @@ export async function runUsage(args: UsageArgs): Promise<void> {
     grandActivations += activations;
   }
 
-  console.log('');
   console.log(
     `Total: ${distinct.size} skill${distinct.size === 1 ? '' : 's'} usage ${grandActivations} time${grandActivations === 1 ? '' : 's'}`,
   );

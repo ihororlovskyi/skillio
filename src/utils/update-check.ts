@@ -3,12 +3,12 @@ import { get } from 'node:https';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 
-const PKG = 'skillio';
+const PKG = 'skl-x';
 const TTL_MS = 24 * 60 * 60 * 1000;
 const FETCH_TIMEOUT_MS = 1500;
 
 export function getCachePath(): string {
-  return join(homedir(), '.cache', 'skillio', 'version.json');
+  return join(homedir(), '.cache', 'sklx', 'version.json');
 }
 
 interface Cache {
@@ -79,7 +79,7 @@ function fetchLatest(): Promise<string | undefined> {
 }
 
 export async function maybePrintUpdateNotice(currentVersion: string): Promise<void> {
-  if (process.env.SKILLIO_NO_UPDATE_CHECK) return;
+  if (process.env.SKLX_NO_UPDATE_CHECK) return;
 
   const now = Date.now();
   const cache = readCache();
@@ -95,7 +95,7 @@ export async function maybePrintUpdateNotice(currentVersion: string): Promise<vo
 
   if (latest && compareVersions(latest, currentVersion) > 0) {
     process.stderr.write(
-      `\nUpdate available: ${currentVersion} → ${latest}\nRun: npm i -g skillio\n\n`,
+      `\nUpdate available: ${currentVersion} → ${latest}\nRun: npm i -g ${PKG}\n\n`,
     );
   }
 }
