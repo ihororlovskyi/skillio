@@ -1,7 +1,7 @@
 // src/utils/skill-table.ts
 import { existsSync, lstatSync } from 'node:fs';
 import { join } from 'node:path';
-import { bold, green, red, yellow } from './ansi';
+import { bold, cyan, green, red, yellow } from './ansi';
 
 export type Install = 'real' | 'symlink' | 'broken';
 
@@ -72,7 +72,7 @@ export function renderSkillTable(
     const orphan = r.inLock && !r.agents && !r.claude;
     const lock: Cell = r.inLock ? { text: '+', paint: orphan ? red : (s) => s } : plain('-');
     return [
-      plain(r.name),
+      { text: r.name, paint: cyan },
       installCell(r.agents, 'universal'),
       installCell(r.claude, 'copied'),
       lock,

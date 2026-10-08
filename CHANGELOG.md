@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.1 (2026-10-08)
+
+### Changed
+
+- `skl ls` and `skl i` print skill names in cyan, as `skl cost` and `skl usage` do.
+
 ## 0.4.0 (2026-10-08)
 
 ### Changed

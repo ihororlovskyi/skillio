@@ -77,8 +77,8 @@ describe('skl ls', () => {
     expect(r.stdout).toContain('\x1b[32mcopied\x1b[0m');
     expect(r.stdout).toContain('\x1b[31mbroken\x1b[0m');
     const lines = r.stdout.split('\n');
-    expect(lines.find((l) => l.startsWith('d '))).toMatch(/\x1b\[31m\+\x1b\[0m$/);
-    expect(lines.find((l) => l.startsWith('a '))).toMatch(/ \+$/);
+    expect(lines.find((l) => l.startsWith('\x1b[36md\x1b[0m '))).toMatch(/\x1b\[31m\+\x1b\[0m$/);
+    expect(lines.find((l) => l.startsWith('\x1b[36ma\x1b[0m '))).toMatch(/ \+$/);
   });
 
   it('prints "No skills in scope." for an empty scope', () => {
