@@ -230,6 +230,9 @@ const main = defineCommand({
 });
 
 (async () => {
+  process.stderr.write(
+    '@sentimony/sklx is deprecated, renamed to skl-x: npm rm -g @sentimony/sklx && npm i -g skl-x\n',
+  );
   if (raw) {
     setColorEnabled(detectColorSupport());
     await maybePrintUpdateNotice(version);

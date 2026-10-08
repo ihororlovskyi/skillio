@@ -5,9 +5,9 @@ import { run } from './helpers';
 const EMPTY = resolve(__dirname, '..', 'fixtures', 'list', 'empty-local');
 
 describe('sklx identity', () => {
-  it.each([[['-v']], [['-h']], [['ls']]])('prints no deprecation line for %j', (args) => {
+  it.each([[['-v']], [['-h']], [['ls']]])('does not mention skillio on stderr for %j', (args) => {
     const { stderr } = run(args, EMPTY);
-    expect(stderr).not.toMatch(/deprecated|skillio/);
+    expect(stderr).not.toContain('skillio');
   });
 
   it('names sklx in root help', () => {

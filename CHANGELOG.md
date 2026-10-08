@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.2 (2026-10-08)
+
+### Deprecated
+
+- **`@sentimony/sklx` is renamed to `skl-x`.** Every run prints
+  `@sentimony/sklx is deprecated, renamed to skl-x: npm rm -g @sentimony/sklx && npm i -g skl-x`
+  to stderr. stdout is unchanged, so `skl -v` still prints the bare version. This is the last
+  `@sentimony/sklx` release; new versions ship as `skl-x`.
+
 ## 0.2.1 (2026-10-08)
 
 ### Changed
