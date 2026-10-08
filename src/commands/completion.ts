@@ -1,8 +1,8 @@
 import { defineCommand } from 'citty';
 
-const BASH = `# skillio bash completion
+const BASH = `# sklx bash completion
 # Install: source <(skl completion bash)
-_skillio_completions() {
+_sklx_completions() {
   local cur prev words cword
   COMPREPLY=()
   cur="\${COMP_WORDS[COMP_CWORD]}"
@@ -50,13 +50,13 @@ _skillio_completions() {
       ;;
   esac
 }
-complete -F _skillio_completions skl
-complete -F _skillio_completions skillio
+complete -F _sklx_completions skl
+complete -F _sklx_completions sklx
 `;
 
-const ZSH = `# skillio zsh completion
+const ZSH = `# sklx zsh completion
 # Install: source <(skl completion zsh)
-_skillio() {
+_sklx() {
   local -a cmds
   cmds=(
     'list:List skills per source'
@@ -121,12 +121,12 @@ _skillio() {
       ;;
   esac
 }
-compdef _skillio skl skillio
+compdef _sklx skl sklx
 `;
 
-const FISH = `# skillio fish completion
+const FISH = `# sklx fish completion
 # Install: skl completion fish | source
-function __skillio_skill_names
+function __sklx_skill_names
   set -l scope ""
   for w in (commandline -opc)
     if test "$w" = "-g" -o "$w" = "--global"
@@ -136,46 +136,46 @@ function __skillio_skill_names
   skl list --names $scope 2>/dev/null
 end
 
-function __skillio_needs_command
+function __sklx_needs_command
   set -l cmd (commandline -opc)
   test (count $cmd) -le 1
 end
 
-function __skillio_using_subcommand
+function __sklx_using_subcommand
   set -l cmd (commandline -opc)
   if test (count $cmd) -lt 2; return 1; end
   test "$cmd[2]" = "$argv[1]"
 end
 
-complete -c skl -n __skillio_needs_command -a 'list ls remove rm cost cst usage usg completion install i'
-complete -c skillio -n __skillio_needs_command -a 'list ls remove rm cost cst usage usg completion install i'
+complete -c skl -n __sklx_needs_command -a 'list ls remove rm cost cst usage usg completion install i'
+complete -c sklx -n __sklx_needs_command -a 'list ls remove rm cost cst usage usg completion install i'
 
 for sub in rm remove
-  complete -c skl -n "__skillio_using_subcommand $sub" -f -a '(__skillio_skill_names)'
-  complete -c skillio -n "__skillio_using_subcommand $sub" -f -a '(__skillio_skill_names)'
-  complete -c skl -n "__skillio_using_subcommand $sub" -s g -l global -d 'Use global scope'
-  complete -c skl -n "__skillio_using_subcommand $sub" -s y -l yes -d 'Skip confirmation prompt'
-  complete -c skl -n "__skillio_using_subcommand $sub" -s x -l reject -d 'With .: skills to keep'
-  complete -c skl -n "__skillio_using_subcommand $sub" -s m -l mode -xa 'silent' -d 'One-line summary'
-  complete -c skl -n "__skillio_using_subcommand $sub" -l lock-only -d 'Only remove lock entry'
-  complete -c skl -n "__skillio_using_subcommand $sub" -l agents-only -d 'Only remove from .agents/skills'
-  complete -c skl -n "__skillio_using_subcommand $sub" -l claude-only -d 'Only remove from .claude/skills'
+  complete -c skl -n "__sklx_using_subcommand $sub" -f -a '(__sklx_skill_names)'
+  complete -c sklx -n "__sklx_using_subcommand $sub" -f -a '(__sklx_skill_names)'
+  complete -c skl -n "__sklx_using_subcommand $sub" -s g -l global -d 'Use global scope'
+  complete -c skl -n "__sklx_using_subcommand $sub" -s y -l yes -d 'Skip confirmation prompt'
+  complete -c skl -n "__sklx_using_subcommand $sub" -s x -l reject -d 'With .: skills to keep'
+  complete -c skl -n "__sklx_using_subcommand $sub" -s m -l mode -xa 'silent' -d 'One-line summary'
+  complete -c skl -n "__sklx_using_subcommand $sub" -l lock-only -d 'Only remove lock entry'
+  complete -c skl -n "__sklx_using_subcommand $sub" -l agents-only -d 'Only remove from .agents/skills'
+  complete -c skl -n "__sklx_using_subcommand $sub" -l claude-only -d 'Only remove from .claude/skills'
 end
 
 for sub in install i
-  for bin in skl skillio
-    complete -c $bin -n "__skillio_using_subcommand $sub" -o ln -l link -d 'Symlink from a local clone'
-    complete -c $bin -n "__skillio_using_subcommand $sub" -s s -l skill -d 'Skill names'
-    complete -c $bin -n "__skillio_using_subcommand $sub" -s x -l reject -d 'Every skill except these'
-    complete -c $bin -n "__skillio_using_subcommand $sub" -s a -l agent -xa 'codex claude-code' -d 'Target agent'
-    complete -c $bin -n "__skillio_using_subcommand $sub" -s y -l yes -d 'Skip prompts'
-    complete -c $bin -n "__skillio_using_subcommand $sub" -s m -l mode -xa 'silent' -d 'Hide npx output'
+  for bin in skl sklx
+    complete -c $bin -n "__sklx_using_subcommand $sub" -o ln -l link -d 'Symlink from a local clone'
+    complete -c $bin -n "__sklx_using_subcommand $sub" -s s -l skill -d 'Skill names'
+    complete -c $bin -n "__sklx_using_subcommand $sub" -s x -l reject -d 'Every skill except these'
+    complete -c $bin -n "__sklx_using_subcommand $sub" -s a -l agent -xa 'codex claude-code' -d 'Target agent'
+    complete -c $bin -n "__sklx_using_subcommand $sub" -s y -l yes -d 'Skip prompts'
+    complete -c $bin -n "__sklx_using_subcommand $sub" -s m -l mode -xa 'silent' -d 'Hide npx output'
   end
 end
 
 for sub in completion
-  complete -c skl -n "__skillio_using_subcommand $sub" -f -a 'bash zsh fish'
-  complete -c skillio -n "__skillio_using_subcommand $sub" -f -a 'bash zsh fish'
+  complete -c skl -n "__sklx_using_subcommand $sub" -f -a 'bash zsh fish'
+  complete -c sklx -n "__sklx_using_subcommand $sub" -f -a 'bash zsh fish'
 end
 `;
 

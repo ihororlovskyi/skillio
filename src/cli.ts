@@ -85,9 +85,9 @@ if (!raw) process.argv = reorderRootFlagsToSubcommand(mergeAgentArgs(process.arg
 
 function printRootHelp(): void {
   const lines = [
-    `Audit and manage AI agent skills (skillio v${version})`,
+    `Audit and manage AI agent skills (sklx v${version})`,
     '',
-    'USAGE skillio [OPTIONS] [COMMAND]',
+    'USAGE sklx [OPTIONS] [COMMAND]',
     '',
     'OPTIONS',
     '',
@@ -127,8 +127,8 @@ function printRemoveHelp(): void {
   const lines = [
     'Remove skills from on-disk dirs and/or skills-lock.json.',
     '',
-    'USAGE skillio remove [SKILL...] [OPTIONS]',
-    '       skillio rm [SKILL...] [OPTIONS]',
+    'USAGE sklx remove [SKILL...] [OPTIONS]',
+    '       sklx rm [SKILL...] [OPTIONS]',
     '',
     'ARGUMENTS',
     '',
@@ -149,13 +149,13 @@ function printRemoveHelp(): void {
     '',
     'EXAMPLES',
     '',
-    '  skillio rm brainstorming',
-    '  skillio rm brainstorming writing-plans --yes',
-    '  skillio rm .',
-    '  skillio rm . -x web-debug typescript',
-    '  skillio rm . -y -m s',
-    '  skillio rm brainstorming --agents-only',
-    '  skillio rm brainstorming --lock-only',
+    '  sklx rm brainstorming',
+    '  sklx rm brainstorming writing-plans --yes',
+    '  sklx rm .',
+    '  sklx rm . -x web-debug typescript',
+    '  sklx rm . -y -m s',
+    '  sklx rm brainstorming --agents-only',
+    '  sklx rm brainstorming --lock-only',
   ];
   console.log(lines.join('\n'));
 }
@@ -195,7 +195,7 @@ function isRootVersion(argv: string[]): boolean {
 
 const main = defineCommand({
   meta: {
-    name: 'skillio',
+    name: 'sklx',
     version,
     description: 'Audit and manage AI agent skills',
   },
@@ -230,9 +230,6 @@ const main = defineCommand({
 });
 
 (async () => {
-  process.stderr.write(
-    'skillio is deprecated, renamed to sklx: npm rm -g skillio && npm i -g sklx\n',
-  );
   if (raw) {
     setColorEnabled(detectColorSupport());
     await maybePrintUpdateNotice(version);
