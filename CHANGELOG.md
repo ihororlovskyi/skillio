@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.23 (YYYY-MM-DD)
+## 0.1.23 (2026-10-08)
 
 ### Deprecated
 
