@@ -141,8 +141,8 @@ describe('runPicker - command menu labels (unit)', () => {
     selectMock.mockResolvedValueOnce('quit');
     const { runPicker } = await import('./picker');
     expect(await runPicker({ global: false })).toBe(0);
-    const { options } = selectMock.mock.calls[0]?.[0] as { options: { label: string }[] };
-    const labels = options.map((o) => o.label);
+    const [params] = selectMock.mock.calls[0] as [{ options: { label: string }[] }];
+    const labels = params.options.map((o) => o.label);
     expect(labels).toContain('usage  - count of skill invocations');
     expect(labels).toContain('remove - delete a skill (asks about lock cleanup)');
     expect(labels.join('\n')).not.toContain('—');
