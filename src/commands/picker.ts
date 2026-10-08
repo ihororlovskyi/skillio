@@ -36,10 +36,10 @@ export async function runPicker(args: PickerArgs): Promise<number> {
   const choice = await select({
     title: 'sklx - pick a command',
     options: [
-      { value: 'usage', label: 'usage  — count of skill invocations' },
-      { value: 'cost', label: 'cost   — per-skill ambient tokens' },
-      { value: 'list', label: 'list   — installed skills per source' },
-      { value: 'remove', label: 'remove — delete a skill (asks about lock cleanup)' },
+      { value: 'usage', label: 'usage  - count of skill invocations' },
+      { value: 'cost', label: 'cost   - per-skill ambient tokens' },
+      { value: 'list', label: 'list   - installed skills per source' },
+      { value: 'remove', label: 'remove - delete a skill (asks about lock cleanup)' },
       { value: 'quit', label: 'quit' },
     ],
   });
