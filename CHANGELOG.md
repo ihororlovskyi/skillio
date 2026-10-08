@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.23 (YYYY-MM-DD)
+
+### Deprecated
+
+- **`skillio` is renamed to `sklx`.** This is the last `skillio` release. Every run prints
+  `skillio is deprecated, renamed to sklx: npm rm -g skillio && npm i -g sklx` to stderr,
+  regardless of `SKILLIO_NO_UPDATE_CHECK`. Remove `skillio` first: both packages install the
+  `skl` bin.
+
 ## 0.1.22 (2026-10-08)
 
 ### Added
