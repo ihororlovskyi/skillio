@@ -3,7 +3,7 @@ import { get } from 'node:https';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 
-const PKG = '@sentimony/sklx';
+const PKG = 'skl-x';
 const TTL_MS = 24 * 60 * 60 * 1000;
 const FETCH_TIMEOUT_MS = 1500;
 
