@@ -29,7 +29,7 @@ export interface InstallDeps {
 }
 
 // Node >= 20 refuses to spawn npx.cmd without a shell on Windows (EINVAL)
-const defaultSpawn: Spawner = (command, args, capture) => {
+export const defaultSpawn: Spawner = (command, args, capture) => {
   if (!capture) {
     const r = spawnSync(command, args, { stdio: 'inherit', shell: process.platform === 'win32' });
     return { status: r.status, error: r.error };

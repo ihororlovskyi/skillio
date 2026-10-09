@@ -7,7 +7,7 @@
 - `skl i … -y -m s` and `skl i -ln` print one progress line that ends as
   `Installing from https://github.com/owner/repo ██████████ 100% · Installed N skills`. The bar is
   green and redraws only in a terminal; scripts and CI get the final line. `owner/repo` is shown
-  as its GitHub URL.
+  as its GitHub URL. While the bar moves, a label wider than the terminal is cut with `…`.
 - The skill table of `skl i` and `skl ls` has a `cost` column, as in `skl cost`; `+` in the lock
   column is green, `-` yellow.
 - `skl usage` prints one table: `.agents` (Codex) and `.claude` (Claude Code) runs, cost per skill

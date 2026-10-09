@@ -4,6 +4,7 @@ const WIDTH = 10;
 
 export interface ProgressOut {
   isTTY: boolean;
+  columns?: number;
   write: (s: string) => void;
 }
 
@@ -28,10 +29,24 @@ const stdoutOut: ProgressOut = {
   get isTTY() {
     return Boolean(process.stdout.isTTY);
   },
+  get columns() {
+    return process.stdout.columns;
+  },
   write: (s) => {
     process.stdout.write(s);
   },
 };
+
+// widest bar text: " ██████████ 100%"
+const BAR_WIDTH = WIDTH + 6;
+
+// `\x1b[2K` clears only the cursor's physical row, so a wrapped frame would leave its first row behind
+function fitLabel(label: string, columns: number | undefined): string {
+  if (!columns) return label;
+  const max = columns - 1 - BAR_WIDTH;
+  if (label.length <= max) return label;
+  return max > 1 ? `${label.slice(0, max - 1)}…` : '';
+}
 
 // Frames only in a TTY; scripts and CI get just the final line from console.log
 export function createProgress(label: string, out: ProgressOut = stdoutOut): Progress {
@@ -40,7 +55,7 @@ export function createProgress(label: string, out: ProgressOut = stdoutOut): Pro
   return {
     update(fraction) {
       if (!out.isTTY) return;
-      out.write(`\r\x1b[2K${label} ${renderBar(fraction, frame++)}`);
+      out.write(`\r\x1b[2K${fitLabel(label, out.columns)} ${renderBar(fraction, frame++)}`);
       drawn = true;
     },
     done(summary) {

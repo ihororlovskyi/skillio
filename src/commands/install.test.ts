@@ -12,6 +12,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  defaultSpawn,
   requestedSkills,
   runInstall,
   type SpawnOutcome,
@@ -374,5 +375,23 @@ describe('snapshotSkills', () => {
       join(proj, 'skills-lock.json'),
     );
     expect([...snap.keys()].sort()).toEqual(['a', 'b']);
+  });
+});
+
+describe('defaultSpawn - capture', () => {
+  it('reports a missing command as an error with no status', async () => {
+    const r = await defaultSpawn('skl-x-no-such-command', [], true);
+    expect(r.status).toBeNull();
+    expect((r.error as NodeJS.ErrnoException | undefined)?.code).toBe('ENOENT');
+  });
+
+  it('keeps a multibyte character split across chunks intact', async () => {
+    // "█" is e2 96 88; the last byte arrives in a later chunk
+    const script =
+      'process.stdout.write(Buffer.from([0xe2, 0x96]));' +
+      'setTimeout(() => process.stdout.write(Buffer.from([0x88, 0x0a])), 50);';
+    const r = await defaultSpawn(process.execPath, ['-e', script], true);
+    expect(r.status).toBe(0);
+    expect(r.stdout).toBe('█\n');
   });
 });
