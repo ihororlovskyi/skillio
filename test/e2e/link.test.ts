@@ -41,7 +41,7 @@ describe('skl i -ln', () => {
     expect(exitCode).toBe(0);
     expect(stdout).toBe(
       [
-        'Symlinked 2 skills from ../clone',
+        'Symlinking from ../clone ██████████ 100% · Symlinked 2 skills',
         'skill   .agents    .claude    skills-lock.json  cost',
         'tdd     symlinked  symlinked  -                 ~1 tok',
         'vitest  symlinked  symlinked  -                 ~2 tok',

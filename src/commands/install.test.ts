@@ -347,7 +347,9 @@ describe('runInstall - link mode', () => {
     expect(await runInstall(argv, { spawn, cwd: proj })).toBe(0);
     expect(spawn).not.toHaveBeenCalled();
     expect(existsSync(join(proj, '.agents', 'skills', 'tdd'))).toBe(true);
-    expect(console.log).toHaveBeenCalledWith('Symlinked 1 skill from ../clone');
+    expect(console.log).toHaveBeenCalledWith(
+      'Symlinking from ../clone ██████████ 100% · Symlinked 1 skill',
+    );
   });
 
   it('rejects npx-only options', async () => {
