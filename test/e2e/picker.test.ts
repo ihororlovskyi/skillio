@@ -30,7 +30,7 @@ describe('picker - non-TTY fallback (remove sub-picker)', () => {
     writeFileSync(join(tmp, 'skills-lock.json'), JSON.stringify({ skills: {} }));
     const r = spawnSync(process.execPath, [CLI], { cwd: tmp, encoding: 'utf8' });
     expect(r.status).toBe(0);
-    expect(r.stdout).toMatch(/Project Scope/);
+    expect(r.stdout).toMatch(/Project scope/);
   });
 
   it('quit option exits 0 (regression: 0.1.10)', () => {

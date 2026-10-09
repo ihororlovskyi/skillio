@@ -31,14 +31,14 @@ describe('skl cost', () => {
     // cost format - NOT the old summary "Total: N skills ~M tok" format
     expect(stdout).toMatch(/Total: ~\d+ tok across 3 skills/);
     // summary printed both Global + Local sections; cost only prints one header
-    expect(stdout).not.toContain('Global Scope');
+    expect(stdout).not.toContain('Global scope');
   });
 
   it('prints no blank lines: header first, Total right after the rows', () => {
     const { stdout, exitCode } = run(['cost'], COST_DIR);
     expect(exitCode).toBe(0);
     const lines = stdout.trimEnd().split('\n');
-    expect(lines[0]).toBe('Project Scope');
+    expect(lines[0]).toBe('Project scope');
     expect(lines).not.toContain('');
     expect(lines.at(-1)).toMatch(/^Total:/);
   });
@@ -70,7 +70,7 @@ describe('skl cost', () => {
 
   it('prints the scope header in bold with FORCE_COLOR', () => {
     const { stdout } = runWithColor(['cost'], COST_DIR);
-    expect(stdout.split('\n')[0]).toBe('\x1b[1mProject Scope\x1b[22m');
+    expect(stdout.split('\n')[0]).toBe('\x1b[1mProject scope\x1b[22m');
   });
 
   it('cst alias works', () => {

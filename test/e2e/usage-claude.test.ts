@@ -19,8 +19,8 @@ describe('skl usage claude', () => {
     expect(exitCode).toBe(0);
     expect(stdout).toContain('skill-foo');
     expect(stdout).toContain('skill-bar');
-    expect(stdout).toMatch(/2\s+skill-foo/);
-    expect(stdout).toMatch(/1\s+skill-bar/);
+    expect(stdout).toMatch(/^skill-foo +2 +~/m);
+    expect(stdout).toMatch(/^skill-bar +1 +~/m);
   });
 
   it('counts activations mode', () => {
@@ -65,8 +65,8 @@ describe('skl usage claude', () => {
   it('audits both agents and all-time when --agent is missing', () => {
     const { stdout, exitCode } = run(['usage', '--root', FIXTURES]);
     expect(exitCode).toBe(0);
-    expect(stdout).toMatch(/claude-code \d+ skills? \d+ times? by all/);
-    expect(stdout).toMatch(/codex \d+ skills? \d+ times? by all/);
+    expect(stdout).toMatch(/^(Project|Global) scope · Usage \d+ times? by all$/m);
+    expect(stdout).toMatch(/^skill +\.agents +\.claude +cost +total$/m);
   });
 
   it('accepts space-separated agents (-a claude-code codex)', () => {
@@ -80,8 +80,7 @@ describe('skl usage claude', () => {
       'codex',
     ]);
     expect(exitCode).toBe(0);
-    expect(stdout).toMatch(/claude-code \d+ skills?/);
-    expect(stdout).toMatch(/codex \d+ skills?/);
+    expect(stdout).toMatch(/^skill +\.agents +\.claude +cost +total$/m);
   });
 
   it('accepts legacy "audit" keyword as no-op prefix', () => {
@@ -94,8 +93,8 @@ describe('skl usage claude', () => {
       'claude-code',
     ]);
     expect(exitCode).toBe(0);
-    expect(stdout).toMatch(/claude-code \d+ skills?/);
-    expect(stdout).toMatch(/2\s+skill-foo/);
+    expect(stdout).toMatch(/^skill +\.claude +cost +total$/m);
+    expect(stdout).toMatch(/^skill-foo +2 +~/m);
   });
 
   it('accepts repeated --agent flag (-a claude -a codex)', () => {
@@ -110,14 +109,13 @@ describe('skl usage claude', () => {
       'codex',
     ]);
     expect(exitCode).toBe(0);
-    expect(stdout).toMatch(/claude-code \d+ skills?/);
-    expect(stdout).toMatch(/codex \d+ skills?/);
+    expect(stdout).toMatch(/^skill +\.agents +\.claude +cost +total$/m);
   });
 
   it('usg alias works', () => {
     const { stdout, exitCode } = run(['usg', '--root', FIXTURES, '-a', 'claude-code', '--scan-all-files']);
     expect(exitCode).toBe(0);
-    expect(stdout).toMatch(/claude-code \d+ skills? \d+ times?/);
+    expect(stdout).toMatch(/^skill +\.claude +cost +total$/m);
   });
 
   it('does not render skills with count=0', () => {
@@ -132,10 +130,10 @@ describe('skl usage claude', () => {
       '--scan-all-files',
     ]);
     expect(exitCode).toBe(0);
-    expect(stdout).not.toMatch(/^\s*0\s+\S+/m);
+    expect(stdout).not.toMatch(/^\S+ +0 +~/m);
   });
 
-  it('prints no blank lines: header first, Total last', () => {
+  it('prints no blank lines: header first, totals last', () => {
     const { stdout, exitCode } = run([
       'usage',
       '--agent',
@@ -148,9 +146,18 @@ describe('skl usage claude', () => {
     ]);
     expect(exitCode).toBe(0);
     const lines = stdout.trimEnd().split('\n');
-    expect(lines[0]).toMatch(/^(Project|Global) Scope$/);
+    expect(lines[0]).toMatch(/^(Project|Global) scope · Usage \d+ times? by all$/);
     expect(lines).not.toContain('');
-    expect(lines.at(-1)).toMatch(/^Total:/);
+    expect(lines.at(-1)).toMatch(/^\d+ skills? /);
+  });
+
+  it('prints the header and a no-usage line when nothing ran in the period', () => {
+    const { stdout, exitCode } = run(['usage', '--root', FIXTURES, '--since', '2999-01-01']);
+    expect(exitCode).toBe(0);
+    expect(stdout.trimEnd().split('\n')).toEqual([
+      expect.stringMatching(/^(Project|Global) scope · Usage 0 times by since 2999-01-01$/),
+      'No skill usage by since 2999-01-01',
+    ]);
   });
 
   it('rejects an unknown --mode with exit 1 and no stdout', () => {

@@ -28,17 +28,17 @@ npx -y skl-x i sentimony/skills -l
 # Specific skills to specific agents, non-interactive
 npx -y skl-x i sentimony/skills -s tdd cross-review -a codex claude-code -y
 
-# Hide the npx skills output, print a summary and a table (needs -y)
+# Hide the npx skills output, print a progress line and a table (needs -y)
 npx -y skl-x i sentimony/skills -s tdd -a codex claude-code -y -m s
 ```
 
 ```text
-Installing from sentimony/skills...
-Installed 1 skill from sentimony/skills
-skill  .agents    .claude    skills-lock.json
-tdd    universal  symlinked  +
+Installing from https://github.com/sentimony/skills ██████████ 100% · Installed 1 skill
+skill  .agents    .claude    skills-lock.json  cost
+tdd    universal  symlinked  +                 ~125 tok
 ```
 
+In a terminal the bar fills while `npx` runs; in scripts and CI only the final line is printed.
 If `npx` fails, its full output is printed.
 
 ### Local skills
@@ -59,10 +59,10 @@ npx -y skl-x i -ln ../skills -s tdd cross-review -a claude-code
 ```
 
 ```text
-Symlinked 2 skills from ../skills
-skill         .agents    .claude    skills-lock.json
-cross-review  symlinked  symlinked  -
-tdd           symlinked  symlinked  -
+Symlinking from ../skills ██████████ 100% · Symlinked 2 skills
+skill         .agents    .claude    skills-lock.json  cost
+cross-review  symlinked  symlinked  -                 ~186 tok
+tdd           symlinked  symlinked  -                 ~125 tok
 ```
 
 - Without `-s`, every `<path>/skills/<name>/SKILL.md` is linked, except skills with
@@ -99,6 +99,17 @@ npx -y skl-x usage -a claude -p 7d
 npx -y skl-x usage -a codex --mode activations
 ```
 
+```text
+Project scope · Usage 22 times by 7d
+skill         .agents  .claude  cost      total
+cross-review  9        2        ~186 tok  ~2,046 tok
+tdd           0        11       ~125 tok  ~1,375 tok
+2 skills      9        13       ~311 tok  ~3,421 tok
+```
+
+`.agents` counts Codex runs, `.claude` - Claude Code runs; `total` is cost × runs. A skill that
+is no longer installed is shown in red with `~? tok`.
+
 | Flag | Default | Description |
 |---|---|---|
 | `-a, --agent` | both | `claude-code` (`claude`), `codex` |
@@ -121,7 +132,7 @@ npx -y skl-x usage -a codex --mode activations
 
 | Command | Alias | Description |
 |---|---|---|
-| `skl-x list` | `ls` | Table of skills: `.agents`, `.claude` and lock per skill |
+| `skl-x list` | `ls` | Table of skills: `.agents`, `.claude`, lock and cost per skill |
 | `skl-x remove` | `rm` | Remove skills from disk and `skills-lock.json` |
 | `skl-x completion` | | Print a shell completion script |
 
@@ -130,13 +141,13 @@ npx -y skl-x usage -a codex --mode activations
 ### `skl-x list`
 
 ```text
-Project Scope
-skill            .agents    .claude    skills-lock.json
-cross-review     universal  symlinked  +
-echarts          -          copied     -
-old-skill        -          -          +
-webapp-debugger  symlinked  broken     -
-4 skills         2          3          2
+Project scope
+skill            .agents    .claude    skills-lock.json  cost
+cross-review     universal  symlinked  +                 ~186 tok
+echarts          -          copied     -                 ~98 tok
+old-skill        -          -          +                 ~? tok
+webapp-debugger  symlinked  broken     -                 ~? tok
+4 skills         2          3          2                 ~284 tok
 ```
 
 | Cell | Meaning |
@@ -197,7 +208,7 @@ npm rm -g @sentimony/sklx skillio && npm i -g skl-x
 To skip the daily update check set `SKL_X_NO_UPDATE_CHECK=1` (`SKLX_NO_UPDATE_CHECK` still
 works).
 
-Requires Node.js 20 or newer.
+Requires Node.js 22 or newer.
 
 ## License
 

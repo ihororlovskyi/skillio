@@ -2,7 +2,12 @@ import { existsSync, lstatSync, readdirSync, readFileSync, statSync } from 'node
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { readLock } from '../lock/file';
-import { estimateContextTokens, extractFrontmatter, parseSkillMeta } from './skill-files';
+import {
+  estimateContextTokens,
+  extractFrontmatter,
+  parseSkillMeta,
+  type SkillCost,
+} from './skill-files';
 
 export type SkillSource = 'lock' | '.claude' | '.agents';
 
@@ -102,4 +107,10 @@ export function discoverSkills(input: DiscoverInput): Map<string, SkillRecord> {
   }
 
   return out;
+}
+
+export function recordCost(rec: SkillRecord | undefined): SkillCost {
+  if (!rec || rec.status === 'missing') return 'missing';
+  if (rec.status === 'no-frontmatter') return 'no-frontmatter';
+  return rec.disableModelInvocation ? 'hidden' : (rec.frontmatterTokens ?? 0);
 }

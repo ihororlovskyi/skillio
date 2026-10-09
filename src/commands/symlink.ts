@@ -13,6 +13,7 @@ import {
 import { basename, dirname, isAbsolute, join, parse, relative, resolve, sep } from 'node:path';
 import { readLock } from '../lock/file';
 import { createConfirmer } from '../utils/confirm';
+import { createProgress } from '../utils/progress';
 import { extractFrontmatter, parseSkillMeta } from '../utils/skill-files';
 import { collectRows, renderSkillTable } from '../utils/skill-table';
 
@@ -311,8 +312,14 @@ export async function runSymlink(argv: string[], deps: SymlinkDeps = {}): Promis
     const count = new Set(replaced.map((s) => s.name)).size;
     if (!(await ask(`Replace ${plural(count, 'existing skill')}?`))) return 1;
   }
-  applySymlinks(steps);
-  console.log(`Symlinked ${plural(names.length, 'skill')} from ${source}`);
+  // after the Replace prompt, so the bar never interleaves with it
+  const progress = createProgress(`Symlinking from ${source}`);
+  progress.update(0);
+  names.forEach((name, i) => {
+    applySymlinks(steps.filter((s) => s.name === name));
+    progress.update((i + 1) / names.length);
+  });
+  progress.done(`Symlinked ${plural(names.length, 'skill')}`);
   if (names.length === 0) return 0;
   const roots = {
     agents: join(cwd, AGENT_DIRS.codex),

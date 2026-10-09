@@ -201,7 +201,9 @@ describe('planSymlinks / runSymlink', () => {
       expect(readlinkSync(join(proj, dir, 'tdd'))).toBe('../../../clone/skills/tdd');
       expect(existsSync(join(proj, dir, ' scope-check'))).toBe(false);
     }
-    expect(console.log).toHaveBeenCalledWith('Symlinked 1 skill from ../clone');
+    expect(console.log).toHaveBeenCalledWith(
+      'Symlinking from ../clone ██████████ 100% · Symlinked 1 skill',
+    );
   });
 
   it('maps -a claude-code to .claude/skills only', async () => {
@@ -216,7 +218,9 @@ describe('planSymlinks / runSymlink', () => {
     expect(readlinkSync(join(proj, '.claude/skills/cross-review'))).toBe(
       '../../../clone/skills/cross-review',
     );
-    expect(console.log).toHaveBeenCalledWith('Symlinked 2 skills from ../clone');
+    expect(console.log).toHaveBeenCalledWith(
+      'Symlinking from ../clone ██████████ 100% · Symlinked 2 skills',
+    );
   });
 
   it('is idempotent: a second run without -y asks nothing', async () => {
@@ -245,6 +249,13 @@ describe('planSymlinks / runSymlink', () => {
     const confirm = vi.fn(async (_q: string) => true);
     expect(await runSymlink(['../clone', '-s', 'tdd'], { cwd: proj, confirm })).toBe(0);
     expect(lstatSync(join(proj, '.claude/skills/tdd')).isSymbolicLink()).toBe(true);
+    expect(confirm).toHaveBeenCalledOnce();
+    // the progress line comes after the listing of replaced skills, never inside it
+    const lines = vi.mocked(console.log).mock.calls.map((c) => String(c[0]));
+    const listed = lines.findIndex((l) => l.startsWith('.claude/skills/tdd - '));
+    const done = lines.findIndex((l) => l.startsWith('Symlinking from ../clone ██████████ 100%'));
+    expect(listed).toBeGreaterThanOrEqual(0);
+    expect(done).toBeGreaterThan(listed);
   });
 
   it('fails before any change when a skill is missing in the clone', async () => {
@@ -366,7 +377,9 @@ describe('planSymlinks / runSymlink', () => {
 
   it('dedupes repeated names', async () => {
     expect(await runSymlink(['../clone', '-s', 'tdd', 'tdd', '-y'], { cwd: proj })).toBe(0);
-    expect(console.log).toHaveBeenCalledWith('Symlinked 1 skill from ../clone');
+    expect(console.log).toHaveBeenCalledWith(
+      'Symlinking from ../clone ██████████ 100% · Symlinked 1 skill',
+    );
   });
 
   it('returns 1 on argument errors', async () => {
@@ -405,17 +418,25 @@ describe('planSymlinks / runSymlink', () => {
       expect(existsSync(join(proj, dir, 'hidden'))).toBe(false);
       expect(existsSync(join(proj, dir, 'notes'))).toBe(false);
     }
-    expect(console.log).toHaveBeenCalledWith('Symlinked 2 skills from ../clone');
     expect(console.log).toHaveBeenCalledWith(
-      'skill         .agents    .claude    skills-lock.json',
+      'Symlinking from ../clone ██████████ 100% · Symlinked 2 skills',
     );
-    expect(console.log).toHaveBeenCalledWith('cross-review  symlinked  symlinked  -');
-    expect(console.log).toHaveBeenCalledWith('tdd           symlinked  symlinked  -');
+    expect(console.log).toHaveBeenCalledWith(
+      'skill         .agents    .claude    skills-lock.json  cost',
+    );
+    expect(console.log).toHaveBeenCalledWith(
+      'cross-review  symlinked  symlinked  -                 ~7 tok',
+    );
+    expect(console.log).toHaveBeenCalledWith(
+      'tdd           symlinked  symlinked  -                 ~4 tok',
+    );
   });
 
   it('prints no table when every -s name is skipped', async () => {
     expect(await runSymlink(['../clone', '-s', ' tdd', '-y'], { cwd: proj })).toBe(0);
-    expect(console.log).toHaveBeenCalledWith('Symlinked 0 skills from ../clone');
+    expect(console.log).toHaveBeenCalledWith(
+      'Symlinking from ../clone ██████████ 100% · Symlinked 0 skills',
+    );
     const lines = vi.mocked(console.log).mock.calls.map((c) => String(c[0]));
     expect(lines.some((l) => l.startsWith('skill '))).toBe(false);
   });
@@ -465,6 +486,8 @@ describe('planSymlinks / runSymlink', () => {
   it('marks skills that are in skills-lock.json with + in the table', async () => {
     writeFileSync(join(proj, 'skills-lock.json'), JSON.stringify({ skills: { tdd: {} } }));
     expect(await runSymlink(['../clone', '-s', 'tdd', '-y'], { cwd: proj })).toBe(0);
-    expect(console.log).toHaveBeenCalledWith('tdd    symlinked  symlinked  +');
+    expect(console.log).toHaveBeenCalledWith(
+      'tdd    symlinked  symlinked  +                 ~4 tok',
+    );
   });
 });

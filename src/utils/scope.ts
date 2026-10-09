@@ -4,7 +4,7 @@ import { dirname, join } from 'node:path';
 import { bold } from './ansi';
 
 export function scopeHeader(isGlobal: boolean): string {
-  return bold(isGlobal ? 'Global Scope' : 'Project Scope');
+  return bold(isGlobal ? 'Global scope' : 'Project scope');
 }
 
 export interface AuditScope {

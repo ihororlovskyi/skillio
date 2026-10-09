@@ -1,8 +1,9 @@
 import { defineCommand } from 'citty';
 import { getLockPath } from '../lock/file';
 import { cyan, red } from '../utils/ansi';
-import { discoverSkills, type SkillRecord } from '../utils/discover-skills';
+import { discoverSkills, recordCost, type SkillRecord } from '../utils/discover-skills';
 import { scopeHeader } from '../utils/scope';
+import { formatCost } from '../utils/skill-files';
 
 function inContext(r: SkillRecord): boolean {
   return r.status === 'ok' && !r.disableModelInvocation;
@@ -40,12 +41,8 @@ export const costCommand = defineCommand({
     }
 
     const nameWidth = Math.max(...rows.map((r) => r.name.length));
-    const tokenCells = rows.map((r) => {
-      if (r.status === 'missing') return '~? tok';
-      if (r.status === 'no-frontmatter') return '(no frontmatter)';
-      // disable-model-invocation: not in Claude Code's always-loaded context
-      return r.disableModelInvocation ? '-' : `~${r.frontmatterTokens} tok`;
-    });
+    // disable-model-invocation: not in Claude Code's always-loaded context, shown as '-'
+    const tokenCells = rows.map((r) => formatCost(recordCost(r)));
     const tokenWidth = Math.max(...tokenCells.map((c) => c.length));
     rows.forEach((r, i) => {
       const tokenCell = tokenCells[i] ?? '';
