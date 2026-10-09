@@ -4,13 +4,15 @@ import { defineCommand } from 'citty';
 import { getLockPath } from '../lock/file';
 import { type ClaudeMode, readClaudeUsage } from '../readers/claude';
 import { type CodexMode, readCodexUsage } from '../readers/codex';
-import { cyan, red } from '../utils/ansi';
-import { discoverSkills } from '../utils/discover-skills';
+import { bold, cyan, red } from '../utils/ansi';
+import { discoverSkills, recordCost } from '../utils/discover-skills';
 import { expandHome } from '../utils/expand-home';
 import { parsePeriod } from '../utils/period';
 import { detectScope, encodeClaudeProjectDir, scopeHeader } from '../utils/scope';
+import { formatCost, type SkillCost } from '../utils/skill-files';
+import { alignCells, type Cell, plain } from '../utils/skill-table';
 
-type Agent = 'claude-code' | 'codex';
+export type Agent = 'claude-code' | 'codex';
 
 export interface UsageArgs {
   agent?: string;
@@ -23,20 +25,55 @@ export interface UsageArgs {
   global: boolean;
 }
 
-export interface UsageRowInput {
-  count: number;
+export interface UsageTableRow {
   name: string;
-  countWidth: number;
-  installed?: boolean;
+  counts: Partial<Record<Agent, number>>;
+  cost: SkillCost;
 }
 
-function pad(n: number | string, width: number): string {
-  return String(n).padStart(width);
+// codex reads .agents/skills, claude-code reads .claude/skills
+const AGENT_COLUMNS: [Agent, string][] = [
+  ['codex', '.agents'],
+  ['claude-code', '.claude'],
+];
+
+function plural(n: number, word: string): string {
+  return `${n} ${word}${n === 1 ? '' : 's'}`;
 }
 
-export function formatUsageRow(row: UsageRowInput): string {
-  const suffix = row.installed === false ? ` ${red('(missing)')}` : '';
-  return `${pad(row.count, row.countWidth)} ${cyan(row.name)}${suffix}`;
+export function renderUsageTable(rows: UsageTableRow[], agents: Agent[]): string[] {
+  const cols = AGENT_COLUMNS.filter(([a]) => agents.includes(a));
+  const runs = (r: UsageTableRow) => cols.reduce((n, [a]) => n + (r.counts[a] ?? 0), 0);
+  const spent = (r: UsageTableRow): SkillCost =>
+    typeof r.cost === 'number' ? r.cost * runs(r) : r.cost;
+  const sum = (pick: (r: UsageTableRow) => SkillCost) =>
+    rows.reduce((n, r) => {
+      const v = pick(r);
+      return n + (typeof v === 'number' ? v : 0);
+    }, 0);
+  const sorted = [...rows].sort((a, b) => runs(b) - runs(a) || a.name.localeCompare(b.name));
+  const header = ['skill', ...cols.map(([, label]) => label), 'cost', 'total'].map((text) => ({
+    text,
+    paint: bold,
+  }));
+  const body = sorted.map((r): Cell[] => [
+    { text: r.name, paint: r.cost === 'missing' ? red : cyan },
+    ...cols.map(([a]) => plain(String(r.counts[a] ?? 0))),
+    plain(formatCost(r.cost, true)),
+    plain(formatCost(spent(r), true)),
+  ]);
+  const footer = [
+    plain(plural(rows.length, 'skill')),
+    ...cols.map(([a]) => plain(String(rows.reduce((n, r) => n + (r.counts[a] ?? 0), 0)))),
+    plain(
+      formatCost(
+        sum((r) => r.cost),
+        true,
+      ),
+    ),
+    plain(formatCost(sum(spent), true)),
+  ];
+  return alignCells([header, ...body, footer]);
 }
 
 function parseAgents(agent: string | undefined): Agent[] {
@@ -203,30 +240,24 @@ export async function runUsage(args: UsageArgs): Promise<void> {
   }
 
   const periodLabel = args.since ? `since ${args.since}` : (args.period ?? 'all');
-  console.log(scopeHeader(scope.global));
-
-  const distinct = new Set<string>();
-  let grandActivations = 0;
-
-  for (const { agent, rows } of results) {
-    const activations = rows.reduce((acc, r) => acc + r.count, 0);
-    console.log(
-      `${agent} ${rows.length} skill${rows.length === 1 ? '' : 's'} ${activations} time${activations === 1 ? '' : 's'} by ${periodLabel}`,
-    );
-    if (rows.length === 0) continue;
-    const countWidth = Math.max(...rows.map((r) => String(r.count).length));
+  const merged = new Map<string, UsageTableRow>();
+  for (const { agent, rows } of results)
     for (const r of rows) {
-      console.log(
-        formatUsageRow({ count: r.count, name: r.name, countWidth, installed: r.installed }),
-      );
-      distinct.add(r.name);
+      const row: UsageTableRow = merged.get(r.name) ?? {
+        name: r.name,
+        counts: {},
+        cost: recordCost(skillUniverse.get(r.name)),
+      };
+      row.counts[agent] = r.count;
+      merged.set(r.name, row);
     }
-    grandActivations += activations;
+  const times = results.reduce((n, { rows }) => n + rows.reduce((m, r) => m + r.count, 0), 0);
+  console.log(`${scopeHeader(scope.global)} · Usage ${plural(times, 'time')} by ${periodLabel}`);
+  if (merged.size === 0) {
+    console.log(`No skill usage by ${periodLabel}`);
+    return;
   }
-
-  console.log(
-    `Total: ${distinct.size} skill${distinct.size === 1 ? '' : 's'} usage ${grandActivations} time${grandActivations === 1 ? '' : 's'}`,
-  );
+  for (const line of renderUsageTable([...merged.values()], agents)) console.log(line);
 }
 
 export const usageCommand = defineCommand({

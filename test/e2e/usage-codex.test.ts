@@ -19,9 +19,9 @@ describe('skl usage codex', () => {
     expect(exitCode).toBe(0);
     expect(stdout).toContain('skill-foo');
     expect(stdout).toContain('skill-bar');
-    expect(stdout).toMatch(/2\s+skill-foo/);
+    expect(stdout).toMatch(/^skill-foo +2 +~/m);
     expect(stdout).toContain('skill-baz');
-    expect(stdout).toMatch(/1\s+skill-baz/);
+    expect(stdout).toMatch(/^skill-baz +1 +~/m);
   });
 
   it('outputs valid JSON', () => {
