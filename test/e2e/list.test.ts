@@ -34,7 +34,7 @@ describe('skl ls', () => {
     expect(exitCode).toBe(0);
     expect(stdout).toBe(
       [
-        'Project Scope',
+        'Project scope',
         'skill      .agents  .claude  skills-lock.json',
         'skill-bar  -        copied   +',
         'skill-baz  -        -        +',
@@ -54,7 +54,7 @@ describe('skl ls', () => {
     expect(exitCode).toBe(0);
     expect(stdout).toBe(
       [
-        'Project Scope',
+        'Project scope',
         'skill     .agents    .claude    skills-lock.json',
         'a         universal  symlinked  +',
         'b         -          copied     -',
@@ -70,7 +70,7 @@ describe('skl ls', () => {
   it('colors cells and the orphan lock mark with FORCE_COLOR', () => {
     const r = runWithColor(['ls'], seedAllStates());
     expect(r.exitCode).toBe(0);
-    expect(r.stdout.split('\n')[0]).toBe('\x1b[1mProject Scope\x1b[22m');
+    expect(r.stdout.split('\n')[0]).toBe('\x1b[1mProject scope\x1b[22m');
     expect(r.stdout).toContain('\x1b[1mskill\x1b[22m');
     expect(r.stdout).toContain('\x1b[32muniversal\x1b[0m');
     expect(r.stdout).toContain('\x1b[33msymlinked\x1b[0m');
@@ -84,7 +84,7 @@ describe('skl ls', () => {
   it('prints "No skills in scope." for an empty scope', () => {
     const r = run(['ls'], EMPTY);
     expect(r.exitCode).toBe(0);
-    expect(r.stdout).toBe('Project Scope\nNo skills in scope.\n');
+    expect(r.stdout).toBe('Project scope\nNo skills in scope.\n');
   });
 
   it('global scope uses the .agents/.skill-lock.json column label', () => {
@@ -99,7 +99,7 @@ describe('skl ls', () => {
     expect(r.status).toBe(0);
     expect(r.stdout).toBe(
       [
-        'Global Scope',
+        'Global scope',
         'skill    .agents  .claude  .agents/.skill-lock.json',
         'foo      -        -        +',
         '1 skill  0        0        1',

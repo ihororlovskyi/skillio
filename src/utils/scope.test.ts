@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { detectScope, encodeClaudeProjectDir, isPathInProject } from './scope';
+import { detectScope, encodeClaudeProjectDir, isPathInProject, scopeHeader } from './scope';
 
 describe('detectScope', () => {
   it('returns global when --global flag is set', () => {
@@ -52,5 +52,12 @@ describe('isPathInProject', () => {
 describe('encodeClaudeProjectDir', () => {
   it('replaces slashes with dashes', () => {
     expect(encodeClaudeProjectDir('/Users/foo/work/skillio')).toBe('-Users-foo-work-skillio');
+  });
+});
+
+describe('scopeHeader', () => {
+  it('writes scope in lower case', () => {
+    expect(scopeHeader(false)).toBe('Project scope');
+    expect(scopeHeader(true)).toBe('Global scope');
   });
 });

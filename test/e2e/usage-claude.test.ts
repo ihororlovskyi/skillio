@@ -148,7 +148,7 @@ describe('skl usage claude', () => {
     ]);
     expect(exitCode).toBe(0);
     const lines = stdout.trimEnd().split('\n');
-    expect(lines[0]).toMatch(/^(Project|Global) Scope$/);
+    expect(lines[0]).toMatch(/^(Project|Global) scope/);
     expect(lines).not.toContain('');
     expect(lines.at(-1)).toMatch(/^Total:/);
   });
