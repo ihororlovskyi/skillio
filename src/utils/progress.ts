@@ -1,3 +1,5 @@
+import { green } from './ansi';
+
 const WIDTH = 10;
 
 export interface ProgressOut {
@@ -5,15 +7,15 @@ export interface ProgressOut {
   write: (s: string) => void;
 }
 
-// null draws an unknown total: a two-cell block that moves with `frame`, no percent
+// green cells, plain percent; null draws an unknown total: a two-cell block that moves with `frame`, no percent
 export function renderBar(fraction: number | null, frame = 0): string {
   if (fraction === null) {
     const pos = frame % (WIDTH - 1);
-    return `${'░'.repeat(pos)}██${'░'.repeat(WIDTH - 2 - pos)}`;
+    return green(`${'░'.repeat(pos)}██${'░'.repeat(WIDTH - 2 - pos)}`);
   }
   const f = Math.min(1, Math.max(0, fraction));
   const full = Math.floor(f * WIDTH);
-  return `${'█'.repeat(full)}${'░'.repeat(WIDTH - full)} ${Math.floor(f * 100)}%`;
+  return `${green('█'.repeat(full) + '░'.repeat(WIDTH - full))} ${Math.floor(f * 100)}%`;
 }
 
 export interface Progress {

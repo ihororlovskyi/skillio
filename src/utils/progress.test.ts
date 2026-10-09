@@ -1,7 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { setColorEnabled } from './ansi';
 import { createProgress, renderBar } from './progress';
 
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.restoreAllMocks();
+  setColorEnabled(false);
+});
 
 describe('renderBar', () => {
   it('fills whole cells and floors the percent', () => {
@@ -14,6 +18,12 @@ describe('renderBar', () => {
     expect(renderBar(null, 0)).toBe('██░░░░░░░░');
     expect(renderBar(null, 8)).toBe('░░░░░░░░██');
     expect(renderBar(null, 9)).toBe('██░░░░░░░░');
+  });
+
+  it('paints the cells green and leaves the percent plain', () => {
+    setColorEnabled(true);
+    expect(renderBar(0.25)).toBe('\x1b[32m██░░░░░░░░\x1b[0m 25%');
+    expect(renderBar(null, 1)).toBe('\x1b[32m░██░░░░░░░\x1b[0m');
   });
 });
 
