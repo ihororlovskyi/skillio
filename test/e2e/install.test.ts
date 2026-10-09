@@ -90,8 +90,8 @@ describe('skl install', () => {
       [
         'Installing from sentimony/skills...',
         'Installed 1 skill from sentimony/skills',
-        'skill            .agents    .claude    skills-lock.json',
-        'webapp-debugger  universal  symlinked  -',
+        'skill            .agents    .claude    skills-lock.json  cost',
+        'webapp-debugger  universal  symlinked  -                 ~5 tok',
         '',
       ].join('\n'),
     );

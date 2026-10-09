@@ -42,9 +42,9 @@ describe('skl i -ln', () => {
     expect(stdout).toBe(
       [
         'Symlinked 2 skills from ../clone',
-        'skill   .agents    .claude    skills-lock.json',
-        'tdd     symlinked  symlinked  -',
-        'vitest  symlinked  symlinked  -',
+        'skill   .agents    .claude    skills-lock.json  cost',
+        'tdd     symlinked  symlinked  -                 ~1 tok',
+        'vitest  symlinked  symlinked  -                 ~2 tok',
         '',
       ].join('\n'),
     );

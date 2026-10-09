@@ -135,8 +135,8 @@ describe('runInstall - silent mode', () => {
     expect(vi.mocked(console.log).mock.calls.map((c) => c[0])).toEqual([
       'Installing from sentimony/skills...',
       'Installed 1 skill from sentimony/skills',
-      'skill            .agents    .claude    skills-lock.json',
-      'webapp-debugger  universal  symlinked  +',
+      'skill            .agents    .claude    skills-lock.json  cost',
+      'webapp-debugger  universal  symlinked  +                 ~5 tok',
     ]);
   });
 
@@ -187,7 +187,7 @@ describe('runInstall - silent mode', () => {
     });
     expect(await runInstall(['sentimony/skills', '-y', '-m', 's'], { spawn, cwd: proj })).toBe(0);
     expect(console.log).toHaveBeenCalledWith('Installed 1 skill from sentimony/skills');
-    expect(console.log).toHaveBeenCalledWith('tdd    universal  symlinked  +');
+    expect(console.log).toHaveBeenCalledWith('tdd    universal  symlinked  +                 ~1 tok');
   });
 
   it('snapshots the global dirs under deps.home with -g', async () => {
@@ -209,7 +209,7 @@ describe('runInstall - silent mode', () => {
     expect(lines.some((l) => l.startsWith('skill') && l.includes('.agents/.skill-lock.json'))).toBe(
       true,
     );
-    expect(lines.some((l) => l.startsWith('g1 ') && l.endsWith('+'))).toBe(true);
+    expect(lines.some((l) => /^g1 +universal +- +\+ +~1 tok$/.test(l))).toBe(true);
   });
 
   it('counts a skill whose only change is its lock entry', async () => {

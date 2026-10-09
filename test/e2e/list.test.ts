@@ -35,18 +35,18 @@ describe('skl ls', () => {
     expect(stdout).toBe(
       [
         'Project scope',
-        'skill      .agents  .claude  skills-lock.json',
-        'skill-bar  -        copied   +',
-        'skill-baz  -        -        +',
-        'skill-foo  -        copied   +',
-        '3 skills   0        2        3',
+        'skill      .agents  .claude  skills-lock.json  cost',
+        'skill-bar  -        copied   +                 ~11 tok',
+        'skill-baz  -        -        +                 ~? tok',
+        'skill-foo  -        copied   +                 ~13 tok',
+        '3 skills   0        2        3                 ~24 tok',
         '',
       ].join('\n'),
     );
   });
 
   it('list alias works', () => {
-    expect(run(['list'], LOCK_DIR).stdout).toContain('skill-bar  -        copied   +');
+    expect(run(['list'], LOCK_DIR).stdout).toContain('skill-bar  -        copied   +                 ~11 tok');
   });
 
   it('shows every install state and no "not in lock" lines', () => {
@@ -55,12 +55,12 @@ describe('skl ls', () => {
     expect(stdout).toBe(
       [
         'Project scope',
-        'skill     .agents    .claude    skills-lock.json',
-        'a         universal  symlinked  +',
-        'b         -          copied     -',
-        'c         -          broken     -',
-        'd         -          -          +',
-        '4 skills  1          3          2',
+        'skill     .agents    .claude    skills-lock.json  cost',
+        'a         universal  symlinked  +                 ~0 tok',
+        'b         -          copied     -                 ~0 tok',
+        'c         -          broken     -                 ~? tok',
+        'd         -          -          +                 ~? tok',
+        '4 skills  1          3          2                 ~0 tok',
         '',
       ].join('\n'),
     );
@@ -77,8 +77,8 @@ describe('skl ls', () => {
     expect(r.stdout).toContain('\x1b[32mcopied\x1b[0m');
     expect(r.stdout).toContain('\x1b[31mbroken\x1b[0m');
     const lines = r.stdout.split('\n');
-    expect(lines.find((l) => l.startsWith('\x1b[36md\x1b[0m '))).toMatch(/\x1b\[31m\+\x1b\[0m$/);
-    expect(lines.find((l) => l.startsWith('\x1b[36ma\x1b[0m '))).toMatch(/ \+$/);
+    expect(lines.find((l) => l.startsWith('\x1b[36md\x1b[0m '))).toMatch(/\x1b\[31m\+\x1b\[0m +~\? tok$/);
+    expect(lines.find((l) => l.startsWith('\x1b[36ma\x1b[0m '))).toMatch(/\x1b\[32m\+\x1b\[0m +~0 tok$/);
   });
 
   it('prints "No skills in scope." for an empty scope', () => {
@@ -100,9 +100,9 @@ describe('skl ls', () => {
     expect(r.stdout).toBe(
       [
         'Global scope',
-        'skill    .agents  .claude  .agents/.skill-lock.json',
-        'foo      -        -        +',
-        '1 skill  0        0        1',
+        'skill    .agents  .claude  .agents/.skill-lock.json  cost',
+        'foo      -        -        +                         ~? tok',
+        '1 skill  0        0        1                         ~0 tok',
         '',
       ].join('\n'),
     );

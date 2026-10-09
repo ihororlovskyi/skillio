@@ -407,10 +407,10 @@ describe('planSymlinks / runSymlink', () => {
     }
     expect(console.log).toHaveBeenCalledWith('Symlinked 2 skills from ../clone');
     expect(console.log).toHaveBeenCalledWith(
-      'skill         .agents    .claude    skills-lock.json',
+      'skill         .agents    .claude    skills-lock.json  cost',
     );
-    expect(console.log).toHaveBeenCalledWith('cross-review  symlinked  symlinked  -');
-    expect(console.log).toHaveBeenCalledWith('tdd           symlinked  symlinked  -');
+    expect(console.log).toHaveBeenCalledWith('cross-review  symlinked  symlinked  -                 ~7 tok');
+    expect(console.log).toHaveBeenCalledWith('tdd           symlinked  symlinked  -                 ~4 tok');
   });
 
   it('prints no table when every -s name is skipped', async () => {
@@ -465,6 +465,6 @@ describe('planSymlinks / runSymlink', () => {
   it('marks skills that are in skills-lock.json with + in the table', async () => {
     writeFileSync(join(proj, 'skills-lock.json'), JSON.stringify({ skills: { tdd: {} } }));
     expect(await runSymlink(['../clone', '-s', 'tdd', '-y'], { cwd: proj })).toBe(0);
-    expect(console.log).toHaveBeenCalledWith('tdd    symlinked  symlinked  +');
+    expect(console.log).toHaveBeenCalledWith('tdd    symlinked  symlinked  +                 ~4 tok');
   });
 });
