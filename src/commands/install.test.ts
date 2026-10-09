@@ -11,7 +11,13 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { runInstall, type SpawnOutcome, snapshotSkills } from './install';
+import {
+  requestedSkills,
+  runInstall,
+  type SpawnOutcome,
+  snapshotSkills,
+  sourceLabel,
+} from './install';
 
 let tmp = '';
 let proj = '';
@@ -133,8 +139,7 @@ describe('runInstall - silent mode', () => {
       true,
     );
     expect(vi.mocked(console.log).mock.calls.map((c) => c[0])).toEqual([
-      'Installing from sentimony/skills...',
-      'Installed 1 skill from sentimony/skills',
+      'Installing from https://github.com/sentimony/skills ██████████ 100% · Installed 1 skill',
       'skill            .agents    .claude    skills-lock.json  cost',
       'webapp-debugger  universal  symlinked  +                 ~5 tok',
     ]);
@@ -158,6 +163,7 @@ describe('runInstall - silent mode', () => {
     expect(await runInstall(['sentimony/skills', '-y', '-m', 's'], { spawn, cwd: proj })).toBe(2);
     expect(out).toHaveBeenCalledWith('out');
     expect(err).toHaveBeenCalledWith('err');
+    expect(console.log).toHaveBeenCalledWith('Installing from https://github.com/sentimony/skills');
   });
 
   it('reports 0 skills without a table when nothing changed', async () => {
@@ -165,8 +171,7 @@ describe('runInstall - silent mode', () => {
     const spawn = vi.fn(ok);
     expect(await runInstall(['sentimony/skills', '-y', '-m', 's'], { spawn, cwd: proj })).toBe(0);
     expect(vi.mocked(console.log).mock.calls.map((c) => c[0])).toEqual([
-      'Installing from sentimony/skills...',
-      'Installed 0 skills from sentimony/skills',
+      'Installing from https://github.com/sentimony/skills ██████████ 100% · Installed 0 skills',
     ]);
   });
 
@@ -186,8 +191,12 @@ describe('runInstall - silent mode', () => {
       return ok();
     });
     expect(await runInstall(['sentimony/skills', '-y', '-m', 's'], { spawn, cwd: proj })).toBe(0);
-    expect(console.log).toHaveBeenCalledWith('Installed 1 skill from sentimony/skills');
-    expect(console.log).toHaveBeenCalledWith('tdd    universal  symlinked  +                 ~1 tok');
+    expect(console.log).toHaveBeenCalledWith(
+      'Installing from https://github.com/sentimony/skills ██████████ 100% · Installed 1 skill',
+    );
+    expect(console.log).toHaveBeenCalledWith(
+      'tdd    universal  symlinked  +                 ~1 tok',
+    );
   });
 
   it('snapshots the global dirs under deps.home with -g', async () => {
@@ -205,7 +214,9 @@ describe('runInstall - silent mode', () => {
       await runInstall(['sentimony/skills', '-g', '-y', '-m', 's'], { spawn, cwd: proj, home }),
     ).toBe(0);
     const lines = vi.mocked(console.log).mock.calls.map((c) => String(c[0]));
-    expect(lines).toContain('Installed 1 skill from sentimony/skills');
+    expect(lines).toContain(
+      'Installing from https://github.com/sentimony/skills ██████████ 100% · Installed 1 skill',
+    );
     expect(lines.some((l) => l.startsWith('skill') && l.includes('.agents/.skill-lock.json'))).toBe(
       true,
     );
@@ -222,16 +233,105 @@ describe('runInstall - silent mode', () => {
       return ok();
     });
     expect(await runInstall(['sentimony/skills', '-y', '-m', 's'], { spawn, cwd: proj })).toBe(0);
-    expect(console.log).toHaveBeenCalledWith('Installed 1 skill from sentimony/skills');
+    expect(console.log).toHaveBeenCalledWith(
+      'Installing from https://github.com/sentimony/skills ██████████ 100% · Installed 1 skill',
+    );
   });
 
   it('drops "from <source>" when the first argument is a flag', async () => {
     const spawn = vi.fn(ok);
     expect(await runInstall(['-y', 'sentimony/skills', '-m', 's'], { spawn, cwd: proj })).toBe(0);
     expect(vi.mocked(console.log).mock.calls.map((c) => c[0])).toEqual([
-      'Installing...',
-      'Installed 0 skills',
+      'Installing ██████████ 100% · Installed 0 skills',
     ]);
+  });
+  it('awaits an async spawner', async () => {
+    const spawn = vi.fn(async () => {
+      fakeInstall('tdd');
+      return ok();
+    });
+    expect(
+      await runInstall(['sentimony/skills', '-s', 'tdd', '-y', '-m', 's'], { spawn, cwd: proj }),
+    ).toBe(0);
+    expect(console.log).toHaveBeenCalledWith(
+      'Installing from https://github.com/sentimony/skills ██████████ 100% · Installed 1 skill',
+    );
+  });
+
+  it('polls the disk every 100 ms, stays below 100% until npx exits and stops polling after', async () => {
+    vi.useFakeTimers();
+    const tty = Object.getOwnPropertyDescriptor(process.stdout, 'isTTY');
+    Object.defineProperty(process.stdout, 'isTTY', { value: true, configurable: true });
+    const frames: string[] = [];
+    vi.spyOn(process.stdout, 'write').mockImplementation((s) => {
+      frames.push(String(s));
+      return true;
+    });
+    try {
+      let finish: (r: SpawnOutcome) => void = () => {};
+      const spawn = vi.fn(
+        () =>
+          new Promise<SpawnOutcome>((done) => {
+            finish = done;
+          }),
+      );
+      const run = runInstall(['sentimony/skills', '-s', 'a', 'b', '-y', '-m', 's'], {
+        spawn,
+        cwd: proj,
+      });
+      expect(frames.at(-1)).toBe(
+        '\r\x1b[2KInstalling from https://github.com/sentimony/skills ░░░░░░░░░░ 0%',
+      );
+      fakeInstall('a');
+      fakeInstall('b');
+      await vi.advanceTimersByTimeAsync(100);
+      expect(frames.at(-1)).toBe(
+        '\r\x1b[2KInstalling from https://github.com/sentimony/skills █████████░ 99%',
+      );
+      finish(ok());
+      expect(await run).toBe(0);
+      const count = frames.length;
+      await vi.advanceTimersByTimeAsync(500);
+      expect(frames.length).toBe(count);
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      if (tty) Object.defineProperty(process.stdout, 'isTTY', tty);
+      else delete (process.stdout as { isTTY?: boolean }).isTTY;
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe('sourceLabel', () => {
+  it('expands the owner/repo shorthand to a GitHub URL', () => {
+    expect(sourceLabel('sentimony/skills')).toBe('https://github.com/sentimony/skills');
+  });
+
+  it('keeps URLs, paths and flags as given', () => {
+    expect(sourceLabel('https://github.com/sentimony/skills')).toBe(
+      'https://github.com/sentimony/skills',
+    );
+    expect(sourceLabel('../skills')).toBe('../skills');
+    expect(sourceLabel('./skills')).toBe('./skills');
+    expect(sourceLabel('~/skills')).toBe('~/skills');
+    expect(sourceLabel('sentimony/skills/tree/main/skills/tdd')).toBe(
+      'sentimony/skills/tree/main/skills/tdd',
+    );
+    expect(sourceLabel('-y')).toBe('');
+    expect(sourceLabel(undefined)).toBe('');
+  });
+});
+
+describe('requestedSkills', () => {
+  it('collects names after -s/--skill up to the next flag', () => {
+    expect(
+      requestedSkills(['x/y', '-s', 'tdd', 'cross-review', '-a', 'codex', '--skill', 'tdd']),
+    ).toEqual(['tdd', 'cross-review']);
+  });
+
+  it('has no total without -s or with *', () => {
+    expect(requestedSkills(['x/y', '-y'])).toBeNull();
+    expect(requestedSkills(['x/y', '-s', '*'])).toBeNull();
   });
 });
 

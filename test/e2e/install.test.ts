@@ -88,8 +88,7 @@ describe('skl install', () => {
     expect(exitCode).toBe(0);
     expect(stdout).toBe(
       [
-        'Installing from sentimony/skills...',
-        'Installed 1 skill from sentimony/skills',
+        'Installing from https://github.com/sentimony/skills ██████████ 100% · Installed 1 skill',
         'skill            .agents    .claude    skills-lock.json  cost',
         'webapp-debugger  universal  symlinked  -                 ~5 tok',
         '',
