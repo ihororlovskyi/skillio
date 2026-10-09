@@ -208,7 +208,7 @@ npm rm -g @sentimony/sklx skillio && npm i -g skl-x
 To skip the daily update check set `SKL_X_NO_UPDATE_CHECK=1` (`SKLX_NO_UPDATE_CHECK` still
 works).
 
-Requires Node.js 20 or newer.
+Requires Node.js 22 or newer.
 
 ## License
 

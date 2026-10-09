@@ -15,6 +15,8 @@
 - `skl usage` prints one table: `.agents` (Codex) and `.claude` (Claude Code) runs, cost per skill
   and total = cost × runs, with a sum row. The `Total:` line is gone; `--format json` is unchanged.
 - Scope headers read `Project scope` / `Global scope`.
+- Requires Node.js 22 or newer (`engines.node` `>=22`): Node 20 reached end of life on
+  2026-04-30.
 
 ## 0.4.2 (2026-10-08)
 

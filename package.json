@@ -43,7 +43,7 @@
     "dist"
   ],
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "scripts": {
     "build": "rm -rf dist && ~/.bun/bin/bun run node_modules/.bin/bunup",
