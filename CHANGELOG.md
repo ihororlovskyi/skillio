@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.4.3 (2026-10-09)
+
+### Changed
+
+- `skl i … -y -m s` and `skl i -ln` print one progress line that ends as
+  `Installing from https://github.com/owner/repo ██████████ 100% · Installed N skills`. The bar is
+  green and redraws only in a terminal; scripts and CI get the final line. `owner/repo` is shown
+  as its GitHub URL.
+- The skill table of `skl i` and `skl ls` has a `cost` column, as in `skl cost`; `+` in the lock
+  column is green, `-` yellow.
+- `skl usage` prints one table: `.agents` (Codex) and `.claude` (Claude Code) runs, cost per skill
+  and total = cost × runs, with a sum row. The `Total:` line is gone; `--format json` is unchanged.
+- Scope headers read `Project scope` / `Global scope`.
+
 ## 0.4.2 (2026-10-08)
 
 ### Changed

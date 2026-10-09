@@ -74,7 +74,7 @@ export const INSTALL_HELP = [
   '  -x, --reject        With -ln: every skill except these',
   '  -a, --agent         With -ln: codex (.agents/skills), claude-code (.claude/skills) (default: both)',
   '  -y, --yes           Skip npx prompts; with -ln: replace existing copies without asking',
-  '  -m, --mode silent   Hide the npx output, print a summary and a table (needs -y)',
+  '  -m, --mode silent   Hide the npx output, print a progress line and a table (needs -y)',
   '',
   'EXAMPLES',
   '',
