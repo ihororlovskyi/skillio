@@ -1,4 +1,4 @@
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -7,8 +7,10 @@ import {
   estimateContextTokens,
   extractFrontmatter,
   findSkillFile,
+  formatCost,
   getSkillPathCandidates,
   parseSkillMeta,
+  readSkillCost,
 } from './skill-files';
 
 describe('extractFrontmatter', () => {
@@ -126,5 +128,51 @@ describe('findSkillFile + countFrontmatterTokens', () => {
     const f = findSkillFile('present', join(TMP, 'skills-lock.json'), false);
     // 'present' + 'hi' = 9 chars -> 3 tokens
     expect(countFrontmatterTokens(f as string)).toBe(3);
+  });
+});
+
+describe('readSkillCost', () => {
+  let dir = '';
+  afterEach(() => rmSync(dir, { recursive: true, force: true }));
+  const write = (body: string) => {
+    dir = mkdtempSync(join(tmpdir(), 'skl-cost-'));
+    writeFileSync(join(dir, 'SKILL.md'), body);
+    return join(dir, 'SKILL.md');
+  };
+
+  it('estimates name + description at 3 chars per token', () => {
+    // 'skill-bar' (9) + 'write a plan from a spec' (24) = 33 chars
+    expect(
+      readSkillCost(
+        write('---\nname: skill-bar\ndescription: write a plan from a spec\n---\n'),
+        'x',
+      ),
+    ).toBe(11);
+  });
+
+  it('marks disable-model-invocation as hidden', () => {
+    expect(readSkillCost(write('---\nname: a\ndisable-model-invocation: true\n---\n'), 'a')).toBe(
+      'hidden',
+    );
+  });
+
+  it('reports a file without frontmatter', () => {
+    expect(readSkillCost(write('# no frontmatter\n'), 'a')).toBe('no-frontmatter');
+  });
+
+  it('reports a missing file', () => {
+    expect(readSkillCost(undefined, 'a')).toBe('missing');
+    expect(readSkillCost('/nonexistent/SKILL.md', 'a')).toBe('missing');
+  });
+});
+
+describe('formatCost', () => {
+  it('formats every cost kind as skl cost does', () => {
+    expect(formatCost(262)).toBe('~262 tok');
+    expect(formatCost(2882)).toBe('~2882 tok');
+    expect(formatCost(2882, true)).toBe('~2,882 tok');
+    expect(formatCost('missing')).toBe('~? tok');
+    expect(formatCost('no-frontmatter')).toBe('(no frontmatter)');
+    expect(formatCost('hidden')).toBe('-');
   });
 });

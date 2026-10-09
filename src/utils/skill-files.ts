@@ -97,3 +97,21 @@ export function countFrontmatterTokens(filePath: string): number | undefined {
   if (fm === undefined) return undefined;
   return estimateContextTokens(parseSkillMeta(fm), basename(dirname(filePath)));
 }
+
+// number - tokens in the always-loaded context; 'hidden' - disable-model-invocation keeps it out
+export type SkillCost = number | 'missing' | 'no-frontmatter' | 'hidden';
+
+export function readSkillCost(file: string | undefined, fallbackName: string): SkillCost {
+  if (file === undefined || !existsSync(file)) return 'missing';
+  const fm = extractFrontmatter(readFileSync(file, 'utf8'));
+  if (fm === undefined) return 'no-frontmatter';
+  const meta = parseSkillMeta(fm);
+  return meta.disableModelInvocation ? 'hidden' : estimateContextTokens(meta, fallbackName);
+}
+
+export function formatCost(cost: SkillCost, grouped = false): string {
+  if (cost === 'missing') return '~? tok';
+  if (cost === 'no-frontmatter') return '(no frontmatter)';
+  if (cost === 'hidden') return '-';
+  return `~${grouped ? cost.toLocaleString('en-US') : cost} tok`;
+}
