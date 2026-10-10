@@ -157,7 +157,7 @@ describe('planSymlinks / runSymlink', () => {
     symlinkSync('../../../clone/skills/tdd', join(proj, '.claude/skills/tdd'));
     const steps = planSymlinks({
       cwd: proj,
-      sourceAbs: clone,
+      skillsAbs: join(clone, 'skills'),
       names: ['tdd', 'cross-review'],
       dirs: BOTH,
     });
@@ -175,7 +175,7 @@ describe('planSymlinks / runSymlink', () => {
     symlinkSync('../../missing/tdd', join(proj, '.agents/skills/tdd'));
     const [step] = planSymlinks({
       cwd: proj,
-      sourceAbs: clone,
+      skillsAbs: join(clone, 'skills'),
       names: ['tdd'],
       dirs: ['.agents/skills'],
     });
@@ -361,7 +361,7 @@ describe('planSymlinks / runSymlink', () => {
     writeFileSync(join(proj, '.claude/skills/tdd'), 'not a skill');
     const [step] = planSymlinks({
       cwd: proj,
-      sourceAbs: clone,
+      skillsAbs: join(clone, 'skills'),
       names: ['tdd'],
       dirs: ['.claude/skills'],
     });
@@ -563,6 +563,52 @@ describe('planSymlinks / runSymlink', () => {
     expect(console.log).toHaveBeenCalledWith(expect.stringContaining('USAGE skl-x sln <path>'));
     expect(await runSln(['../clone', '-y', '-m', 's', '-m', 'q'], { cwd: proj })).toBe(1);
     expect(console.error).toHaveBeenCalledWith('skl sln: conflicting modes: silent and quiet');
+    expect(existsSync(join(proj, '.agents'))).toBe(false);
+  });
+
+  it('takes a path that is the skills folder itself, with and without -s', async () => {
+    seedInternal(clone, 'hidden');
+    expect(await runSymlink(['../clone/skills', '-s', 'tdd', '-y'], { cwd: proj })).toBe(0);
+    expect(readlinkSync(join(proj, '.agents/skills/tdd'))).toBe('../../../clone/skills/tdd');
+    expect(console.log).toHaveBeenCalledWith(
+      'Symlinking from ../clone/skills ██████████ 100% · Symlinked 1 skill',
+    );
+    expect(await runSymlink(['../clone/skills', '-y'], { cwd: proj })).toBe(0);
+    for (const dir of BOTH) {
+      expect(readlinkSync(join(proj, dir, 'cross-review'))).toBe(
+        '../../../clone/skills/cross-review',
+      );
+      expect(existsSync(join(proj, dir, 'hidden'))).toBe(false);
+    }
+  });
+
+  it('runSln clear on the skills folder logs the real targets and unchanged links', async () => {
+    expect(await runSymlink(['../clone', '-s', 'tdd', '-y'], { cwd: proj })).toBe(0);
+    vi.mocked(console.log).mockClear();
+    expect(await runSln(['../clone/skills', '-s', 'tdd', '-y'], { cwd: proj })).toBe(0);
+    expect(logged().slice(0, 2)).toEqual([
+      '.agents/skills/tdd -> ../../../clone/skills/tdd (unchanged)',
+      '.claude/skills/tdd -> ../../../clone/skills/tdd (unchanged)',
+    ]);
+  });
+
+  it('prefers <path>/skills when <path> also holds skill folders', async () => {
+    mkdirSync(join(clone, 'stray'));
+    writeFileSync(join(clone, 'stray', 'SKILL.md'), '---\nname: stray\n---\n');
+    expect(await runSymlink(['../clone', '-y'], { cwd: proj })).toBe(0);
+    expect(existsSync(join(proj, '.agents/skills/tdd'))).toBe(true);
+    expect(existsSync(join(proj, '.agents/skills/stray'))).toBe(false);
+  });
+
+  it('names the skills folder itself in errors for that path form', async () => {
+    expect(await runSymlink(['../clone/skills', '-s', 'nope', '-y'], { cwd: proj })).toBe(1);
+    expect(console.error).toHaveBeenCalledWith(
+      `skl sln: ${join('../clone/skills', 'nope', 'SKILL.md')} not found`,
+    );
+    expect(await runSymlink(['../clone/skills', '-x', 'nope', '-y'], { cwd: proj })).toBe(1);
+    expect(console.error).toHaveBeenCalledWith(
+      'skl sln: --reject: "nope" is not in ../clone/skills',
+    );
     expect(existsSync(join(proj, '.agents'))).toBe(false);
   });
 });

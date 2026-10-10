@@ -51,7 +51,8 @@ If `npx` fails, its full output is printed.
 
 `skl-x sln <path>` symlinks `<path>/skills/<name>` into `.agents/skills` and
 `.claude/skills`. The links point straight at the clone, so edits there show up without
-reinstalling.
+reinstalling. `<path>` may also be the skills folder itself, such as
+`../skills/plugins/devflow/skills`.
 
 ```sh
 # Every skill in the clone
@@ -75,7 +76,8 @@ cross-review  symlinked  symlinked  -                 ~186 tok
 tdd           symlinked  symlinked  -                 ~125 tok
 ```
 
-- Without `-s`, every `<path>/skills/<name>/SKILL.md` is linked, except skills with
+- Without `-s`, every `<path>/skills/<name>/SKILL.md` is linked (or `<path>/<name>/SKILL.md`
+  when `<path>/skills` has no skills), except skills with
   `metadata.internal: true` (as `npx skills add` does).
 - An existing copy or symlink with the same name is replaced after a
   `Replace N existing skills?` prompt, or at once with `-y`.

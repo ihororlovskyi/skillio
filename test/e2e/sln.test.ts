@@ -149,6 +149,13 @@ describe('removed commands', () => {
     expect(existsSync(join(PROJ, '.claude'))).toBe(false);
   });
 
+  it('takes the skills folder itself as <path>', () => {
+    const { stdout, exitCode } = run(['sln', '../clone/skills', '-s', 'vitest', '-y', '-m', 'q'], PROJ);
+    expect(exitCode).toBe(0);
+    expect(stdout).toBe('Symlinked 1 skill from ../clone/skills\n');
+    expect(readlinkSync(join(PROJ, '.agents/skills/vitest'))).toBe('../../../clone/skills/vitest');
+  });
+
   it('root help lists add, sln and the short aliases only', () => {
     const { stdout } = run(['-h'], PROJ);
     expect(stdout).toContain('  add  ');
