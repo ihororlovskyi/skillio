@@ -14,22 +14,25 @@ Install, audit and manage AI agent skills for Claude Code and Codex.
 ## Install skills
 
 ```sh
-npx -y skl-x i sentimony/skills
+npx -y skl-x add sentimony/skills
 ```
 
-`skl-x i` runs `npx -y skills add` with the same arguments, so every
+`skl-x add` runs `npx -y skills add` with the same arguments, so every
 [source format](https://github.com/vercel-labs/skills#source-formats) and option of
 `npx skills add` works as is.
 
 ```sh
 # List skills in a repository
-npx -y skl-x i sentimony/skills -l
+npx -y skl-x add sentimony/skills -l
 
 # Specific skills to specific agents, non-interactive
-npx -y skl-x i sentimony/skills -s tdd cross-review -a codex claude-code -y
+npx -y skl-x add sentimony/skills -s tdd cross-review -a codex claude-code -y
 
 # Hide the npx skills output, print a progress line and a table (needs -y)
-npx -y skl-x i sentimony/skills -s tdd -a codex claude-code -y -m s
+npx -y skl-x add sentimony/skills -s tdd -a codex claude-code -y -m s
+
+# One line only (needs -y)
+npx -y skl-x add sentimony/skills -s tdd -a codex claude-code -y -m q
 ```
 
 ```text
@@ -38,27 +41,34 @@ skill  .agents    .claude    skills-lock.json  cost
 tdd    universal  symlinked  +                 ~125 tok
 ```
 
+Without `-m`, the `npx skills add` output is shown as is, followed by the table of the skills it
+changed.
+
 In a terminal the bar fills while `npx` runs; in scripts and CI only the final line is printed.
 If `npx` fails, its full output is printed.
 
 ### Local skills
 
-`--link <path>` (`-ln`) symlinks `<path>/skills/<name>` into `.agents/skills` and
+`skl-x sln <path>` symlinks `<path>/skills/<name>` into `.agents/skills` and
 `.claude/skills`. The links point straight at the clone, so edits there show up without
 reinstalling.
 
 ```sh
 # Every skill in the clone
-npx -y skl-x i -ln ../skills -a codex claude-code -y
+npx -y skl-x sln ../skills -a codex claude-code -y
 
 # Every skill except the listed ones
-npx -y skl-x i -ln ../skills -x scope-check echarts -y
+npx -y skl-x sln ../skills -x scope-check echarts -y
 
 # Only the listed skills, only .claude/skills
-npx -y skl-x i -ln ../skills -s tdd cross-review -a claude-code
+npx -y skl-x sln ../skills -s tdd cross-review -a claude-code
 ```
 
 ```text
+.agents/skills/cross-review -> ../../../skills/skills/cross-review
+.claude/skills/cross-review -> ../../../skills/skills/cross-review
+.agents/skills/tdd -> ../../../skills/skills/tdd
+.claude/skills/tdd -> ../../../skills/skills/tdd
 Symlinking from ../skills ██████████ 100% · Symlinked 2 skills
 skill         .agents    .claude    skills-lock.json  cost
 cross-review  symlinked  symlinked  -                 ~186 tok
@@ -73,12 +83,17 @@ tdd           symlinked  symlinked  -                 ~125 tok
 
 | Option | Description |
 |---|---|
-| `--link, -ln` | Symlink from a local clone instead of running `npx skills add` |
 | `--skill, -s <names...>` | Only these skills; a name starting with a space is skipped |
 | `--reject, -x <names...>` | Every skill except these (not with `-s`) |
 | `--agent, -a <agents...>` | `codex` (`.agents/skills`), `claude-code` (`.claude/skills`); default: both |
-| `--yes, -y` | Skip `npx` prompts; with `-ln`: replace existing copies without asking |
-| `--mode, -m silent` | Hide the `npx` output (needs `-y`); no effect with `-ln` |
+| `--yes, -y` | Skip `npx` prompts (`add`); replace existing copies without asking (`sln`) |
+| `--mode, -m <mode>` | `clear` (`c`, default), `silent` (`s`), `quiet` (`q`); `silent` and `quiet` in `add` need `-y` |
+
+| Mode | `add` | `sln` | `rm` |
+|---|---|---|---|
+| `clear` | `npx` output, then a table | `path -> target` per link, progress line, table | plan and summary |
+| `silent` | progress line and table | progress line and table | `Executed A/B/C skills` |
+| `quiet` | `Installed N skills from <source>` | `Symlinked N skills from <path>` | `Executed A/B/C skills` |
 
 ## Cost
 
@@ -189,7 +204,7 @@ skl-x completion fish > ~/.config/fish/completions/skl.fish
 | anywhere else, `$HOME` included | that directory |
 | `cost`, `ls`, `rm` with `--global` / `-g` | global: `~/.agents/.skill-lock.json`, `~/.claude/skills`, `~/.agents/skills` |
 
-`skl usage` is always project scope. `skl i` installs into the current directory.
+`skl usage` is always project scope. `skl add` and `skl sln` write into the current directory.
 
 ## Global install
 

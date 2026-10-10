@@ -12,7 +12,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { parseSymlinkArgs, planSymlinks, runSymlink } from './symlink';
+import { parseSymlinkArgs, planSymlinks, runSln, runSymlink } from './symlink';
 
 describe('parseSymlinkArgs', () => {
   it('collects several -s and -a values', () => {
@@ -93,9 +93,9 @@ describe('parseSymlinkArgs', () => {
     });
   });
 
-  it('prefixes argument errors with skl install --link', () => {
+  it('prefixes argument errors with skl sln', () => {
     const r = parseSymlinkArgs(['-s', 'tdd']);
-    expect(r).toEqual({ kind: 'error', message: 'skl install --link: missing <path>' });
+    expect(r).toEqual({ kind: 'error', message: 'skl sln: missing <path>' });
   });
 
   it.each([
@@ -370,9 +370,7 @@ describe('planSymlinks / runSymlink', () => {
 
   it('fails when the source is not a directory', async () => {
     expect(await runSymlink(['../missing', '-s', 'tdd'], { cwd: proj })).toBe(1);
-    expect(console.error).toHaveBeenCalledWith(
-      'skl install --link: ../missing is not a local directory',
-    );
+    expect(console.error).toHaveBeenCalledWith('skl sln: ../missing is not a local directory');
   });
 
   it('dedupes repeated names', async () => {
@@ -384,7 +382,7 @@ describe('planSymlinks / runSymlink', () => {
 
   it('returns 1 on argument errors', async () => {
     expect(await runSymlink(['-s', 'tdd'], { cwd: proj })).toBe(1);
-    expect(console.error).toHaveBeenCalledWith('skl install --link: missing <path>');
+    expect(console.error).toHaveBeenCalledWith('skl sln: missing <path>');
   });
 
   function seedInternal(root: string, name: string): void {
@@ -469,7 +467,7 @@ describe('planSymlinks / runSymlink', () => {
   it('-x with a name not in the clone fails before any change', async () => {
     expect(await runSymlink(['../clone', '-x', 'nope', '-y'], { cwd: proj })).toBe(1);
     expect(console.error).toHaveBeenCalledWith(
-      `skl install --link: --reject: "nope" is not in ${join('../clone', 'skills')}`,
+      `skl sln: --reject: "nope" is not in ${join('../clone', 'skills')}`,
     );
     expect(existsSync(join(proj, '.agents'))).toBe(false);
   });
@@ -489,5 +487,82 @@ describe('planSymlinks / runSymlink', () => {
     expect(console.log).toHaveBeenCalledWith(
       'tdd    symlinked  symlinked  +                 ~4 tok',
     );
+  });
+
+  const logged = () => vi.mocked(console.log).mock.calls.map((c) => c[0]);
+
+  it('runSln clear logs skipped skills and each link before the progress line', async () => {
+    seedInternal(clone, 'hidden');
+    mkdirSync(join(proj, '.agents/skills/tdd'), { recursive: true });
+    expect(await runSln(['../clone', '-x', 'cross-review', '-y'], { cwd: proj })).toBe(0);
+    expect(logged()).toEqual([
+      'skip hidden (metadata.internal)',
+      'skip cross-review (-x)',
+      '.agents/skills/tdd -> ../../../clone/skills/tdd (replaced folder)',
+      '.claude/skills/tdd -> ../../../clone/skills/tdd',
+      'Symlinking from ../clone ██████████ 100% · Symlinked 1 skill',
+      'skill  .agents    .claude    skills-lock.json  cost',
+      'tdd    symlinked  symlinked  -                 ~4 tok',
+    ]);
+  });
+
+  it('runSln clear marks unchanged links, old targets and space-prefixed names', async () => {
+    mkdirSync(join(proj, '.agents/skills'), { recursive: true });
+    symlinkSync('../../../clone/skills/tdd', join(proj, '.agents/skills/tdd'));
+    mkdirSync(join(proj, '.claude/skills'), { recursive: true });
+    symlinkSync('../../old/tdd', join(proj, '.claude/skills/tdd'));
+    expect(await runSln(['../clone', '-s', 'tdd', ' scope-check', '-y'], { cwd: proj })).toBe(0);
+    expect(logged().slice(0, 3)).toEqual([
+      'skip scope-check (leading space)',
+      '.agents/skills/tdd -> ../../../clone/skills/tdd (unchanged)',
+      '.claude/skills/tdd -> ../../../clone/skills/tdd (replaced symlink -> ../../old/tdd)',
+    ]);
+  });
+
+  it('runSln -m s prints the progress line and the table only', async () => {
+    expect(await runSln(['../clone', '-s', 'tdd', '-y', '-m', 's'], { cwd: proj })).toBe(0);
+    expect(logged()).toEqual([
+      'Symlinking from ../clone ██████████ 100% · Symlinked 1 skill',
+      'skill  .agents    .claude    skills-lock.json  cost',
+      'tdd    symlinked  symlinked  -                 ~4 tok',
+    ]);
+  });
+
+  it('runSln --mode quiet prints one line and still links', async () => {
+    expect(await runSln(['../clone', '--mode', 'quiet', '-y'], { cwd: proj })).toBe(0);
+    expect(logged()).toEqual(['Symlinked 2 skills from ../clone']);
+    expect(lstatSync(join(proj, '.claude/skills/tdd')).isSymbolicLink()).toBe(true);
+  });
+
+  it('runSln: "No skills to symlink" after the skip lines in clear, alone in quiet', async () => {
+    expect(await runSln(['../clone', '-x', 'tdd', 'cross-review'], { cwd: proj })).toBe(0);
+    expect(logged()).toEqual([
+      'skip cross-review (-x)',
+      'skip tdd (-x)',
+      'No skills to symlink in ../clone.',
+    ]);
+    vi.mocked(console.log).mockClear();
+    expect(await runSln(['../clone', '-x', 'tdd', 'cross-review', '-m', 'q'], { cwd: proj })).toBe(
+      0,
+    );
+    expect(logged()).toEqual(['No skills to symlink in ../clone.']);
+    vi.mocked(console.log).mockClear();
+    expect(await runSln(['../clone', '-s', ' tdd', '-y', '-m', 'q'], { cwd: proj })).toBe(0);
+    expect(logged()).toEqual(['No skills to symlink in ../clone.']);
+    expect(existsSync(join(proj, '.agents'))).toBe(false);
+  });
+
+  it('runSln clear: an internal skill listed in -x is skipped once, as -x', async () => {
+    seedInternal(clone, 'hidden');
+    expect(await runSln(['../clone', '-x', 'hidden', 'cross-review', '-y'], { cwd: proj })).toBe(0);
+    expect(logged().slice(0, 2)).toEqual(['skip cross-review (-x)', 'skip hidden (-x)']);
+  });
+
+  it('runSln prints its help and rejects conflicting modes before any change', async () => {
+    expect(await runSln(['-h'], { cwd: proj })).toBe(0);
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('USAGE skl-x sln <path>'));
+    expect(await runSln(['../clone', '-y', '-m', 's', '-m', 'q'], { cwd: proj })).toBe(1);
+    expect(console.error).toHaveBeenCalledWith('skl sln: conflicting modes: silent and quiet');
+    expect(existsSync(join(proj, '.agents'))).toBe(false);
   });
 });

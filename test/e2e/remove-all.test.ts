@@ -235,8 +235,22 @@ describe('skl rm .', () => {
     expect(existsSync(join(tmp, '.claude', 'skills', 'foo', 'SKILL.md'))).toBe(true);
   });
 
+  it('-m q and --mode quiet print the same Executed line as -m s', () => {
+    seed3();
+    expect(rmAll(['-y', '-m', 'q']).stdout).toBe('Executed 0/3/3 skills\n');
+    seed3();
+    expect(rmAll(['-y', '--mode', 'quiet']).stdout).toBe('Executed 0/3/3 skills\n');
+  });
+
+  it('-m c prints the summary block as without -m', () => {
+    seed3();
+    const r = rmAll(['-y', '-m', 'c']);
+    expect(r.status).toBe(0);
+    expect(r.stdout.startsWith('3 skills bar baz foo removed from:\n')).toBe(true);
+  });
+
   it('-sm, --stealth-mode and a bad --mode value exit 1 before any change', () => {
-    for (const flags of [['-sm'], ['--stealth-mode'], ['-m', 'loud']]) {
+    for (const flags of [['-sm'], ['--stealth-mode'], ['-m', 'loud'], ['-m', 's', '-m', 'q']]) {
       seed3();
       const r = rmAll(['-y', ...flags]);
       expect(r.status).toBe(1);

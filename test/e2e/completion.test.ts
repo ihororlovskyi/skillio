@@ -35,26 +35,25 @@ describe('skl completion', () => {
     expect(stderr).toContain('unknown shell: ohmyzsh');
   });
 
-  it('completes commands and install/rm flags in every shell', () => {
+  it('completes commands and add, sln, rm flags in every shell', () => {
     const bash = run(['completion', 'bash'], process.cwd()).stdout;
-    expect(bash).toContain('local cmds="list ls remove rm cost cst usage usg completion install i"');
-    expect(bash).toContain('install|i)');
-    expect(bash).toContain('-ln --link -s --skill -x --reject -a --agent -y --yes -m --mode');
+    expect(bash).toContain('local cmds="list ls remove rm cost cst usage usg completion add sln"');
+    expect(bash).toContain('    add)');
+    expect(bash).toContain('    sln)');
+    expect(bash).toContain('"-s --skill -a --agent -y --yes -m --mode -h --help"');
+    expect(bash).toContain('"-s --skill -x --reject -a --agent -y --yes -m --mode -h --help"');
     expect(bash).toContain('compgen -W "codex claude-code"');
-    expect(bash).toContain('compgen -W "silent"');
-    expect(bash).not.toMatch(/symlink|stealth|-sm/);
+    expect(bash.split('compgen -W "clear silent quiet"').length - 1).toBe(3);
+    expect(bash).not.toMatch(/install|-ln|--link|symlink|stealth|-sm/);
     const zsh = run(['completion', 'zsh'], process.cwd()).stdout;
-    expect(zsh).toContain("'install:Install skills or symlink a local clone'");
-    expect(zsh).toContain('install|i)');
-    expect(zsh).toContain("'-ln[symlink a local clone]'");
-    // install and rm both complete silent after -m/--mode
-    expect(zsh.split("_values 'mode' silent").length - 1).toBe(2);
-    expect(zsh).not.toMatch(/symlink:|stealth|-sm\[|'cs:|'us:/);
+    expect(zsh).toContain("'add:Install skills via npx skills add'");
+    expect(zsh).toContain("'sln:Symlink skills from a local clone'");
+    expect(zsh.split("_values 'mode' clear silent quiet").length - 1).toBe(3);
+    expect(zsh).not.toMatch(/install|-ln|--link|symlink:|stealth|-sm\[|'cs:|'us:/);
     const fish = run(['completion', 'fish'], process.cwd()).stdout;
-    expect(fish).toContain("-a 'list ls remove rm cost cst usage usg completion install i'");
-    expect(fish).toContain("-o ln -l link -d 'Symlink from a local clone'");
+    expect(fish).toContain("-a 'list ls remove rm cost cst usage usg completion add sln'");
     expect(fish).toContain("-s a -l agent -xa 'codex claude-code'");
-    expect(fish).toContain("-s m -l mode -xa 'silent'");
-    expect(fish).not.toMatch(/symlink sym sl|stealth/);
+    expect(fish.split("-s m -l mode -xa 'clear silent quiet'").length - 1).toBe(3);
+    expect(fish).not.toMatch(/install|-o ln|--link|symlink sym sl|stealth/);
   });
 });

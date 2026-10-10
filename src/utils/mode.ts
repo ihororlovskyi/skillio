@@ -1,19 +1,30 @@
+export type OutputMode = 'clear' | 'silent' | 'quiet';
+
 export type ModeResult =
-  | { kind: 'ok'; silent: boolean; rest: string[] }
+  | { kind: 'ok'; mode: OutputMode; rest: string[] }
   | { kind: 'error'; message: string };
 
-const SILENT = new Set(['silent', 's']);
+const VALUES = new Map<string, OutputMode>([
+  ['clear', 'clear'],
+  ['c', 'clear'],
+  ['silent', 'silent'],
+  ['s', 'silent'],
+  ['quiet', 'quiet'],
+  ['q', 'quiet'],
+]);
+
+const CHOICES = 'clear (c), silent (s) or quiet (q)';
 
 export function extractMode(argv: string[]): ModeResult {
   const rest: string[] = [];
-  let silent = false;
+  let chosen: OutputMode | null = null;
   for (let i = 0; i < argv.length; i++) {
     const tok = argv[i] ?? '';
     let value: string | undefined;
     if (tok === '-m' || tok === '--mode') {
       value = argv[i + 1];
       if (value === undefined || value.startsWith('-')) {
-        return { kind: 'error', message: `${tok} needs a value: silent (s)` };
+        return { kind: 'error', message: `${tok} needs a value: ${CHOICES}` };
       }
       i++;
     } else if (tok.startsWith('--mode=')) {
@@ -22,10 +33,14 @@ export function extractMode(argv: string[]): ModeResult {
       rest.push(tok);
       continue;
     }
-    if (!SILENT.has(value)) {
-      return { kind: 'error', message: `unknown mode "${value}", use silent (s)` };
+    const mode = VALUES.get(value);
+    if (mode === undefined) {
+      return { kind: 'error', message: `unknown mode "${value}", use ${CHOICES}` };
     }
-    silent = true;
+    if (chosen !== null && chosen !== mode) {
+      return { kind: 'error', message: `conflicting modes: ${chosen} and ${mode}` };
+    }
+    chosen = mode;
   }
-  return { kind: 'ok', silent, rest };
+  return { kind: 'ok', mode: chosen ?? 'clear', rest };
 }

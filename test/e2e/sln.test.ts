@@ -35,12 +35,17 @@ beforeEach(() => {
 
 afterEach(() => rmSync(TMP, { recursive: true, force: true }));
 
-describe('skl i -ln', () => {
-  it('links every non-internal skill into both dirs and prints a table', () => {
-    const { stdout, exitCode } = run(['i', '-ln', '../clone', '-a', 'codex', 'claude-code', '-y'], PROJ);
+describe('skl sln', () => {
+  it('clear logs every link, then prints the progress line and a table', () => {
+    const { stdout, exitCode } = run(['sln', '../clone', '-a', 'codex', 'claude-code', '-y'], PROJ);
     expect(exitCode).toBe(0);
     expect(stdout).toBe(
       [
+        'skip hidden (metadata.internal)',
+        '.agents/skills/tdd -> ../../../clone/skills/tdd (replaced folder)',
+        '.claude/skills/tdd -> ../../../clone/skills/tdd',
+        '.agents/skills/vitest -> ../../../clone/skills/vitest',
+        '.claude/skills/vitest -> ../../../clone/skills/vitest',
         'Symlinking from ../clone ██████████ 100% · Symlinked 2 skills',
         'skill   .agents    .claude    skills-lock.json  cost',
         'tdd     symlinked  symlinked  -                 ~1 tok',
@@ -55,8 +60,58 @@ describe('skl i -ln', () => {
     }
   });
 
-  it('install --link -x skips the listed skills', () => {
-    const { exitCode } = run(['install', '--link', '../clone', '-x', 'tdd', '-y'], PROJ);
+  it('-m s prints the 0.4.5 output, -m q one line', () => {
+    const silent = run(['sln', '../clone', '-s', 'vitest', '-y', '-m', 's'], PROJ);
+    expect(silent.stdout).toBe(
+      [
+        'Symlinking from ../clone ██████████ 100% · Symlinked 1 skill',
+        'skill   .agents    .claude    skills-lock.json  cost',
+        'vitest  symlinked  symlinked  -                 ~2 tok',
+        '',
+      ].join('\n'),
+    );
+    const quiet = run(['sln', '../clone', '-s', 'tdd', '-y', '-m', 'q'], PROJ);
+    expect(quiet.exitCode).toBe(0);
+    expect(quiet.stdout).toBe('Symlinked 1 skill from ../clone\n');
+  });
+
+  it('clear names skipped skills with their reason', () => {
+    const picked = run(['sln', '../clone', '-s', 'vitest', ' tdd', '-y'], PROJ);
+    expect(picked.exitCode).toBe(0);
+    expect(picked.stdout).toBe(
+      [
+        'skip tdd (leading space)',
+        '.agents/skills/vitest -> ../../../clone/skills/vitest',
+        '.claude/skills/vitest -> ../../../clone/skills/vitest',
+        'Symlinking from ../clone ██████████ 100% · Symlinked 1 skill',
+        'skill   .agents    .claude    skills-lock.json  cost',
+        'vitest  symlinked  symlinked  -                 ~2 tok',
+        '',
+      ].join('\n'),
+    );
+    const none = run(['sln', '../clone', '-x', 'tdd', 'vitest', '-y'], PROJ);
+    expect(none.exitCode).toBe(0);
+    expect(none.stdout).toBe(
+      [
+        'skip hidden (metadata.internal)',
+        'skip tdd (-x)',
+        'skip vitest (-x)',
+        'No skills to symlink in ../clone.',
+        '',
+      ].join('\n'),
+    );
+  });
+
+  it('quiet prints "No skills to symlink" for an empty -s selection', () => {
+    const { stdout, exitCode } = run(['sln', '../clone', '-s', ' tdd', '-y', '-m', 'q'], PROJ);
+    expect(exitCode).toBe(0);
+    expect(stdout).toBe('No skills to symlink in ../clone.\n');
+    expect(lstatSync(join(PROJ, '.agents/skills/tdd')).isDirectory()).toBe(true);
+    expect(existsSync(join(PROJ, '.claude'))).toBe(false);
+  });
+
+  it('-x skips the listed skills', () => {
+    const { exitCode } = run(['sln', '../clone', '-x', 'tdd', '-y'], PROJ);
     expect(exitCode).toBe(0);
     expect(existsSync(join(PROJ, '.claude/skills/vitest'))).toBe(true);
     expect(lstatSync(join(PROJ, '.agents/skills/tdd')).isDirectory()).toBe(true);
@@ -65,12 +120,12 @@ describe('skl i -ln', () => {
   it('does not touch skills-lock.json', () => {
     const lock = '{\n  "version": 1,\n  "skills": {}\n}\n';
     writeFileSync(join(PROJ, 'skills-lock.json'), lock);
-    expect(run(['i', '-ln', '../clone', '-s', 'tdd', '-y'], PROJ).exitCode).toBe(0);
+    expect(run(['sln', '../clone', '-s', 'tdd', '-y'], PROJ).exitCode).toBe(0);
     expect(readFileSync(join(PROJ, 'skills-lock.json'), 'utf8')).toBe(lock);
   });
 
   it('without -y and no TTY the copy stays (createConfirmer reads EOF as no)', () => {
-    const { stdout, exitCode } = run(['i', '-ln', '../clone', '-s', 'tdd'], PROJ);
+    const { stdout, exitCode } = run(['sln', '../clone', '-s', 'tdd'], PROJ);
     expect(exitCode).toBe(1);
     expect(stdout).toContain('.agents/skills/tdd - folder');
     expect(stdout).toContain('Replace 1 existing skill?');
@@ -78,9 +133,9 @@ describe('skl i -ln', () => {
   });
 
   it('-a goes through unmerged and -g is rejected', () => {
-    const ok = run(['i', '-ln', '../clone', '-s', 'tdd', '-a', 'claude-code', 'codex', '-y'], PROJ);
+    const ok = run(['sln', '../clone', '-s', 'tdd', '-a', 'claude-code', 'codex', '-y'], PROJ);
     expect(ok.exitCode).toBe(0);
-    const global = run(['-g', 'i', '-ln', '../clone', '-s', 'tdd'], PROJ);
+    const global = run(['-g', 'sln', '../clone', '-s', 'tdd'], PROJ);
     expect(global.exitCode).toBe(1);
     expect(global.stderr).toContain('-g/--global is not supported yet');
   });
@@ -94,11 +149,12 @@ describe('removed commands', () => {
     expect(existsSync(join(PROJ, '.claude'))).toBe(false);
   });
 
-  it('root help lists install and the short aliases only', () => {
+  it('root help lists add, sln and the short aliases only', () => {
     const { stdout } = run(['-h'], PROJ);
-    expect(stdout).toContain('install, i');
+    expect(stdout).toContain('  add  ');
+    expect(stdout).toContain('  sln  ');
     expect(stdout).toContain('cost, cst ');
     expect(stdout).toContain('usage, usg ');
-    expect(stdout).not.toMatch(/symlink, sym|\bcs\b|\bus\b/);
+    expect(stdout).not.toMatch(/install, i|symlink, sym|\bcs\b|\bus\b/);
   });
 });
