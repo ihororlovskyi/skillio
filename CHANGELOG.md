@@ -8,6 +8,7 @@
   0.4.3).
 - Dev tooling: `vitest` and `@vitest/coverage-v8` 5.x, `vite` added as a dev dependency (a
   required peer of vitest 5).
+- Dependabot version updates removed; dependencies and GitHub Actions are bumped by hand.
 
 ## 0.4.4 (2026-10-10)
 
