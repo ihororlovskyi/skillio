@@ -1,9 +1,19 @@
 import { spawnSync } from 'node:child_process';
-import { cpSync, mkdtempSync } from 'node:fs';
+import {
+  copyFileSync,
+  cpSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { encodeClaudeProjectDir } from '../../src/utils/scope';
 
 const CLI = join(process.cwd(), 'dist', 'cli.js');
+const FIXTURES = join(process.cwd(), 'test', 'fixtures');
 
 export interface RunResult {
   stdout: string;
@@ -48,6 +58,33 @@ export function runWithColor(args: string[], cwd?: string): RunResult {
 // Fixtures live inside the skl-x git repo, so commands run in them would resolve to its root.
 export function copyFixture(name: string): string {
   const dir = mkdtempSync(join(tmpdir(), `skl-fixture-${name.replaceAll('/', '-')}-`));
-  cpSync(join(process.cwd(), 'test', 'fixtures', name), dir, { recursive: true, verbatimSymlinks: true });
+  cpSync(join(FIXTURES, name), dir, { recursive: true, verbatimSymlinks: true });
   return dir;
+}
+
+// realpath: on macOS tmpdir() is /var/..., while the child's process.cwd() is /private/var/...
+export function makeHome(prefix: string): { home: string; project: string } {
+  const home = realpathSync(mkdtempSync(join(tmpdir(), prefix)));
+  const project = join(home, 'project');
+  mkdirSync(join(project, '.git'), { recursive: true });
+  return { home, project };
+}
+
+export function seedClaudeSessions(home: string, project: string, fixture = 'claude'): void {
+  const dir = join(home, '.claude', 'projects', encodeClaudeProjectDir(project));
+  mkdirSync(dir, { recursive: true });
+  copyFileSync(join(FIXTURES, fixture, 'sample.jsonl'), join(dir, 'sample.jsonl'));
+}
+
+// The fixture has no session_meta, so project filtering would drop it without one.
+export function seedCodexSessions(home: string, cwd: string, id = 'session-1'): void {
+  const dir = join(home, '.codex', 'sessions');
+  mkdirSync(dir, { recursive: true });
+  const meta = JSON.stringify({ type: 'session_meta', payload: { id, session_id: id, cwd } });
+  const body = readFileSync(join(FIXTURES, 'codex', 'sample.jsonl'), 'utf8');
+  writeFileSync(join(dir, `${id}.jsonl`), `${meta}\n${body}`);
+}
+
+export function homeEnv(home: string): Record<string, string> {
+  return { HOME: home, NO_COLOR: '1' };
 }

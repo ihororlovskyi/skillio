@@ -2,20 +2,25 @@ import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { run } from './helpers';
-
-const FIXTURES = join(process.cwd(), 'test', 'fixtures', 'codex');
+import { homeEnv, makeHome, run, seedCodexSessions } from './helpers';
 
 describe('skl usage codex', () => {
+  let home = '';
+  let project = '';
+  beforeEach(() => {
+    ({ home, project } = makeHome('skl-usg-codex-'));
+    seedCodexSessions(home, project);
+  });
+  afterEach(() => rmSync(home, { recursive: true, force: true }));
+  const usg = (args: string[]) => run(args, project, homeEnv(home));
+
   it('counts activations from exec_command_end entries', () => {
-    const { stdout, exitCode } = run([
+    const { stdout, exitCode } = usg([
       'usage',
       '--agent',
       'codex',
       '--mode',
       'activations',
-      '--root',
-      FIXTURES,
       '--scan-all-files',
     ]);
     expect(exitCode).toBe(0);
@@ -27,14 +32,12 @@ describe('skl usage codex', () => {
   });
 
   it('outputs valid JSON', () => {
-    const { stdout, exitCode } = run([
+    const { stdout, exitCode } = usg([
       'usage',
       '--agent',
       'codex',
       '--mode',
       'activations',
-      '--root',
-      FIXTURES,
       '--scan-all-files',
       '--format',
       'json',
