@@ -67,7 +67,7 @@ function reorderRootFlagsToSubcommand(argv: string[]): string[] {
 
 // install takes raw argv: mergeAgentArgs would join -a values with \x1f and citty
 // cannot hold several -s values. Only -g/--global may precede it, so an option value
-// such as `--root i` never turns into a command; these names stay out of SUBCOMMAND_NAMES
+// such as `--since i` never turns into a command; these names stay out of SUBCOMMAND_NAMES
 // for the same reason.
 const RAW_COMMANDS = new Set(['install', 'i']);
 

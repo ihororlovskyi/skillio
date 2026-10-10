@@ -17,22 +17,50 @@ export interface CodexReaderOptions {
   projectRoot?: string;
 }
 
-function readSessionCwd(file: string): string | undefined {
+interface SessionMeta {
+  cwd?: string;
+  ids: string[];
+}
+
+// Reads cwd and session ids from the session_meta line near the top of a session file.
+function readSessionMeta(file: string): SessionMeta {
   let head: string;
   try {
     head = readFileSync(file, 'utf8');
   } catch {
-    return undefined;
+    return { ids: [] };
   }
   const lines = head.split('\n', 30);
   for (const line of lines) {
     if (!line.trim()) continue;
     try {
-      const e = JSON.parse(line) as { type?: string; payload?: { cwd?: unknown } };
-      if (e.type === 'session_meta' && typeof e.payload?.cwd === 'string') return e.payload.cwd;
+      const e = JSON.parse(line) as {
+        type?: string;
+        payload?: { cwd?: unknown; id?: unknown; session_id?: unknown };
+      };
+      if (e.type !== 'session_meta' || typeof e.payload !== 'object' || e.payload === null) {
+        continue;
+      }
+      const { cwd, id, session_id } = e.payload;
+      // Like the old cwd reader: a session_meta without a string cwd is skipped.
+      if (typeof cwd !== 'string') continue;
+      const ids = [session_id, id].filter((v): v is string => typeof v === 'string' && v !== '');
+      return { cwd, ids };
     } catch {}
   }
-  return undefined;
+  return { ids: [] };
+}
+
+// Ids of all sessions whose cwd is in the project. Walks every session file without
+// the since filter: an old session can still have fresh history entries.
+function collectProjectSessionIds(root: string, projectRoot: string): Set<string> {
+  const ids = new Set<string>();
+  for (const file of findJsonlFiles(root)) {
+    const meta = readSessionMeta(file);
+    if (!meta.cwd || !isPathInProject(meta.cwd, projectRoot)) continue;
+    for (const id of meta.ids) ids.add(id);
+  }
+  return ids;
 }
 
 export function readCodexUsage(options: CodexReaderOptions): UsageResult {
@@ -48,7 +76,7 @@ function readCodexActivations(options: CodexReaderOptions): UsageResult {
 
   for (const file of findJsonlFiles(root, since)) {
     if (options.projectRoot) {
-      const sessionCwd = readSessionCwd(file);
+      const sessionCwd = readSessionMeta(file).cwd;
       if (!sessionCwd || !isPathInProject(sessionCwd, options.projectRoot)) continue;
     }
     filesRead++;
@@ -78,6 +106,10 @@ function readCodexMentions(options: CodexReaderOptions): UsageResult {
 
   if (!existsSync(historyPath)) return { counts, filesRead: 0, linesRead: 0 };
 
+  const projectIds = options.projectRoot
+    ? collectProjectSessionIds(expandHome(options.root ?? '~/.codex/sessions'), options.projectRoot)
+    : undefined;
+
   for (const line of readFileSync(historyPath, 'utf8').split('\n')) {
     if (!line.trim()) continue;
     linesRead++;
@@ -88,10 +120,16 @@ function readCodexMentions(options: CodexReaderOptions): UsageResult {
       continue;
     }
     if (!isRecentEntry(entry, options.since)) continue;
+    if (projectIds && !isProjectEntry(entry, projectIds)) continue;
     for (const skill of extractCodexMentions(entry)) {
       counts.set(skill, (counts.get(skill) ?? 0) + 1);
     }
   }
 
   return { counts, filesRead: 1, linesRead };
+}
+
+function isProjectEntry(entry: unknown, projectIds: Set<string>): boolean {
+  const sessionId = (entry as { session_id?: unknown }).session_id;
+  return typeof sessionId === 'string' && projectIds.has(sessionId);
 }

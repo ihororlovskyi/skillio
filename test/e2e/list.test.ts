@@ -1,12 +1,20 @@
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
-import { run, runWithColor } from './helpers';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { copyFixture, run, runWithColor } from './helpers';
 
-const LOCK_DIR = join(process.cwd(), 'test', 'fixtures', 'lock');
-const EMPTY = resolve(__dirname, '..', 'fixtures', 'list', 'empty-local');
+let LOCK_DIR = '';
+let EMPTY = '';
+beforeAll(() => {
+  LOCK_DIR = copyFixture('lock');
+  EMPTY = copyFixture('list/empty-local');
+});
+afterAll(() => {
+  rmSync(LOCK_DIR, { recursive: true, force: true });
+  rmSync(EMPTY, { recursive: true, force: true });
+});
 const CLI = resolve(process.cwd(), 'dist', 'cli.js');
 
 let tmp = '';
@@ -29,6 +37,16 @@ function seedAllStates(): string {
 }
 
 describe('skl ls', () => {
+  it('in a subdirectory of a git repo lists the skills of the repo root', () => {
+    tmp = mkdtempSync(join(tmpdir(), 'skl-ls-sub-'));
+    cpSync(LOCK_DIR, tmp, { recursive: true });
+    mkdirSync(join(tmp, '.git'));
+    mkdirSync(join(tmp, 'pkg', 'src'), { recursive: true });
+    expect(run(['ls', '--names'], join(tmp, 'pkg', 'src')).stdout).toBe(
+      'skill-bar\nskill-baz\nskill-foo\n',
+    );
+  });
+
   it('prints one table row per skill with a total row', () => {
     const { stdout, exitCode } = run(['ls'], LOCK_DIR);
     expect(exitCode).toBe(0);

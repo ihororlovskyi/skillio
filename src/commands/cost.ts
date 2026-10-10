@@ -1,8 +1,7 @@
 import { defineCommand } from 'citty';
-import { getLockPath } from '../lock/file';
 import { cyan, red } from '../utils/ansi';
 import { discoverSkills, recordCost, type SkillRecord } from '../utils/discover-skills';
-import { scopeHeader } from '../utils/scope';
+import { scopeHeader, scopeLockPath } from '../utils/scope';
 import { formatCost } from '../utils/skill-files';
 
 function inContext(r: SkillRecord): boolean {
@@ -28,7 +27,7 @@ export const costCommand = defineCommand({
     global: { type: 'boolean', alias: 'g', default: false, description: 'Use global scope' },
   },
   run({ args }) {
-    const lockPath = getLockPath(args.global);
+    const lockPath = scopeLockPath(args.global, process.cwd());
     const map = discoverSkills({ isGlobal: args.global, cwd: process.cwd(), lockPath });
     const rows = sortRows([...map.values()]);
     const total = rows.filter(inContext).reduce((acc, r) => acc + (r.frontmatterTokens ?? 0), 0);

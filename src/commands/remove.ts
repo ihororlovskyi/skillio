@@ -1,12 +1,13 @@
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { defineCommand } from 'citty';
-import { countLockLinesToRemove, getLockPath, readLock, removeSkillFromLock } from '../lock/file';
+import { countLockLinesToRemove, readLock, removeSkillFromLock } from '../lock/file';
 import { green, red, yellow } from '../utils/ansi';
 import { createConfirmer } from '../utils/confirm';
 import { discoverSkills } from '../utils/discover-skills';
 import { countFoldersAndFiles, lstatOrNull, rmSkillDir } from '../utils/fs-rm';
 import { extractMode } from '../utils/mode';
+import { scopeLockPath } from '../utils/scope';
 
 type LocationKind = 'real' | 'symlink' | 'missing';
 
@@ -273,7 +274,7 @@ export const removeCommand = defineCommand({
       process.exit(1);
     }
 
-    const lockPath = getLockPath(isGlobal);
+    const lockPath = scopeLockPath(isGlobal, process.cwd());
 
     let targets: SkillTarget[] = all
       ? collectAllTargets(isGlobal, lockPath)

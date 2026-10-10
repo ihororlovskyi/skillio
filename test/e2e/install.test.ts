@@ -73,8 +73,8 @@ describe('skl install', () => {
   });
 
   it('an option value equal to a raw command name does not dispatch it', () => {
-    const a = run(['--root', 'i', 'usage'], TMP, ENV);
-    const b = run(['usage', '--root', 'symlink'], TMP, ENV);
+    const a = run(['--since', 'i', 'usage'], TMP, ENV);
+    const b = run(['usage', '--since', 'symlink'], TMP, ENV);
     expect(existsSync(ARGS_FILE)).toBe(false);
     for (const r of [a, b]) expect(r.stderr).not.toMatch(/skl (install|symlink)|Unknown option/);
   });

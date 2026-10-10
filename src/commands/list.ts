@@ -1,9 +1,8 @@
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { defineCommand } from 'citty';
-import { getLockPath } from '../lock/file';
 import { discoverSkills } from '../utils/discover-skills';
-import { scopeHeader } from '../utils/scope';
+import { scopeHeader, scopeLockPath } from '../utils/scope';
 import { collectRows, renderSkillTable } from '../utils/skill-table';
 
 function rootFor(isGlobal: boolean, lockPath: string, kind: '.claude' | '.agents'): string {
@@ -22,7 +21,7 @@ export const listCommand = defineCommand({
     },
   },
   run({ args }) {
-    const lockPath = getLockPath(args.global);
+    const lockPath = scopeLockPath(args.global, process.cwd());
     const records = [
       ...discoverSkills({ isGlobal: args.global, cwd: process.cwd(), lockPath }).values(),
     ];

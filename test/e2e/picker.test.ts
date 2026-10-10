@@ -2,10 +2,14 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { run } from './helpers';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { copyFixture, run } from './helpers';
 
-const COST_DIR = join(process.cwd(), 'test', 'fixtures', 'cost');
+let COST_DIR = '';
+beforeAll(() => {
+  COST_DIR = copyFixture('cost');
+});
+afterAll(() => rmSync(COST_DIR, { recursive: true, force: true }));
 
 describe('bare skl', () => {
   it('non-TTY (piped stdout) falls back to cost', () => {
