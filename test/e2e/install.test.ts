@@ -81,20 +81,31 @@ describe('skl install', () => {
 
   it('-m s hides the npx output and prints a summary table', () => {
     const { stdout, exitCode } = run(
-      ['i', 'sentimony/skills', '-s', 'webapp-debugger', '-y', '-m', 's'],
+      ['i', 'sentimony/skills', '-s', 'cross-review', '-a', 'codex', 'claude-code', '-y', '-m', 's'],
       TMP,
-      { ...ENV, NPX_SEED: 'webapp-debugger' },
+      { ...ENV, NPX_SEED: 'cross-review' },
     );
     expect(exitCode).toBe(0);
     expect(stdout).toBe(
       [
         'Installing from https://github.com/sentimony/skills ██████████ 100% · Installed 1 skill',
-        'skill            .agents    .claude    skills-lock.json  cost',
-        'webapp-debugger  universal  symlinked  -                 ~5 tok',
+        'skill         .agents    .claude    skills-lock.json  cost',
+        'cross-review  universal  symlinked  -                 ~4 tok',
         '',
       ].join('\n'),
     );
-    expect(npxArgs()).toEqual(['-y', 'skills', 'add', 'sentimony/skills', '-s', 'webapp-debugger', '-y']);
+    expect(npxArgs()).toEqual([
+      '-y',
+      'skills',
+      'add',
+      'sentimony/skills',
+      '-s',
+      'cross-review',
+      '-a',
+      'codex',
+      'claude-code',
+      '-y',
+    ]);
   });
 
   it('-m s prints the npx output when npx fails', () => {

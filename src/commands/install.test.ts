@@ -115,11 +115,11 @@ describe('runInstall - npx proxy', () => {
 describe('runInstall - silent mode', () => {
   it('hides npx output, strips -m and prints a summary with a table', async () => {
     const spawn = vi.fn((_c: string, _a: string[], _capture: boolean) => {
-      fakeInstall('webapp-debugger');
+      fakeInstall('cross-review');
       return { status: 0, stdout: 'NOISE', stderr: '' };
     });
     const status = await runInstall(
-      ['sentimony/skills', '-s', 'webapp-debugger', '-a', 'codex', 'claude-code', '-y', '-m', 's'],
+      ['sentimony/skills', '-s', 'cross-review', '-a', 'codex', 'claude-code', '-y', '-m', 's'],
       { spawn, cwd: proj },
     );
     expect(status).toBe(0);
@@ -131,7 +131,7 @@ describe('runInstall - silent mode', () => {
         'add',
         'sentimony/skills',
         '-s',
-        'webapp-debugger',
+        'cross-review',
         '-a',
         'codex',
         'claude-code',
@@ -141,8 +141,8 @@ describe('runInstall - silent mode', () => {
     );
     expect(vi.mocked(console.log).mock.calls.map((c) => c[0])).toEqual([
       'Installing from https://github.com/sentimony/skills ██████████ 100% · Installed 1 skill',
-      'skill            .agents    .claude    skills-lock.json  cost',
-      'webapp-debugger  universal  symlinked  +                 ~5 tok',
+      'skill         .agents    .claude    skills-lock.json  cost',
+      'cross-review  universal  symlinked  +                 ~4 tok',
     ]);
   });
 

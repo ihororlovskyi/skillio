@@ -1,8 +1,66 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { mkdirSync, mkdtempSync, realpathSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from 'vitest';
 import { setColorEnabled } from '../utils/ansi';
-import { renderUsageTable } from './usage';
+import { renderUsageTable, runUsage, type UsageArgs } from './usage';
 
 afterEach(() => setColorEnabled(false));
+
+describe('runUsage', () => {
+  let home: string;
+  let project: string;
+  let log: MockInstance<typeof console.log>;
+  let error: MockInstance<typeof console.log>;
+
+  const args = (over: Partial<UsageArgs> = {}): UsageArgs => ({
+    period: 'all',
+    format: 'text',
+    'scan-all-files': false,
+    global: false,
+    ...over,
+  });
+  const printed = (spy: MockInstance<typeof console.log>) => spy.mock.calls.map((c) => c[0]);
+
+  beforeEach(() => {
+    home = realpathSync(mkdtempSync(join(tmpdir(), 'skl-usg-unit-')));
+    project = join(home, 'project');
+    mkdirSync(join(project, '.git'), { recursive: true });
+    vi.stubEnv('HOME', home);
+    vi.spyOn(process, 'cwd').mockReturnValue(project);
+    vi.spyOn(process, 'exit').mockImplementation((code) => {
+      throw new Error(`exit ${code}`);
+    });
+    log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    error = vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    rmSync(home, { recursive: true, force: true });
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+  });
+
+  it('reports no usage when neither agent has a session dir', async () => {
+    await runUsage(args());
+    expect(printed(log)).toEqual(['Project scope · Usage 0 times by all', 'No skill usage by all']);
+    expect(error).not.toHaveBeenCalled();
+  });
+
+  it('exits 1 when --root does not exist', async () => {
+    const root = join(home, 'missing');
+    await expect(runUsage(args({ root }))).rejects.toThrow('exit 1');
+    expect(printed(error)).toEqual([`--root ${root} does not exist`]);
+    expect(log).not.toHaveBeenCalled();
+  });
+
+  it('reads an existing --root as global scope', async () => {
+    const root = join(home, 'sessions');
+    mkdirSync(root);
+    await runUsage(args({ root, agent: 'claude-code' }));
+    expect(printed(log)).toEqual(['Global scope · Usage 0 times by all', 'No skill usage by all']);
+  });
+});
 
 describe('renderUsageTable', () => {
   it('renders the spec table with sums', () => {

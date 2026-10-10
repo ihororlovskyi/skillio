@@ -52,15 +52,17 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
+    "test:e2e:network": "SKL_X_E2E_NETWORK=1 vitest run --config vitest.e2e.config.ts test/e2e/install-network.test.ts",
     "prepublishOnly": "biome check src/ && vitest run && rm -rf dist && ~/.bun/bin/bun run node_modules/.bin/bunup && vitest run --config vitest.e2e.config.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.15",
     "@types/node": "^26.6.4",
-    "@vitest/coverage-v8": "^4.1.10",
+    "@vitest/coverage-v8": "^5.0.3",
     "bunup": "^0.16.32",
     "citty": "^0.2.2",
     "typescript": "^7.0.2",
-    "vitest": "^4.1.10"
+    "vite": "^8.3.4",
+    "vitest": "^5.0.3"
   }
 }

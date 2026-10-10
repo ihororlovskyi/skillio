@@ -1,12 +1,21 @@
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { findJsonlFiles, isRecentEntry, readJsonlLines } from './jsonl';
 
-const TMP = join(tmpdir(), `skillum-jsonl-${Date.now()}`);
+vi.mock('node:fs', async (importOriginal) => {
+  const fs = await importOriginal<typeof import('node:fs')>();
+  return { ...fs, statSync: vi.fn(fs.statSync) };
+});
 
-beforeEach(() => mkdirSync(TMP, { recursive: true }));
+const fsError = (code: string) => Object.assign(new Error(code), { code });
+
+let TMP: string;
+
+beforeEach(() => {
+  TMP = mkdtempSync(join(tmpdir(), 'skl-jsonl-'));
+});
 afterEach(() => rmSync(TMP, { recursive: true, force: true }));
 
 describe('findJsonlFiles', () => {
@@ -41,6 +50,23 @@ describe('findJsonlFiles', () => {
     const file = join(TMP, 'file.jsonl');
     writeFileSync(file, '');
     expect(() => [...findJsonlFiles(file)]).toThrow(/ENOTDIR/);
+  });
+
+  it('skips a file deleted between readdir and stat', () => {
+    writeFileSync(join(TMP, 'gone.jsonl'), '');
+    writeFileSync(join(TMP, 'kept.jsonl'), '');
+    vi.mocked(statSync).mockImplementationOnce(() => {
+      throw fsError('ENOENT');
+    });
+    expect([...findJsonlFiles(TMP, new Date(0))]).toHaveLength(1);
+  });
+
+  it('rethrows stat errors other than a missing file', () => {
+    writeFileSync(join(TMP, 'locked.jsonl'), '');
+    vi.mocked(statSync).mockImplementationOnce(() => {
+      throw fsError('EACCES');
+    });
+    expect(() => [...findJsonlFiles(TMP, new Date(0))]).toThrow('EACCES');
   });
 });
 
