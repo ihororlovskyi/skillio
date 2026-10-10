@@ -221,6 +221,7 @@ describe('skl usage claude without session dirs', () => {
   it.each([
     [['usg', '-g']],
     [['usg', '--global']],
+    [['usg', '--global=true']],
     [['-g', 'usg']],
     [['usg', '--root', '/tmp']],
     [['usg', '--root=/tmp']],

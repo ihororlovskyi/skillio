@@ -143,9 +143,12 @@ describe('renderUsageTable', () => {
 });
 
 describe('hasRemovedUsageFlag', () => {
-  it.each([['-g'], ['--global'], ['--root', '/x'], ['--root=/x']])('flags %s', (...args) => {
-    expect(hasRemovedUsageFlag(['-p', '2d', ...args])).toBe(true);
-  });
+  it.each([['-g'], ['--global'], ['--global=true'], ['--root', '/x'], ['--root=/x']])(
+    'flags %s',
+    (...args) => {
+      expect(hasRemovedUsageFlag(['-p', '2d', ...args])).toBe(true);
+    },
+  );
 
   it('accepts the remaining flags', () => {
     expect(

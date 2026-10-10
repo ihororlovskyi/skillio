@@ -130,7 +130,12 @@ export const REMOVED_FLAGS_ERROR = 'skl usage is project-only: -g and --root wer
 // citty silently keeps undeclared flags in args, so removed ones are caught from raw argv.
 export function hasRemovedUsageFlag(rawArgs: string[]): boolean {
   return rawArgs.some(
-    (a) => a === '-g' || a === '--global' || a === '--root' || a.startsWith('--root='),
+    (a) =>
+      a === '-g' ||
+      a === '--global' ||
+      a.startsWith('--global=') ||
+      a === '--root' ||
+      a.startsWith('--root='),
   );
 }
 
