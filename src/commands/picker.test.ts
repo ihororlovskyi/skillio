@@ -165,4 +165,12 @@ describe('runPicker - command menu labels (unit)', () => {
     expect(labels).toContain('remove - delete a skill (asks about lock cleanup)');
     expect(labels.join('\n')).not.toContain('—');
   });
+
+  it('hides usage in the global picker', async () => {
+    selectMock.mockResolvedValueOnce('quit');
+    const { runPicker } = await import('./picker');
+    expect(await runPicker({ global: true })).toBe(0);
+    const [params] = selectMock.mock.calls[0] as [{ options: { value: string }[] }];
+    expect(params.options.map((o) => o.value)).toEqual(['cost', 'list', 'remove', 'quit']);
+  });
 });

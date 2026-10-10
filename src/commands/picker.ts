@@ -41,7 +41,8 @@ export async function runPicker(args: PickerArgs): Promise<number> {
       { value: 'list', label: 'list   - installed skills per source' },
       { value: 'remove', label: 'remove - delete a skill (asks about lock cleanup)' },
       { value: 'quit', label: 'quit' },
-    ],
+      // `skl usage` is project-only and rejects -g, so the global menu omits it
+    ].filter((o) => !(args.global && o.value === 'usage')),
   });
 
   if (choice === null || choice === 'quit') return 0;
