@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- CI tests on Node 22 and 24; Node 20 is no longer tested (`engines.node` has been `>=22` since
+  0.4.3).
+- Dev tooling: `vitest` and `@vitest/coverage-v8` 5.x, `vite` added as a dev dependency (a
+  required peer of vitest 5).
+
 ## 0.4.4 (2026-10-10)
 
 ### Fixed
