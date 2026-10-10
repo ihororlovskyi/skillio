@@ -2,11 +2,19 @@ import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
-import { run, runWithColor } from './helpers';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { copyFixture, run, runWithColor } from './helpers';
 
-const LOCK_DIR = join(process.cwd(), 'test', 'fixtures', 'lock');
-const EMPTY = resolve(__dirname, '..', 'fixtures', 'list', 'empty-local');
+let LOCK_DIR = '';
+let EMPTY = '';
+beforeAll(() => {
+  LOCK_DIR = copyFixture('lock');
+  EMPTY = copyFixture('list/empty-local');
+});
+afterAll(() => {
+  rmSync(LOCK_DIR, { recursive: true, force: true });
+  rmSync(EMPTY, { recursive: true, force: true });
+});
 const CLI = resolve(process.cwd(), 'dist', 'cli.js');
 
 let tmp = '';

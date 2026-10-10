@@ -1,4 +1,6 @@
 import { spawnSync } from 'node:child_process';
+import { cpSync, mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 const CLI = join(process.cwd(), 'dist', 'cli.js');
@@ -41,4 +43,11 @@ export function runWithColor(args: string[], cwd?: string): RunResult {
     stderr: result.stderr ?? '',
     exitCode: result.status ?? 1,
   };
+}
+
+// Fixtures live inside the skl-x git repo, so commands run in them would resolve to its root.
+export function copyFixture(name: string): string {
+  const dir = mkdtempSync(join(tmpdir(), `skl-fixture-${name.replaceAll('/', '-')}-`));
+  cpSync(join(process.cwd(), 'test', 'fixtures', name), dir, { recursive: true, verbatimSymlinks: true });
+  return dir;
 }
