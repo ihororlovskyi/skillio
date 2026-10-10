@@ -32,6 +32,16 @@ describe('findJsonlFiles', () => {
     writeFileSync(join(TMP, 'y.jsonl'), '');
     expect([...findJsonlFiles(TMP)]).toHaveLength(2);
   });
+
+  it('yields nothing for a missing directory', () => {
+    expect([...findJsonlFiles(join(TMP, 'missing'))]).toEqual([]);
+  });
+
+  it('rethrows errors other than a missing directory', () => {
+    const file = join(TMP, 'file.jsonl');
+    writeFileSync(file, '');
+    expect(() => [...findJsonlFiles(file)]).toThrow(/ENOTDIR/);
+  });
 });
 
 describe('readJsonlLines', () => {

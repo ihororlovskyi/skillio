@@ -148,6 +148,12 @@ export async function runUsage(args: UsageArgs): Promise<void> {
     process.exit(1);
   }
 
+  // A missing default session dir means no sessions; a missing explicit --root is a typo.
+  if (args.root && !existsSync(expandHome(args.root))) {
+    console.error(`--root ${args.root} does not exist`);
+    process.exit(1);
+  }
+
   const scope = detectScope({
     global: args.global,
     rootOverride: !!args.root,
@@ -159,7 +165,6 @@ export async function runUsage(args: UsageArgs): Promise<void> {
     (scope.projectRoot
       ? join(claudeProjectsRoot, encodeClaudeProjectDir(scope.projectRoot))
       : claudeProjectsRoot);
-  const claudeRootMissing = !args.root && !!scope.projectRoot && !existsSync(claudeRoot);
 
   const lockPath = getLockPath(args.global);
   const skillUniverse = discoverSkills({
@@ -183,9 +188,12 @@ export async function runUsage(args: UsageArgs): Promise<void> {
     let mode: string;
     if (agent === 'claude-code') {
       mode = (args.mode ?? 'merged') as ClaudeMode;
-      const result = claudeRootMissing
-        ? { counts: new Map<string, number>(), filesRead: 0, linesRead: 0 }
-        : readClaudeUsage({ since, mode: mode as ClaudeMode, root: claudeRoot, scanAllFiles });
+      const result = readClaudeUsage({
+        since,
+        mode: mode as ClaudeMode,
+        root: claudeRoot,
+        scanAllFiles,
+      });
       counts = result.counts;
       stats = { filesRead: result.filesRead, linesRead: result.linesRead };
     } else {
