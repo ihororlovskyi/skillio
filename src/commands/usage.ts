@@ -1,13 +1,17 @@
 import { join } from 'node:path';
 import { defineCommand } from 'citty';
-import { getLockPath } from '../lock/file';
 import { type ClaudeMode, readClaudeUsage } from '../readers/claude';
 import { type CodexMode, readCodexUsage } from '../readers/codex';
 import { bold, cyan, red } from '../utils/ansi';
 import { discoverSkills, recordCost } from '../utils/discover-skills';
 import { expandHome } from '../utils/expand-home';
 import { parsePeriod } from '../utils/period';
-import { detectScope, encodeClaudeProjectDir, scopeHeader } from '../utils/scope';
+import {
+  encodeClaudeProjectDir,
+  findProjectRoot,
+  scopeHeader,
+  scopeLockPath,
+} from '../utils/scope';
 import { formatCost, type SkillCost } from '../utils/skill-files';
 import { alignCells, type Cell, plain } from '../utils/skill-table';
 
@@ -147,13 +151,11 @@ export async function runUsage(args: UsageArgs): Promise<void> {
     process.exit(1);
   }
 
-  const scope = detectScope({ cwd: process.cwd() });
-  const claudeProjectsRoot = expandHome('~/.claude/projects');
-  const claudeRoot = scope.projectRoot
-    ? join(claudeProjectsRoot, encodeClaudeProjectDir(scope.projectRoot))
-    : claudeProjectsRoot;
+  // Usage is always project-scoped: $HOME is just another project root.
+  const projectRoot = findProjectRoot(process.cwd());
+  const claudeRoot = join(expandHome('~/.claude/projects'), encodeClaudeProjectDir(projectRoot));
 
-  const lockPath = getLockPath(false);
+  const lockPath = scopeLockPath(false, process.cwd());
   const skillUniverse = discoverSkills({
     isGlobal: false,
     cwd: process.cwd(),
@@ -189,7 +191,7 @@ export async function runUsage(args: UsageArgs): Promise<void> {
         since,
         mode: mode as CodexMode,
         scanAllFiles,
-        projectRoot: scope.projectRoot,
+        projectRoot,
       });
       counts = result.counts;
       stats = { filesRead: result.filesRead, linesRead: result.linesRead };
@@ -246,7 +248,7 @@ export async function runUsage(args: UsageArgs): Promise<void> {
       merged.set(r.name, row);
     }
   const times = results.reduce((n, { rows }) => n + rows.reduce((m, r) => m + r.count, 0), 0);
-  console.log(`${scopeHeader(scope.global)} · Usage ${plural(times, 'time')} by ${periodLabel}`);
+  console.log(`${scopeHeader(false)} · Usage ${plural(times, 'time')} by ${periodLabel}`);
   if (merged.size === 0) {
     console.log(`No skill usage by ${periodLabel}`);
     return;

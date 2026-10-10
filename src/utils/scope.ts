@@ -1,30 +1,10 @@
 import { existsSync } from 'node:fs';
-import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { getLockPath } from '../lock/file';
 import { bold } from './ansi';
 
 export function scopeHeader(isGlobal: boolean): string {
   return bold(isGlobal ? 'Global scope' : 'Project scope');
-}
-
-export interface AuditScope {
-  global: boolean;
-  projectRoot?: string;
-}
-
-export interface ScopeOptions {
-  global?: boolean;
-  rootOverride?: boolean;
-  cwd: string;
-  home?: string;
-}
-
-export function detectScope(opts: ScopeOptions): AuditScope {
-  const home = opts.home ?? homedir();
-  if (opts.global || opts.rootOverride) return { global: true };
-  if (norm(opts.cwd) === norm(home)) return { global: true };
-  return { global: false, projectRoot: findGitRoot(opts.cwd) ?? opts.cwd };
 }
 
 // Nearest ancestor of cwd (inclusive) with .git (dir or file), else cwd itself

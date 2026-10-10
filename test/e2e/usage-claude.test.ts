@@ -182,6 +182,18 @@ describe('skl usage claude', () => {
     expect(exitCode).toBe(0);
     expect(stdout).not.toContain('old-skill');
   });
+
+  it('in a subdirectory reads sessions of the repo root', () => {
+    const sub = join(project, 'src');
+    mkdirSync(sub);
+    const { stdout, exitCode } = run(
+      ['usage', '-a', 'claude-code', '--mode', 'attributed'],
+      sub,
+      homeEnv(home),
+    );
+    expect(exitCode).toBe(0);
+    expect(stdout).toMatch(/^skill-foo +2 +~/m);
+  });
 });
 
 describe('skl usage claude without session dirs', () => {
