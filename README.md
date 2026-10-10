@@ -43,7 +43,7 @@ If `npx` fails, its full output is printed.
 
 ### Local skills
 
-`-ln <path>` (`--link`) symlinks `<path>/skills/<name>` into `.agents/skills` and
+`--link <path>` (`-ln`) symlinks `<path>/skills/<name>` into `.agents/skills` and
 `.claude/skills`. The links point straight at the clone, so edits there show up without
 reinstalling.
 
@@ -73,12 +73,12 @@ tdd           symlinked  symlinked  -                 ~125 tok
 
 | Option | Description |
 |---|---|
-| `-ln, --link` | Symlink from a local clone instead of running `npx skills add` |
-| `-s, --skill <names...>` | Only these skills; a name starting with a space is skipped |
-| `-x, --reject <names...>` | Every skill except these (not with `-s`) |
-| `-a, --agent <agents...>` | `codex` (`.agents/skills`), `claude-code` (`.claude/skills`); default: both |
-| `-y, --yes` | Skip `npx` prompts; with `-ln`: replace existing copies without asking |
-| `-m, --mode silent` | Hide the `npx` output (needs `-y`); no effect with `-ln` |
+| `--link, -ln` | Symlink from a local clone instead of running `npx skills add` |
+| `--skill, -s <names...>` | Only these skills; a name starting with a space is skipped |
+| `--reject, -x <names...>` | Every skill except these (not with `-s`) |
+| `--agent, -a <agents...>` | `codex` (`.agents/skills`), `claude-code` (`.claude/skills`); default: both |
+| `--yes, -y` | Skip `npx` prompts; with `-ln`: replace existing copies without asking |
+| `--mode, -m silent` | Hide the `npx` output (needs `-y`); no effect with `-ln` |
 
 ## Cost
 
@@ -112,12 +112,12 @@ is no longer installed is shown in red with `~? tok`.
 
 | Flag | Default | Description |
 |---|---|---|
-| `-a, --agent` | both | `claude-code` (`claude`), `codex` |
-| `-p, --period` | `all` | `60s`, `30m`, `24h`, `7d`, `2w`, `6mo`, `all` (`1m` is a minute, `1mo` is 30 days) |
+| `--agent, -a` | both | `claude-code` (`claude`), `codex` |
+| `--period, -p` | `all` | `60s`, `30m`, `24h`, `7d`, `2w`, `6mo`, `all` (`1m` is a minute, `1mo` is 30 days) |
 | `--since` | - | `yyyy-mm-dd`, overrides `--period` |
 | `--mode` | `merged` (claude) / `activations` (codex) | `merged`, `attributed`, `activations`, `mentions` |
 | `--format` | `text` | `text`, `json` |
-| `-g, --global` | `false` | Global scope |
+| `--global, -g` | `false` | Global scope |
 | `--root` | - | Agent sessions directory; implies global |
 | `--scan-all-files` | - | Ignore file mtime, read everything |
 
@@ -189,7 +189,7 @@ skl-x completion fish > ~/.config/fish/completions/skl.fish
 |---|---|
 | inside a git repo | that repo |
 | in `$HOME` | global: every repo on this machine |
-| with `-g` / `--global` | global |
+| with `--global` / `-g` | global |
 | with `--root <dir>` | that directory, as global |
 
 ## Global install
