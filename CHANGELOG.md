@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.4.6 (2026-10-10)
+
+### Removed
+
+- **Breaking:** `skl install` / `skl i`. They exit 1 with `skl i was removed in 0.4.6, use skl add`;
+  with `-ln`/`--link` the hint is `use skl sln`.
+- **Breaking:** `-ln` / `--link`. Symlinking a local clone is its own command, `skl sln`;
+  `skl add -ln` exits 1 with `use skl sln`.
+
+### Added
+
+- `skl add <source>` runs `npx -y skills add` with the same arguments, as `skl i` did.
+- `skl sln <path>` symlinks `<path>/skills/<name>` into `.agents/skills` and `.claude/skills`, as
+  `skl i -ln` did, with `-s`, `-x`, `-a`, `-y`.
+- Output modes for `add`, `sln` and `rm`: `-m c` / `--mode clear` (default), `-m s` / `--mode silent`,
+  `-m q` / `--mode quiet`. Two different modes exit 1.
+  - `add`: clear shows the `npx` output, then a table of the changed skills; silent is the 0.4.5
+    `-m s` (progress line and table); quiet prints one `Installed N skills from <source>` line.
+  - `add` in clear mode still runs `npx` when `skills-lock.json` is unreadable and only skips the table.
+  - `sln`: clear logs each link as `path -> target` and the skipped skills
+    (`metadata.internal`, `-x`), then the progress line and the table; silent is the 0.4.5 `i -ln`
+    output; quiet prints one `Symlinked N skills from <path>` line.
+  - `rm`: clear is the plan and summary; silent and quiet print `Executed A/B/C skills`.
+
+### Changed
+
+- `skl add` without `-m` shows the `npx` output as before, then prints a table of the changed
+  skills.
+- `skl sln` without `-m` logs each link as `path -> target` before the progress line and the table;
+  the 0.4.5 `i -ln` output is `-m s`.
+- Shell completion offers `add` and `sln` instead of `install` and `i`, and `clear silent quiet` after
+  `-m`/`--mode`.
+
 ## 0.4.5 (2026-10-10)
 
 ### Removed

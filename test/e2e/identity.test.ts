@@ -18,13 +18,15 @@ describe('skl-x identity', () => {
     expect(stdout).not.toMatch(/skillio|sklx/);
   });
 
-  it('names skl-x in rm and install help', () => {
+  it('names skl-x in rm, add and sln help', () => {
     const rm = run(['rm', '-h'], EMPTY).stdout;
     expect(rm).toContain('USAGE skl-x remove');
     expect(rm).not.toMatch(/skillio|sklx/);
-    const install = run(['i', '-h'], EMPTY).stdout;
-    expect(install).toContain('USAGE skl-x install');
-    expect(install).not.toMatch(/skillio|sklx/);
+    expect(rm).toContain('silent (s), quiet (q)');
+    const add = run(['add', '-h'], EMPTY).stdout;
+    expect(add).toContain('USAGE skl-x add');
+    expect(add).not.toMatch(/skillio|sklx/);
+    expect(run(['sln', '-h'], EMPTY).stdout).toContain('USAGE skl-x sln <path>');
   });
 });
 

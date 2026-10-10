@@ -8,7 +8,7 @@ _skl_x_completions() {
   cur="\${COMP_WORDS[COMP_CWORD]}"
   prev="\${COMP_WORDS[COMP_CWORD-1]}"
 
-  local cmds="list ls remove rm cost cst usage usg completion install i"
+  local cmds="list ls remove rm cost cst usage usg completion add sln"
   if [ "\${COMP_CWORD}" -eq 1 ]; then
     COMPREPLY=( $(compgen -W "\${cmds} -h --help -v --version" -- "\${cur}") )
     return 0
@@ -20,7 +20,7 @@ _skl_x_completions() {
       if [[ "\${cur}" == -* ]]; then
         COMPREPLY=( $(compgen -W "-g --global -y --yes -x --reject -m --mode --lock-only --agents-only --claude-only -h --help" -- "\${cur}") )
       elif [ "\${prev}" = "-m" ] || [ "\${prev}" = "--mode" ]; then
-        COMPREPLY=( $(compgen -W "silent" -- "\${cur}") )
+        COMPREPLY=( $(compgen -W "clear silent quiet" -- "\${cur}") )
       else
         local names
         local scope=""
@@ -32,13 +32,23 @@ _skl_x_completions() {
       fi
       return 0
       ;;
-    install|i)
+    add)
       if [[ "\${cur}" == -* ]]; then
-        COMPREPLY=( $(compgen -W "-ln --link -s --skill -x --reject -a --agent -y --yes -m --mode -h --help" -- "\${cur}") )
+        COMPREPLY=( $(compgen -W "-s --skill -a --agent -y --yes -m --mode -h --help" -- "\${cur}") )
       elif [ "\${prev}" = "-a" ] || [ "\${prev}" = "--agent" ]; then
         COMPREPLY=( $(compgen -W "codex claude-code" -- "\${cur}") )
       elif [ "\${prev}" = "-m" ] || [ "\${prev}" = "--mode" ]; then
-        COMPREPLY=( $(compgen -W "silent" -- "\${cur}") )
+        COMPREPLY=( $(compgen -W "clear silent quiet" -- "\${cur}") )
+      fi
+      return 0
+      ;;
+    sln)
+      if [[ "\${cur}" == -* ]]; then
+        COMPREPLY=( $(compgen -W "-s --skill -x --reject -a --agent -y --yes -m --mode -h --help" -- "\${cur}") )
+      elif [ "\${prev}" = "-a" ] || [ "\${prev}" = "--agent" ]; then
+        COMPREPLY=( $(compgen -W "codex claude-code" -- "\${cur}") )
+      elif [ "\${prev}" = "-m" ] || [ "\${prev}" = "--mode" ]; then
+        COMPREPLY=( $(compgen -W "clear silent quiet" -- "\${cur}") )
       else
         COMPREPLY=( $(compgen -d -- "\${cur}") )
       fi
@@ -68,8 +78,8 @@ _skl_x() {
     'usage:Show skill usage'
     'usg:Alias for usage'
     'completion:Print shell completion script'
-    'install:Install skills or symlink a local clone'
-    'i:Alias for install'
+    'add:Install skills via npx skills add'
+    'sln:Symlink skills from a local clone'
   )
   if (( CURRENT == 2 )); then
     _describe 'command' cmds
@@ -83,12 +93,12 @@ _skl_x() {
           '-g[global scope]' '--global[global scope]' \\
           '-y[skip confirmation]' '--yes[skip confirmation]' \\
           '-x[with .: skills to keep]' '--reject[with .: skills to keep]' \\
-          '-m[silent: one-line summary]' '--mode[silent: one-line summary]' \\
+          '-m[clear, silent or quiet]' '--mode[clear, silent or quiet]' \\
           '--lock-only[only remove lock entry]' \\
           '--agents-only[only remove from .agents/skills]' \\
           '--claude-only[only remove from .claude/skills]'
       elif [[ \${words[CURRENT-1]} == -m || \${words[CURRENT-1]} == --mode ]]; then
-        _values 'mode' silent
+        _values 'mode' clear silent quiet
       else
         local scope=""
         for w in \${words[@]}; do
@@ -99,19 +109,31 @@ _skl_x() {
         compadd -- $names
       fi
       ;;
-    install|i)
+    add)
       if [[ \${words[CURRENT]} == -* ]]; then
         _values 'flag' \\
-          '-ln[symlink a local clone]' '--link[symlink a local clone]' \\
           '-s[skill names]' '--skill[skill names]' \\
-          '-x[every skill except these]' '--reject[every skill except these]' \\
           '-a[codex or claude-code]' '--agent[codex or claude-code]' \\
           '-y[skip prompts]' '--yes[skip prompts]' \\
-          '-m[silent: hide npx output]' '--mode[silent: hide npx output]'
+          '-m[clear, silent or quiet]' '--mode[clear, silent or quiet]'
       elif [[ \${words[CURRENT-1]} == -a || \${words[CURRENT-1]} == --agent ]]; then
         _values 'agent' codex claude-code
       elif [[ \${words[CURRENT-1]} == -m || \${words[CURRENT-1]} == --mode ]]; then
-        _values 'mode' silent
+        _values 'mode' clear silent quiet
+      fi
+      ;;
+    sln)
+      if [[ \${words[CURRENT]} == -* ]]; then
+        _values 'flag' \\
+          '-s[skill names]' '--skill[skill names]' \\
+          '-x[every skill except these]' '--reject[every skill except these]' \\
+          '-a[codex or claude-code]' '--agent[codex or claude-code]' \\
+          '-y[replace without asking]' '--yes[replace without asking]' \\
+          '-m[clear, silent or quiet]' '--mode[clear, silent or quiet]'
+      elif [[ \${words[CURRENT-1]} == -a || \${words[CURRENT-1]} == --agent ]]; then
+        _values 'agent' codex claude-code
+      elif [[ \${words[CURRENT-1]} == -m || \${words[CURRENT-1]} == --mode ]]; then
+        _values 'mode' clear silent quiet
       else
         _files -/
       fi
@@ -147,8 +169,8 @@ function __skl_x_using_subcommand
   test "$cmd[2]" = "$argv[1]"
 end
 
-complete -c skl -n __skl_x_needs_command -a 'list ls remove rm cost cst usage usg completion install i'
-complete -c skl-x -n __skl_x_needs_command -a 'list ls remove rm cost cst usage usg completion install i'
+complete -c skl -n __skl_x_needs_command -a 'list ls remove rm cost cst usage usg completion add sln'
+complete -c skl-x -n __skl_x_needs_command -a 'list ls remove rm cost cst usage usg completion add sln'
 
 for sub in rm remove
   complete -c skl -n "__skl_x_using_subcommand $sub" -f -a '(__skl_x_skill_names)'
@@ -156,21 +178,22 @@ for sub in rm remove
   complete -c skl -n "__skl_x_using_subcommand $sub" -s g -l global -d 'Use global scope'
   complete -c skl -n "__skl_x_using_subcommand $sub" -s y -l yes -d 'Skip confirmation prompt'
   complete -c skl -n "__skl_x_using_subcommand $sub" -s x -l reject -d 'With .: skills to keep'
-  complete -c skl -n "__skl_x_using_subcommand $sub" -s m -l mode -xa 'silent' -d 'One-line summary'
+  complete -c skl -n "__skl_x_using_subcommand $sub" -s m -l mode -xa 'clear silent quiet' -d 'Output mode'
   complete -c skl -n "__skl_x_using_subcommand $sub" -l lock-only -d 'Only remove lock entry'
   complete -c skl -n "__skl_x_using_subcommand $sub" -l agents-only -d 'Only remove from .agents/skills'
   complete -c skl -n "__skl_x_using_subcommand $sub" -l claude-only -d 'Only remove from .claude/skills'
 end
 
-for sub in install i
-  for bin in skl skl-x
-    complete -c $bin -n "__skl_x_using_subcommand $sub" -o ln -l link -d 'Symlink from a local clone'
-    complete -c $bin -n "__skl_x_using_subcommand $sub" -s s -l skill -d 'Skill names'
-    complete -c $bin -n "__skl_x_using_subcommand $sub" -s x -l reject -d 'Every skill except these'
-    complete -c $bin -n "__skl_x_using_subcommand $sub" -s a -l agent -xa 'codex claude-code' -d 'Target agent'
-    complete -c $bin -n "__skl_x_using_subcommand $sub" -s y -l yes -d 'Skip prompts'
-    complete -c $bin -n "__skl_x_using_subcommand $sub" -s m -l mode -xa 'silent' -d 'Hide npx output'
-  end
+for bin in skl skl-x
+  complete -c $bin -n "__skl_x_using_subcommand add" -s s -l skill -d 'Skill names'
+  complete -c $bin -n "__skl_x_using_subcommand add" -s a -l agent -xa 'codex claude-code' -d 'Target agent'
+  complete -c $bin -n "__skl_x_using_subcommand add" -s y -l yes -d 'Skip prompts'
+  complete -c $bin -n "__skl_x_using_subcommand add" -s m -l mode -xa 'clear silent quiet' -d 'Output mode'
+  complete -c $bin -n "__skl_x_using_subcommand sln" -s s -l skill -d 'Skill names'
+  complete -c $bin -n "__skl_x_using_subcommand sln" -s x -l reject -d 'Every skill except these'
+  complete -c $bin -n "__skl_x_using_subcommand sln" -s a -l agent -xa 'codex claude-code' -d 'Target agent'
+  complete -c $bin -n "__skl_x_using_subcommand sln" -s y -l yes -d 'Replace without asking'
+  complete -c $bin -n "__skl_x_using_subcommand sln" -s m -l mode -xa 'clear silent quiet' -d 'Output mode'
 end
 
 for sub in completion

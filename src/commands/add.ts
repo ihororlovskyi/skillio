@@ -6,7 +6,6 @@ import { readLock } from '../lock/file';
 import { extractMode } from '../utils/mode';
 import { createProgress } from '../utils/progress';
 import { collectRows, renderSkillTable, type SkillRoots } from '../utils/skill-table';
-import { runSymlink } from './symlink';
 
 export interface SpawnOutcome {
   status: number | null;
@@ -21,11 +20,10 @@ export type Spawner = (
   capture: boolean,
 ) => SpawnOutcome | Promise<SpawnOutcome>;
 
-export interface InstallDeps {
+export interface AddDeps {
   spawn?: Spawner;
   cwd?: string;
   home?: string;
-  confirm?: (question: string) => Promise<boolean>;
 }
 
 // Node >= 20 refuses to spawn npx.cmd without a shell on Windows (EINVAL)
@@ -56,33 +54,27 @@ export const defaultSpawn: Spawner = (command, args, capture) => {
   });
 };
 
-export const INSTALL_HELP = [
-  'Install skills: run `npx -y skills add`, or symlink a local clone with -ln.',
+export const ADD_HELP = [
+  'Install skills: run `npx -y skills add` with the same arguments.',
   '',
-  'USAGE skl-x install <source> [OPTIONS]',
-  '       skl-x i <source> [OPTIONS]',
-  '       skl-x i -ln <path> [-s <SKILL...> | -x <SKILL...>] [-a <AGENT...>] [-y]',
+  'USAGE skl-x add <source> [OPTIONS]',
   '',
-  'Without -ln every argument except -m/--mode is passed to `npx skills add` unchanged;',
+  'Every argument except -m/--mode is passed to `npx skills add` unchanged;',
   'see `npx skills add --help`.',
   '',
   'OPTIONS',
   '',
-  '  -ln, --link         Symlink <path>/skills/<name> into .agents/skills and .claude/skills',
-  '                      instead of running npx; skills-lock.json is not changed',
-  '  -s, --skill         With -ln: skill names (default: every skill except metadata.internal)',
-  '  -x, --reject        With -ln: every skill except these',
-  '  -a, --agent         With -ln: codex (.agents/skills), claude-code (.claude/skills) (default: both)',
-  '  -y, --yes           Skip npx prompts; with -ln: replace existing copies without asking',
-  '  -m, --mode silent   Hide the npx output, print a progress line and a table (needs -y)',
+  '  -y, --yes           Skip npx prompts (needed by silent and quiet)',
+  '  -m, --mode          clear (c, default): the npx output, then a table of the changed skills',
+  '                      silent (s): a progress line and the table',
+  '                      quiet (q): one "Installed N skills from <source>" line',
   '',
   'EXAMPLES',
   '',
-  '  skl i sentimony/skills -s cross-review tdd -a codex claude-code -y',
-  '  skl i sentimony/skills -l',
-  '  skl i sentimony/skills -s tdd -y -m s',
-  '  skl i -ln ../skills -a codex claude-code -y',
-  '  skl i -ln ../skills -x scope-check echarts -y',
+  '  skl add sentimony/skills -l',
+  '  skl add sentimony/skills -s cross-review tdd -a codex claude-code -y',
+  '  skl add sentimony/skills -s tdd -y -m s',
+  '  skl add sentimony/skills -s tdd -y -m q',
 ].join('\n');
 
 function plural(n: number, word: string): string {
@@ -132,36 +124,60 @@ export function requestedSkills(args: string[]): string[] | null {
   return names.length === 0 || names.includes('*') ? null : [...new Set(names)];
 }
 
-async function runSilent(args: string[], spawn: Spawner, deps: InstallDeps): Promise<number> {
-  if (!args.includes('-y') && !args.includes('--yes')) {
-    console.error(
-      'skl install: --mode silent needs -y/--yes (npx skills add asks questions otherwise)',
-    );
-    return 1;
-  }
+interface AddScope {
+  roots: SkillRoots;
+  lockPath: string;
+  lockLabel: string;
+}
+
+// npx skills add writes to the home dirs with -g, to the current directory otherwise
+function addScope(args: string[], deps: AddDeps): AddScope {
   const isGlobal = args.includes('-g') || args.includes('--global');
   const home = deps.home ?? homedir();
   const base = isGlobal ? home : (deps.cwd ?? process.cwd());
-  const roots = {
-    agents: join(base, '.agents', 'skills'),
-    claude: join(base, '.claude', 'skills'),
+  return {
+    roots: { agents: join(base, '.agents', 'skills'), claude: join(base, '.claude', 'skills') },
+    lockPath: isGlobal ? join(home, '.agents', '.skill-lock.json') : join(base, 'skills-lock.json'),
+    lockLabel: isGlobal ? '.agents/.skill-lock.json' : 'skills-lock.json',
   };
-  const lockPath = isGlobal
-    ? join(home, '.agents', '.skill-lock.json')
-    : join(base, 'skills-lock.json');
+}
+
+function changedSince(scope: AddScope, before: Map<string, string>): string[] {
+  const now = snapshotSkills(scope.roots, scope.lockPath);
+  return [...now.keys()].filter((name) => now.get(name) !== before.get(name));
+}
+
+function printTable(scope: AddScope, changed: string[]): void {
+  if (changed.length === 0) return;
+  const lockNames = new Set(Object.keys(readLock(scope.lockPath).skills));
+  const rows = collectRows(changed, scope.roots, lockNames);
+  for (const line of renderSkillTable(rows, { lockLabel: scope.lockLabel, total: false }))
+    console.log(line);
+}
+
+function failedToRun(r: SpawnOutcome): boolean {
+  if (!r.error && r.status !== null) return false;
+  console.error(`skl add: failed to run npx${r.error ? `: ${r.error.message}` : ''}`);
+  return true;
+}
+
+// a captured run shows what npx printed only when it fails
+function reportCapturedFailure(r: SpawnOutcome): number {
+  if (r.stdout) process.stdout.write(r.stdout);
+  if (r.stderr) process.stderr.write(r.stderr);
+  return failedToRun(r) ? 1 : (r.status ?? 1);
+}
+
+async function runSilent(args: string[], spawn: Spawner, scope: AddScope): Promise<number> {
   const from = sourceLabel(args[0]);
   const progress = createProgress(from ? `Installing from ${from}` : 'Installing');
   const requested = requestedSkills(args);
-  const before = snapshotSkills(roots, lockPath);
-  const changedSince = () => {
-    const now = snapshotSkills(roots, lockPath);
-    return [...now.keys()].filter((name) => now.get(name) !== before.get(name));
-  };
+  const before = snapshotSkills(scope.roots, scope.lockPath);
   const tick = () => {
     if (requested === null) return progress.update(null);
     // npx may remove an entry between readdir and lstat; skip that frame
     try {
-      const changed = new Set(changedSince());
+      const changed = new Set(changedSince(scope, before));
       const done = requested.filter((n) => changed.has(n)).length;
       progress.update(Math.min(0.99, done / requested.length));
     } catch {}
@@ -176,50 +192,72 @@ async function runSilent(args: string[], spawn: Spawner, deps: InstallDeps): Pro
   }
   if (r.error || r.status === null || r.status !== 0) {
     progress.fail();
-    if (r.stdout) process.stdout.write(r.stdout);
-    if (r.stderr) process.stderr.write(r.stderr);
-    if (r.error || r.status === null) {
-      console.error(`skl install: failed to run npx${r.error ? `: ${r.error.message}` : ''}`);
-      return 1;
-    }
-    return r.status;
+    return reportCapturedFailure(r);
   }
-  const changed = changedSince();
+  const changed = changedSince(scope, before);
   progress.done(`Installed ${plural(changed.length, 'skill')}`);
-  if (changed.length === 0) return 0;
-  const lockNames = new Set(Object.keys(readLock(lockPath).skills));
-  const lockLabel = isGlobal ? '.agents/.skill-lock.json' : 'skills-lock.json';
-  for (const line of renderSkillTable(collectRows(changed, roots, lockNames), {
-    lockLabel,
-    total: false,
-  }))
-    console.log(line);
+  printTable(scope, changed);
   return 0;
 }
 
-export async function runInstall(argv: string[], deps: InstallDeps = {}): Promise<number> {
+async function runClear(args: string[], spawn: Spawner, scope: AddScope): Promise<number> {
+  // the table is extra on top of the npx proxy: a broken lock or skill dir must not stop
+  // npx from running or turn its success into a crash, so it only drops the table
+  let before: Map<string, string> | null = null;
+  try {
+    before = snapshotSkills(scope.roots, scope.lockPath);
+  } catch {}
+  const r = await spawn('npx', ['-y', 'skills', 'add', ...args], false);
+  if (failedToRun(r)) return 1;
+  if (r.status !== 0) return r.status ?? 1;
+  if (before === null) return 0;
+  try {
+    printTable(scope, changedSince(scope, before));
+  } catch {}
+  return 0;
+}
+
+async function runQuiet(args: string[], spawn: Spawner, scope: AddScope): Promise<number> {
+  const before = snapshotSkills(scope.roots, scope.lockPath);
+  const r = await spawn('npx', ['-y', 'skills', 'add', ...args], true);
+  if (r.error || r.status !== 0) return reportCapturedFailure(r);
+  const from = sourceLabel(args[0]);
+  const count = plural(changedSince(scope, before).length, 'skill');
+  console.log(from ? `Installed ${count} from ${from}` : `Installed ${count}`);
+  return 0;
+}
+
+export function removedInstallMessage(command: string, args: string[]): string {
+  const link = args.find((a) => a === '-ln' || a === '--link');
+  return link
+    ? `skl ${command} ${link} was removed in 0.4.6, use skl sln`
+    : `skl ${command} was removed in 0.4.6, use skl add`;
+}
+
+export async function runAdd(argv: string[], deps: AddDeps = {}): Promise<number> {
   if (argv.includes('-h') || argv.includes('--help')) {
-    console.log(INSTALL_HELP);
+    console.log(ADD_HELP);
     return 0;
   }
   const mode = extractMode(argv);
   if (mode.kind === 'error') {
-    console.error(`skl install: ${mode.message}`);
+    console.error(`skl add: ${mode.message}`);
     return 1;
   }
   const args = mode.rest;
   if (args.includes('-ln') || args.includes('--link')) {
-    return runSymlink(
-      args.filter((t) => t !== '-ln' && t !== '--link'),
-      { cwd: deps.cwd, confirm: deps.confirm },
-    );
-  }
-  const spawn = deps.spawn ?? defaultSpawn;
-  if (mode.silent) return runSilent(args, spawn, deps);
-  const r = await spawn('npx', ['-y', 'skills', 'add', ...args], false);
-  if (r.error || r.status === null) {
-    console.error(`skl install: failed to run npx${r.error ? `: ${r.error.message}` : ''}`);
+    console.error('skl add: -ln/--link was removed in 0.4.6, use skl sln');
     return 1;
   }
-  return r.status;
+  if (mode.mode !== 'clear' && !args.includes('-y') && !args.includes('--yes')) {
+    console.error(
+      `skl add: --mode ${mode.mode} needs -y/--yes (npx skills add asks questions otherwise)`,
+    );
+    return 1;
+  }
+  const spawn = deps.spawn ?? defaultSpawn;
+  const scope = addScope(args, deps);
+  if (mode.mode === 'silent') return runSilent(args, spawn, scope);
+  if (mode.mode === 'quiet') return runQuiet(args, spawn, scope);
+  return runClear(args, spawn, scope);
 }

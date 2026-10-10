@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { run } from './helpers';
 
 // Real `npx skills add` against GitHub: opt-in so CI does not depend on the network.
-describe.skipIf(!process.env.SKL_X_E2E_NETWORK)('skl install (network)', () => {
+describe.skipIf(!process.env.SKL_X_E2E_NETWORK)('skl add (network)', () => {
   let proj = '';
 
   beforeEach(() => {
@@ -16,7 +16,7 @@ describe.skipIf(!process.env.SKL_X_E2E_NETWORK)('skl install (network)', () => {
 
   it('installs cross-review from sentimony/skills for codex and claude-code', () => {
     const { stdout, stderr, exitCode } = run(
-      ['i', 'sentimony/skills', '-s', 'cross-review', '-a', 'codex', 'claude-code', '-y', '-m', 's'],
+      ['add', 'sentimony/skills', '-s', 'cross-review', '-a', 'codex', 'claude-code', '-y', '-m', 's'],
       proj,
     );
     expect(exitCode, stdout + stderr).toBe(0);

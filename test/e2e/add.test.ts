@@ -39,10 +39,10 @@ function npxArgs(): string[] {
   return readFileSync(ARGS_FILE, 'utf8').trimEnd().split('\n');
 }
 
-describe('skl install', () => {
+describe('skl add', () => {
   it('passes -s and -a with several values to npx skills add unchanged', () => {
     const { exitCode } = run(
-      ['i', 'sentimony/skills', '-s', 'cross-review', 'tdd', '-a', 'codex', 'claude-code', '-y'],
+      ['add', 'sentimony/skills', '-s', 'cross-review', 'tdd', '-a', 'codex', 'claude-code', '-y'],
       TMP,
       ENV,
     );
@@ -62,26 +62,36 @@ describe('skl install', () => {
     ]);
   });
 
-  it('install is an alias of i', () => {
-    run(['install', 'sentimony/skills', '-l'], TMP, ENV);
-    expect(npxArgs()).toEqual(['-y', 'skills', 'add', 'sentimony/skills', '-l']);
+  it.each([
+    [['i', 'sentimony/skills', '-y'], 'skl i was removed in 0.4.6, use skl add'],
+    [['install', 'sentimony/skills', '-l'], 'skl install was removed in 0.4.6, use skl add'],
+    [['i', '-ln', '../clone', '-y'], 'skl i -ln was removed in 0.4.6, use skl sln'],
+    [['-g', 'install', '--link', '../clone'], 'skl install --link was removed in 0.4.6, use skl sln'],
+    [['add', '-ln', '../clone', '-y'], 'skl add: -ln/--link was removed in 0.4.6, use skl sln'],
+    [['add', '../clone', '--link'], 'skl add: -ln/--link was removed in 0.4.6, use skl sln'],
+  ])('%j exits 1 without running npx', (args, message) => {
+    const { stdout, stderr, exitCode } = run(args, TMP, ENV);
+    expect(exitCode).toBe(1);
+    expect(stdout).toBe('');
+    expect(stderr.trim()).toBe(message);
+    expect(existsSync(ARGS_FILE)).toBe(false);
   });
 
   it('moves a root -g after the command', () => {
-    run(['-g', 'i', 'sentimony/skills'], TMP, ENV);
+    run(['-g', 'add', 'sentimony/skills'], TMP, ENV);
     expect(npxArgs()).toEqual(['-y', 'skills', 'add', '-g', 'sentimony/skills']);
   });
 
   it('an option value equal to a raw command name does not dispatch it', () => {
-    const a = run(['--since', 'i', 'usage'], TMP, ENV);
-    const b = run(['usage', '--since', 'symlink'], TMP, ENV);
+    const a = run(['--since', 'add', 'usage'], TMP, ENV);
+    const b = run(['usage', '--since', 'sln'], TMP, ENV);
     expect(existsSync(ARGS_FILE)).toBe(false);
-    for (const r of [a, b]) expect(r.stderr).not.toMatch(/skl (install|symlink)|Unknown option/);
+    for (const r of [a, b]) expect(r.stderr).not.toMatch(/skl (add|sln)|Unknown option/);
   });
 
   it('-m s hides the npx output and prints a summary table', () => {
     const { stdout, exitCode } = run(
-      ['i', 'sentimony/skills', '-s', 'cross-review', '-a', 'codex', 'claude-code', '-y', '-m', 's'],
+      ['add', 'sentimony/skills', '-s', 'cross-review', '-a', 'codex', 'claude-code', '-y', '-m', 's'],
       TMP,
       { ...ENV, NPX_SEED: 'cross-review' },
     );
@@ -109,15 +119,44 @@ describe('skl install', () => {
   });
 
   it('-m s prints the npx output when npx fails', () => {
-    const { stdout, exitCode } = run(['i', 'sentimony/skills', '-y', '-m', 's'], TMP, ENV);
+    const { stdout, exitCode } = run(['add', 'sentimony/skills', '-y', '-m', 's'], TMP, ENV);
     expect(exitCode).toBe(3);
     expect(stdout).toContain('NOISE');
   });
 
   it('-h prints its own help', () => {
-    const { stdout, exitCode } = run(['i', '-h'], TMP, ENV);
+    const { stdout, exitCode } = run(['add', '-h'], TMP, ENV);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain('npx -y skills add');
-    expect(stdout).toContain('-ln, --link');
+    expect(stdout).toContain('USAGE skl-x add');
+    expect(stdout).not.toContain('-ln');
+  });
+
+  it('clear shows the npx output, then the table', () => {
+    const { stdout, exitCode } = run(
+      ['add', 'sentimony/skills', '-s', 'cross-review', '-a', 'codex', 'claude-code', '-y'],
+      TMP,
+      { ...ENV, NPX_SEED: 'cross-review' },
+    );
+    expect(exitCode).toBe(0);
+    expect(stdout).toBe(
+      [
+        'NOISE',
+        'skill         .agents    .claude    skills-lock.json  cost',
+        'cross-review  universal  symlinked  -                 ~4 tok',
+        '',
+      ].join('\n'),
+    );
+  });
+
+  it('-m q prints one line, and needs -y', () => {
+    const ok = run(['add', 'sentimony/skills', '-s', 'cross-review', '-y', '-m', 'q'], TMP, {
+      ...ENV,
+      NPX_SEED: 'cross-review',
+    });
+    expect(ok.exitCode).toBe(0);
+    expect(ok.stdout).toBe('Installed 1 skill from https://github.com/sentimony/skills\n');
+    const noYes = run(['add', 'sentimony/skills', '-m', 'q'], TMP, ENV);
+    expect(noYes.exitCode).toBe(1);
+    expect(noYes.stderr).toContain('--mode quiet needs -y/--yes');
   });
 });

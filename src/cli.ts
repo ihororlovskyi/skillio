@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 import { createRequire } from 'node:module';
 import { defineCommand, runMain } from 'citty';
+import { removedInstallMessage, runAdd } from './commands/add';
 import { completionCommand } from './commands/completion';
 import { costCommand } from './commands/cost';
-import { runInstall } from './commands/install';
 import { listCommand } from './commands/list';
 import { removeCommand } from './commands/remove';
+import { runSln } from './commands/symlink';
 import { usageCommand } from './commands/usage';
 import { detectColorSupport, setColorEnabled } from './utils/ansi';
 import { maybePrintUpdateNotice } from './utils/update-check';
@@ -65,11 +66,11 @@ function reorderRootFlagsToSubcommand(argv: string[]): string[] {
   return [argv[0] ?? '', argv[1] ?? '', sub, ...before, ...after];
 }
 
-// install takes raw argv: mergeAgentArgs would join -a values with \x1f and citty
-// cannot hold several -s values. Only -g/--global may precede it, so an option value
-// such as `--since i` never turns into a command; these names stay out of SUBCOMMAND_NAMES
-// for the same reason.
-const RAW_COMMANDS = new Set(['install', 'i']);
+// add and sln take raw argv: mergeAgentArgs would join -a values with \x1f and citty
+// cannot hold several -s values. Only -g/--global may precede them, so an option value
+// such as `--since add` never turns into a command; these names stay out of SUBCOMMAND_NAMES
+// for the same reason. install and i are here only to point at add and sln.
+const RAW_COMMANDS = new Set(['add', 'sln', 'install', 'i']);
 
 function detectRawCommand(argv: string[]): { command: string; args: string[] } | null {
   const tail = argv.slice(2);
@@ -103,7 +104,8 @@ function printRootHelp(): void {
     '  remove, rm       Delete on-disk skill dirs and/or skills-lock.json (interactive)',
     '  cost, cst        Show ambient context cost (per-skill name + description tokens) sorted desc',
     '  usage, usg       Show skill usage × cost (consumption) with missed rows',
-    '  install, i       Install skills via `npx skills add`, or -ln to symlink a local clone',
+    '  add              Install skills via `npx skills add`',
+    '  sln              Symlink skills from a local clone into .agents/skills and .claude/skills',
     '  completion       Print shell completion script (bash, zsh, fish)',
   ];
   console.log(lines.join('\n'));
@@ -140,8 +142,9 @@ function printRemoveHelp(): void {
     '  -y, --yes            Skip confirmation prompts (answers yes to both the',
     '                       "Proceed?" and "Clean skills-lock.json?" questions)',
     '                       and the plan; only the summary is printed',
-    '  -m, --mode silent    Print one "Executed A/B/C skills" line instead of the',
-    '                       summary (.agents/skills / .claude/skills / lock counts)',
+    '  -m, --mode           clear (c, default): plan and summary',
+    '                       silent (s), quiet (q): one "Executed A/B/C skills" line instead of',
+    '                       the summary (.agents/skills / .claude/skills / lock counts)',
     '  -x, --reject         With ".": skill names to keep (space-separated)',
     '      --lock-only      Only remove the skills-lock.json entry',
     '      --agents-only    Only remove from .agents/skills',
@@ -231,9 +234,13 @@ const main = defineCommand({
 
 (async () => {
   if (raw) {
+    if (raw.command === 'install' || raw.command === 'i') {
+      console.error(removedInstallMessage(raw.command, raw.args));
+      process.exit(1);
+    }
     setColorEnabled(detectColorSupport());
     await maybePrintUpdateNotice(version);
-    process.exit(await runInstall(raw.args));
+    process.exit(raw.command === 'sln' ? await runSln(raw.args) : await runAdd(raw.args));
   }
   if (isRootHelp(process.argv)) {
     printRootHelp();

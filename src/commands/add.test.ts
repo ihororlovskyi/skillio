@@ -1,5 +1,4 @@
 import {
-  existsSync,
   mkdirSync,
   mkdtempSync,
   realpathSync,
@@ -12,13 +11,15 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  ADD_HELP,
   defaultSpawn,
+  removedInstallMessage,
   requestedSkills,
-  runInstall,
+  runAdd,
   type SpawnOutcome,
   snapshotSkills,
   sourceLabel,
-} from './install';
+} from './add';
 
 let tmp = '';
 let proj = '';
@@ -55,10 +56,10 @@ afterEach(() => {
 
 const ok = (): SpawnOutcome => ({ status: 0, stdout: '', stderr: '' });
 
-describe('runInstall - npx proxy', () => {
+describe('runAdd - clear mode', () => {
   it('passes args to npx skills add unchanged and in order, without capture', async () => {
     const spawn = vi.fn((_c: string, _a: string[], _capture: boolean) => ok());
-    const status = await runInstall(
+    const status = await runAdd(
       ['sentimony/skills', '-s', 'cross-review', 'tdd', '-a', 'codex', 'claude-code', '-y'],
       { spawn, cwd: proj },
     );
@@ -84,41 +85,91 @@ describe('runInstall - npx proxy', () => {
 
   it('returns the npx exit code', async () => {
     const spawn = vi.fn(() => ({ status: 3 }));
-    expect(await runInstall(['sentimony/skills'], { spawn, cwd: proj })).toBe(3);
+    expect(await runAdd(['sentimony/skills'], { spawn, cwd: proj })).toBe(3);
   });
 
   it('returns 1 and reports the error when npx cannot start', async () => {
     const spawn = vi.fn(() => ({ status: null, error: new Error('spawn npx ENOENT') }));
-    expect(await runInstall(['sentimony/skills'], { spawn, cwd: proj })).toBe(1);
+    expect(await runAdd(['sentimony/skills'], { spawn, cwd: proj })).toBe(1);
     expect(console.error).toHaveBeenCalledWith(expect.stringContaining('ENOENT'));
   });
 
-  it('prints its own help for -h without spawning npx', async () => {
+  it('prints its own help for -h without spawning npx, even with -ln', async () => {
     const spawn = vi.fn(ok);
-    expect(await runInstall(['-h'], { spawn, cwd: proj })).toBe(0);
-    expect(await runInstall(['-ln', '--help'], { spawn, cwd: proj })).toBe(0);
+    expect(await runAdd(['-h'], { spawn, cwd: proj })).toBe(0);
+    expect(await runAdd(['-ln', '--help'], { spawn, cwd: proj })).toBe(0);
     expect(spawn).not.toHaveBeenCalled();
-    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('npx -y skills add'));
-    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('-ln, --link'));
+    expect(console.log).toHaveBeenCalledWith(ADD_HELP);
+    expect(ADD_HELP).toContain('USAGE skl-x add <source>');
+    expect(ADD_HELP).not.toMatch(/-ln|--link|install/);
   });
 
   it('rejects a bad --mode value without spawning npx', async () => {
     const spawn = vi.fn(ok);
-    expect(await runInstall(['sentimony/skills', '-y', '-m', 'loud'], { spawn, cwd: proj })).toBe(
-      1,
+    expect(await runAdd(['sentimony/skills', '-y', '-m', 'loud'], { spawn, cwd: proj })).toBe(1);
+    expect(console.error).toHaveBeenCalledWith(
+      'skl add: unknown mode "loud", use clear (c), silent (s) or quiet (q)',
     );
-    expect(console.error).toHaveBeenCalledWith('skl install: unknown mode "loud", use silent (s)');
     expect(spawn).not.toHaveBeenCalled();
+  });
+
+  it('prints a table of the changed skills after the npx output', async () => {
+    const spawn = vi.fn((_c: string, _a: string[], _capture: boolean) => {
+      fakeInstall('cross-review');
+      return ok();
+    });
+    expect(await runAdd(['sentimony/skills', '-s', 'cross-review'], { spawn, cwd: proj })).toBe(0);
+    expect(spawn).toHaveBeenCalledWith(
+      'npx',
+      ['-y', 'skills', 'add', 'sentimony/skills', '-s', 'cross-review'],
+      false,
+    );
+    expect(vi.mocked(console.log).mock.calls.map((c) => c[0])).toEqual([
+      'skill         .agents    .claude    skills-lock.json  cost',
+      'cross-review  universal  symlinked  +                 ~4 tok',
+    ]);
+  });
+
+  it('prints nothing of its own when npx fails or changes nothing', async () => {
+    const failing = vi.fn(() => ({ status: 3 }));
+    expect(await runAdd(['sentimony/skills'], { spawn: failing, cwd: proj })).toBe(3);
+    expect(await runAdd(['sentimony/skills', '-l'], { spawn: vi.fn(ok), cwd: proj })).toBe(0);
+    expect(console.log).not.toHaveBeenCalled();
+  });
+
+  it.each([['{bad'], ['{}']])(
+    'still runs npx and skips the table when skills-lock.json is %s',
+    async (lock) => {
+      writeFileSync(join(proj, 'skills-lock.json'), lock);
+      const spawn = vi.fn(ok);
+      expect(await runAdd(['sentimony/skills', '-y'], { spawn, cwd: proj })).toBe(0);
+      expect(spawn).toHaveBeenCalledWith(
+        'npx',
+        ['-y', 'skills', 'add', 'sentimony/skills', '-y'],
+        false,
+      );
+      expect(console.log).not.toHaveBeenCalled();
+    },
+  );
+
+  it('returns 0 without a table when npx leaves a broken skills-lock.json', async () => {
+    const spawn = vi.fn(() => {
+      writeFileSync(join(proj, 'skills-lock.json'), '{bad');
+      return ok();
+    });
+    expect(await runAdd(['sentimony/skills', '-y'], { spawn, cwd: proj })).toBe(0);
+    expect(spawn).toHaveBeenCalled();
+    expect(console.log).not.toHaveBeenCalled();
   });
 });
 
-describe('runInstall - silent mode', () => {
+describe('runAdd - silent mode', () => {
   it('hides npx output, strips -m and prints a summary with a table', async () => {
     const spawn = vi.fn((_c: string, _a: string[], _capture: boolean) => {
       fakeInstall('cross-review');
       return { status: 0, stdout: 'NOISE', stderr: '' };
     });
-    const status = await runInstall(
+    const status = await runAdd(
       ['sentimony/skills', '-s', 'cross-review', '-a', 'codex', 'claude-code', '-y', '-m', 's'],
       { spawn, cwd: proj },
     );
@@ -148,11 +199,9 @@ describe('runInstall - silent mode', () => {
 
   it('needs -y and does not spawn npx without it', async () => {
     const spawn = vi.fn(ok);
-    expect(await runInstall(['sentimony/skills', '--mode', 'silent'], { spawn, cwd: proj })).toBe(
-      1,
-    );
+    expect(await runAdd(['sentimony/skills', '--mode', 'silent'], { spawn, cwd: proj })).toBe(1);
     expect(console.error).toHaveBeenCalledWith(
-      'skl install: --mode silent needs -y/--yes (npx skills add asks questions otherwise)',
+      'skl add: --mode silent needs -y/--yes (npx skills add asks questions otherwise)',
     );
     expect(spawn).not.toHaveBeenCalled();
   });
@@ -161,7 +210,7 @@ describe('runInstall - silent mode', () => {
     const out = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
     const err = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
     const spawn = vi.fn(() => ({ status: 2, stdout: 'out', stderr: 'err' }));
-    expect(await runInstall(['sentimony/skills', '-y', '-m', 's'], { spawn, cwd: proj })).toBe(2);
+    expect(await runAdd(['sentimony/skills', '-y', '-m', 's'], { spawn, cwd: proj })).toBe(2);
     expect(out).toHaveBeenCalledWith('out');
     expect(err).toHaveBeenCalledWith('err');
     expect(console.log).toHaveBeenCalledWith('Installing from https://github.com/sentimony/skills');
@@ -170,7 +219,7 @@ describe('runInstall - silent mode', () => {
   it('reports 0 skills without a table when nothing changed', async () => {
     fakeInstall('tdd');
     const spawn = vi.fn(ok);
-    expect(await runInstall(['sentimony/skills', '-y', '-m', 's'], { spawn, cwd: proj })).toBe(0);
+    expect(await runAdd(['sentimony/skills', '-y', '-m', 's'], { spawn, cwd: proj })).toBe(0);
     expect(vi.mocked(console.log).mock.calls.map((c) => c[0])).toEqual([
       'Installing from https://github.com/sentimony/skills ██████████ 100% · Installed 0 skills',
     ]);
@@ -191,7 +240,7 @@ describe('runInstall - silent mode', () => {
       fakeInstall('tdd');
       return ok();
     });
-    expect(await runInstall(['sentimony/skills', '-y', '-m', 's'], { spawn, cwd: proj })).toBe(0);
+    expect(await runAdd(['sentimony/skills', '-y', '-m', 's'], { spawn, cwd: proj })).toBe(0);
     expect(console.log).toHaveBeenCalledWith(
       'Installing from https://github.com/sentimony/skills ██████████ 100% · Installed 1 skill',
     );
@@ -212,7 +261,7 @@ describe('runInstall - silent mode', () => {
       return ok();
     });
     expect(
-      await runInstall(['sentimony/skills', '-g', '-y', '-m', 's'], { spawn, cwd: proj, home }),
+      await runAdd(['sentimony/skills', '-g', '-y', '-m', 's'], { spawn, cwd: proj, home }),
     ).toBe(0);
     const lines = vi.mocked(console.log).mock.calls.map((c) => String(c[0]));
     expect(lines).toContain(
@@ -233,7 +282,7 @@ describe('runInstall - silent mode', () => {
       );
       return ok();
     });
-    expect(await runInstall(['sentimony/skills', '-y', '-m', 's'], { spawn, cwd: proj })).toBe(0);
+    expect(await runAdd(['sentimony/skills', '-y', '-m', 's'], { spawn, cwd: proj })).toBe(0);
     expect(console.log).toHaveBeenCalledWith(
       'Installing from https://github.com/sentimony/skills ██████████ 100% · Installed 1 skill',
     );
@@ -241,7 +290,7 @@ describe('runInstall - silent mode', () => {
 
   it('drops "from <source>" when the first argument is a flag', async () => {
     const spawn = vi.fn(ok);
-    expect(await runInstall(['-y', 'sentimony/skills', '-m', 's'], { spawn, cwd: proj })).toBe(0);
+    expect(await runAdd(['-y', 'sentimony/skills', '-m', 's'], { spawn, cwd: proj })).toBe(0);
     expect(vi.mocked(console.log).mock.calls.map((c) => c[0])).toEqual([
       'Installing ██████████ 100% · Installed 0 skills',
     ]);
@@ -252,7 +301,7 @@ describe('runInstall - silent mode', () => {
       return ok();
     });
     expect(
-      await runInstall(['sentimony/skills', '-s', 'tdd', '-y', '-m', 's'], { spawn, cwd: proj }),
+      await runAdd(['sentimony/skills', '-s', 'tdd', '-y', '-m', 's'], { spawn, cwd: proj }),
     ).toBe(0);
     expect(console.log).toHaveBeenCalledWith(
       'Installing from https://github.com/sentimony/skills ██████████ 100% · Installed 1 skill',
@@ -276,7 +325,7 @@ describe('runInstall - silent mode', () => {
             finish = done;
           }),
       );
-      const run = runInstall(['sentimony/skills', '-s', 'a', 'b', '-y', '-m', 's'], {
+      const run = runAdd(['sentimony/skills', '-s', 'a', 'b', '-y', '-m', 's'], {
         spawn,
         cwd: proj,
       });
@@ -336,32 +385,84 @@ describe('requestedSkills', () => {
   });
 });
 
-describe('runInstall - link mode', () => {
-  beforeEach(() => seedSkill(join(tmp, 'clone'), 'tdd'));
-
+describe('runAdd - removed -ln', () => {
   it.each([
     [['-ln', '../clone', '-y']],
-    [['../clone', '-y', '--link']],
+    [['../clone', '--link']],
     [['../clone', '-ln', '-y', '-m', 's']],
-  ])('%j symlinks without spawning npx', async (argv) => {
+  ])('%j exits 1 with use skl sln and does not spawn npx', async (argv) => {
     const spawn = vi.fn(ok);
-    expect(await runInstall(argv, { spawn, cwd: proj })).toBe(0);
-    expect(spawn).not.toHaveBeenCalled();
-    expect(existsSync(join(proj, '.agents', 'skills', 'tdd'))).toBe(true);
-    expect(console.log).toHaveBeenCalledWith(
-      'Symlinking from ../clone ██████████ 100% · Symlinked 1 skill',
-    );
-  });
-
-  it('rejects npx-only options', async () => {
-    expect(await runInstall(['-ln', '../clone', '-l'], { cwd: proj })).toBe(1);
-    expect(console.error).toHaveBeenCalledWith('Unknown option: -l');
-  });
-
-  it('rejects a source that is not a local directory', async () => {
-    expect(await runInstall(['-ln', 'sentimony/skills'], { cwd: proj })).toBe(1);
+    expect(await runAdd(argv, { spawn, cwd: proj })).toBe(1);
     expect(console.error).toHaveBeenCalledWith(
-      'skl install --link: sentimony/skills is not a local directory',
+      'skl add: -ln/--link was removed in 0.4.6, use skl sln',
+    );
+    expect(spawn).not.toHaveBeenCalled();
+  });
+});
+
+describe('runAdd - quiet mode', () => {
+  it('prints one line with the source and hides the npx output', async () => {
+    const spawn = vi.fn((_c: string, _a: string[], _capture: boolean) => {
+      fakeInstall('cross-review');
+      return { status: 0, stdout: 'NOISE', stderr: '' };
+    });
+    expect(
+      await runAdd(['sentimony/skills', '-s', 'cross-review', '-y', '-m', 'q'], {
+        spawn,
+        cwd: proj,
+      }),
+    ).toBe(0);
+    expect(spawn).toHaveBeenCalledWith(
+      'npx',
+      ['-y', 'skills', 'add', 'sentimony/skills', '-s', 'cross-review', '-y'],
+      true,
+    );
+    expect(vi.mocked(console.log).mock.calls.map((c) => c[0])).toEqual([
+      'Installed 1 skill from https://github.com/sentimony/skills',
+    ]);
+  });
+
+  it('drops "from <source>" when the first argument is a flag', async () => {
+    const spawn = vi.fn(ok);
+    expect(await runAdd(['-y', 'sentimony/skills', '--mode', 'quiet'], { spawn, cwd: proj })).toBe(
+      0,
+    );
+    expect(vi.mocked(console.log).mock.calls.map((c) => c[0])).toEqual(['Installed 0 skills']);
+  });
+
+  it('needs -y and does not spawn npx without it', async () => {
+    const spawn = vi.fn(ok);
+    expect(await runAdd(['sentimony/skills', '-m', 'q'], { spawn, cwd: proj })).toBe(1);
+    expect(console.error).toHaveBeenCalledWith(
+      'skl add: --mode quiet needs -y/--yes (npx skills add asks questions otherwise)',
+    );
+    expect(spawn).not.toHaveBeenCalled();
+  });
+
+  it('prints the captured output and keeps the exit code when npx fails', async () => {
+    const out = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    const err = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    const spawn = vi.fn(() => ({ status: 2, stdout: 'out', stderr: 'err' }));
+    expect(await runAdd(['sentimony/skills', '-y', '-m', 'q'], { spawn, cwd: proj })).toBe(2);
+    expect(out).toHaveBeenCalledWith('out');
+    expect(err).toHaveBeenCalledWith('err');
+    expect(console.log).not.toHaveBeenCalled();
+  });
+});
+
+describe('removedInstallMessage', () => {
+  it('points install and i to skl add, and their -ln/--link to skl sln', () => {
+    expect(removedInstallMessage('i', ['sentimony/skills', '-y'])).toBe(
+      'skl i was removed in 0.4.6, use skl add',
+    );
+    expect(removedInstallMessage('install', [])).toBe(
+      'skl install was removed in 0.4.6, use skl add',
+    );
+    expect(removedInstallMessage('i', ['-ln', '../skills'])).toBe(
+      'skl i -ln was removed in 0.4.6, use skl sln',
+    );
+    expect(removedInstallMessage('install', ['../skills', '--link'])).toBe(
+      'skl install --link was removed in 0.4.6, use skl sln',
     );
   });
 });
