@@ -37,6 +37,24 @@ describe('runPicker - remove sub-picker (unit)', () => {
     return lockPath;
   }
 
+  it('in a subdirectory of a git repo offers the skills of the repo root', async () => {
+    seed({ lock: { 'a-locked': {} }, claudeNames: ['a-locked'] });
+    mkdirSync(join(tmp, '.git'));
+    mkdirSync(join(tmp, 'sub'));
+    selectMock.mockResolvedValueOnce('remove');
+    multiSelectMock.mockResolvedValueOnce(null);
+    const cwdBefore = process.cwd();
+    process.chdir(join(tmp, 'sub'));
+    try {
+      const { runPicker } = await import('./picker');
+      expect(await runPicker({ global: false })).toBe(0);
+    } finally {
+      process.chdir(cwdBefore);
+    }
+    const [params] = multiSelectMock.mock.calls[0] as [{ options: { value: string }[] }];
+    expect(params.options.map((o) => o.value)).toEqual(['a-locked']);
+  });
+
   it('sub-picker options: in-lock alphabetic first, then orphan with red "(orphan)" suffix', async () => {
     seed({
       lock: { 'b-locked': {}, 'a-locked': {} },

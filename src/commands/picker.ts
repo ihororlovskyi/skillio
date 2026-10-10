@@ -1,15 +1,15 @@
 import { spawnSync } from 'node:child_process';
-import { getLockPath } from '../lock/file';
 import { red } from '../utils/ansi';
 import { listRemovableTargets } from '../utils/list-removable';
 import { multiSelect, select } from '../utils/prompt';
+import { scopeLockPath } from '../utils/scope';
 
 export interface PickerArgs {
   global: boolean;
 }
 
 async function pickRemoveTargets(args: PickerArgs): Promise<string[] | null> {
-  const lockPath = getLockPath(args.global);
+  const lockPath = scopeLockPath(args.global, process.cwd());
   const { inLock, orphan } = listRemovableTargets({
     isGlobal: args.global,
     cwd: process.cwd(),

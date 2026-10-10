@@ -29,6 +29,16 @@ beforeEach(() => {
 afterEach(() => rmSync(TMP, { recursive: true, force: true }));
 
 describe('skl rm', () => {
+  it('in a subdirectory of a git repo removes from the repo root', () => {
+    mkdirSync(join(TMP, '.git'));
+    mkdirSync(join(TMP, 'sub'));
+    const { exitCode } = run(['rm', '--yes', 'skill-foo'], join(TMP, 'sub'));
+    expect(exitCode).toBe(0);
+    expect(existsSync(join(TMP, '.claude/skills/skill-foo'))).toBe(false);
+    const lock = JSON.parse(readFileSync(join(TMP, 'skills-lock.json'), 'utf8'));
+    expect(Object.keys(lock.skills)).not.toContain('skill-foo');
+  });
+
   it('--yes removes disk skills and the lock entry', () => {
     expect(existsSync(join(TMP, '.claude/skills/skill-foo/SKILL.md'))).toBe(true);
     const { stdout, exitCode } = run(['rm', '--yes', 'skill-foo'], TMP);

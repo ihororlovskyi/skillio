@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -11,6 +11,20 @@ beforeAll(() => {
 afterAll(() => rmSync(COST_DIR, { recursive: true, force: true }));
 
 describe('skl cost', () => {
+  it('in a subdirectory of a git repo measures the skills of the repo root', () => {
+    const tmp = mkdtempSync(join(tmpdir(), 'skl-cost-sub-'));
+    try {
+      cpSync(COST_DIR, tmp, { recursive: true });
+      mkdirSync(join(tmp, '.git'));
+      mkdirSync(join(tmp, 'sub'));
+      const { stdout, exitCode } = run(['cost'], join(tmp, 'sub'));
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain('Total: ~17 tok across 3 skills');
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+
   it('lists per-skill cost sorted desc without a verdict', () => {
     const { stdout, exitCode } = run(['cost'], COST_DIR);
     expect(exitCode).toBe(0);
