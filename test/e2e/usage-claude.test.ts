@@ -195,7 +195,7 @@ describe('skl usage claude without session dirs', () => {
   });
   afterEach(() => rmSync(home, { recursive: true, force: true }));
 
-  it.each([[['-a', 'claude-code']], [['-a', 'claude-code', '-g']], [[]], [['-g']]])('reports no usage for %s', (args) => {
+  it.each([[['-a', 'claude-code']], [[]]])('reports no usage for %s', (args) => {
     const { stdout, stderr, exitCode } = run(
       ['usg', '-p', '2d', ...args],
       project,
@@ -206,13 +206,16 @@ describe('skl usage claude without session dirs', () => {
     expect(stdout).toContain('No skill usage by 2d');
   });
 
-  it('fails for a missing --root', () => {
-    const root = join(home, 'missing');
-    const { stderr, exitCode } = run(['usg', '--root', root, '-a', 'claude-code'], project, {
-      HOME: home,
-      NO_COLOR: '1',
-    });
+  it.each([
+    [['usg', '-g']],
+    [['usg', '--global']],
+    [['-g', 'usg']],
+    [['usg', '--root', '/tmp']],
+    [['usg', '--root=/tmp']],
+  ])('rejects %s', (args) => {
+    const { stdout, stderr, exitCode } = run(args, project, { HOME: home, NO_COLOR: '1' });
     expect(exitCode).toBe(1);
-    expect(stderr).toContain(`--root ${root} does not exist`);
+    expect(stdout).toBe('');
+    expect(stderr.trim()).toBe('skl usage is project-only: -g and --root were removed in 0.4.5');
   });
 });

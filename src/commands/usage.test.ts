@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from 'vitest';
 import { setColorEnabled } from '../utils/ansi';
-import { renderUsageTable, runUsage, type UsageArgs } from './usage';
+import { hasRemovedUsageFlag, renderUsageTable, runUsage, type UsageArgs } from './usage';
 
 afterEach(() => setColorEnabled(false));
 
@@ -17,7 +17,6 @@ describe('runUsage', () => {
     period: 'all',
     format: 'text',
     'scan-all-files': false,
-    global: false,
     ...over,
   });
   const printed = (spy: MockInstance<typeof console.log>) => spy.mock.calls.map((c) => c[0]);
@@ -45,20 +44,6 @@ describe('runUsage', () => {
     await runUsage(args());
     expect(printed(log)).toEqual(['Project scope · Usage 0 times by all', 'No skill usage by all']);
     expect(error).not.toHaveBeenCalled();
-  });
-
-  it('exits 1 when --root does not exist', async () => {
-    const root = join(home, 'missing');
-    await expect(runUsage(args({ root }))).rejects.toThrow('exit 1');
-    expect(printed(error)).toEqual([`--root ${root} does not exist`]);
-    expect(log).not.toHaveBeenCalled();
-  });
-
-  it('reads an existing --root as global scope', async () => {
-    const root = join(home, 'sessions');
-    mkdirSync(root);
-    await runUsage(args({ root, agent: 'claude-code' }));
-    expect(printed(log)).toEqual(['Global scope · Usage 0 times by all', 'No skill usage by all']);
   });
 });
 
@@ -110,5 +95,17 @@ describe('renderUsageTable', () => {
     );
     expect(lines[1]?.startsWith('\x1b[36mtdd\x1b[0m')).toBe(true);
     expect(lines[2]?.startsWith('\x1b[31mgone\x1b[0m')).toBe(true);
+  });
+});
+
+describe('hasRemovedUsageFlag', () => {
+  it.each([['-g'], ['--global'], ['--root', '/x'], ['--root=/x']])('flags %s', (...args) => {
+    expect(hasRemovedUsageFlag(['-p', '2d', ...args])).toBe(true);
+  });
+
+  it('accepts the remaining flags', () => {
+    expect(
+      hasRemovedUsageFlag(['-a', 'codex', '-p', '2d', '--mode', 'mentions', '--scan-all-files']),
+    ).toBe(false);
   });
 });

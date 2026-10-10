@@ -60,7 +60,7 @@ describe('skl usage codex without session dirs', () => {
   });
   afterEach(() => rmSync(home, { recursive: true, force: true }));
 
-  it.each([[['-a', 'codex']], [['-a', 'codex', '-g']]])('reports no usage for %s', (args) => {
+  it.each([[['-a', 'codex']]])('reports no usage for %s', (args) => {
     const { stdout, stderr, exitCode } = run(
       ['usg', '-p', '2d', ...args],
       project,

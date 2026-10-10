@@ -1,4 +1,3 @@
-import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { defineCommand } from 'citty';
 import { getLockPath } from '../lock/file';
@@ -20,9 +19,7 @@ export interface UsageArgs {
   since?: string;
   mode?: string;
   format: string;
-  root?: string;
   'scan-all-files': boolean;
-  global: boolean;
 }
 
 export interface UsageTableRow {
@@ -121,15 +118,17 @@ export const usageArgs = {
     description: 'merged (default for claude-code) | attributed | activations | mentions',
   },
   format: { type: 'string', default: 'text', description: 'text | json' },
-  root: { type: 'string', description: 'Override agent sessions directory; implies global' },
   'scan-all-files': { type: 'boolean', default: false, description: 'Ignore file mtime' },
-  global: {
-    type: 'boolean',
-    alias: 'g',
-    default: false,
-    description: 'Force global scope',
-  },
 } as const;
+
+export const REMOVED_FLAGS_ERROR = 'skl usage is project-only: -g and --root were removed in 0.4.5';
+
+// citty silently keeps undeclared flags in args, so removed ones are caught from raw argv.
+export function hasRemovedUsageFlag(rawArgs: string[]): boolean {
+  return rawArgs.some(
+    (a) => a === '-g' || a === '--global' || a === '--root' || a.startsWith('--root='),
+  );
+}
 
 export async function runUsage(args: UsageArgs): Promise<void> {
   validateChoice('mode', args.mode, MODES);
@@ -148,27 +147,15 @@ export async function runUsage(args: UsageArgs): Promise<void> {
     process.exit(1);
   }
 
-  // A missing default session dir means no sessions; a missing explicit --root is a typo.
-  if (args.root && !existsSync(expandHome(args.root))) {
-    console.error(`--root ${args.root} does not exist`);
-    process.exit(1);
-  }
-
-  const scope = detectScope({
-    global: args.global,
-    rootOverride: !!args.root,
-    cwd: process.cwd(),
-  });
+  const scope = detectScope({ cwd: process.cwd() });
   const claudeProjectsRoot = expandHome('~/.claude/projects');
-  const claudeRoot =
-    args.root ??
-    (scope.projectRoot
-      ? join(claudeProjectsRoot, encodeClaudeProjectDir(scope.projectRoot))
-      : claudeProjectsRoot);
+  const claudeRoot = scope.projectRoot
+    ? join(claudeProjectsRoot, encodeClaudeProjectDir(scope.projectRoot))
+    : claudeProjectsRoot;
 
-  const lockPath = getLockPath(args.global);
+  const lockPath = getLockPath(false);
   const skillUniverse = discoverSkills({
-    isGlobal: args.global,
+    isGlobal: false,
     cwd: process.cwd(),
     lockPath,
   });
@@ -201,7 +188,6 @@ export async function runUsage(args: UsageArgs): Promise<void> {
       const result = readCodexUsage({
         since,
         mode: mode as CodexMode,
-        root: args.root,
         scanAllFiles,
         projectRoot: scope.projectRoot,
       });
@@ -271,7 +257,11 @@ export async function runUsage(args: UsageArgs): Promise<void> {
 export const usageCommand = defineCommand({
   meta: { description: 'Show skill usage x cost (consumption) with missed rows' },
   args: usageArgs,
-  async run({ args }) {
+  async run({ args, rawArgs }) {
+    if (hasRemovedUsageFlag(rawArgs)) {
+      console.error(REMOVED_FLAGS_ERROR);
+      process.exit(1);
+    }
     try {
       await runUsage(args as unknown as UsageArgs);
     } catch (e) {
