@@ -6,6 +6,12 @@ import { setColorEnabled } from '../utils/ansi';
 import { encodeClaudeProjectDir } from '../utils/scope';
 import { hasRemovedUsageFlag, renderUsageTable, runUsage, type UsageArgs } from './usage';
 
+// Bun's os.homedir() ignores a stubbed HOME (CI runs vitest through bun), so read it from env
+vi.mock('node:os', async (importOriginal) => {
+  const os = await importOriginal<typeof import('node:os')>();
+  return { ...os, homedir: () => process.env.HOME ?? os.homedir() };
+});
+
 afterEach(() => setColorEnabled(false));
 
 describe('runUsage', () => {
