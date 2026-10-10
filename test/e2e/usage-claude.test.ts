@@ -1,5 +1,7 @@
+import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { run } from './helpers';
 
 const FIXTURES = join(process.cwd(), 'test', 'fixtures', 'claude');
@@ -190,5 +192,38 @@ describe('skl usage claude', () => {
     ]);
     expect(exitCode).toBe(0);
     expect(stdout).not.toContain('old-skill');
+  });
+});
+
+describe('skl usage claude without session dirs', () => {
+  let home: string;
+  let project: string;
+
+  beforeEach(() => {
+    home = mkdtempSync(join(tmpdir(), 'skl-usg-home-'));
+    project = join(home, 'project');
+    mkdirSync(join(project, '.git'), { recursive: true });
+  });
+  afterEach(() => rmSync(home, { recursive: true, force: true }));
+
+  it.each([[['-a', 'claude-code']], [['-a', 'claude-code', '-g']], [[]], [['-g']]])('reports no usage for %s', (args) => {
+    const { stdout, stderr, exitCode } = run(
+      ['usg', '-p', '2d', ...args],
+      project,
+      { HOME: home, NO_COLOR: '1' },
+    );
+    expect(stderr).toBe('');
+    expect(exitCode).toBe(0);
+    expect(stdout).toContain('No skill usage by 2d');
+  });
+
+  it('fails for a missing --root', () => {
+    const root = join(home, 'missing');
+    const { stderr, exitCode } = run(['usg', '--root', root, '-a', 'claude-code'], project, {
+      HOME: home,
+      NO_COLOR: '1',
+    });
+    expect(exitCode).toBe(1);
+    expect(stderr).toContain(`--root ${root} does not exist`);
   });
 });

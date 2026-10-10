@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.4.4 (2026-10-10)
+
+### Fixed
+
+- `skl usage` without `~/.claude/projects` or `~/.codex/sessions` (a fresh machine or CI runner,
+  an agent that never ran) prints `No skill usage by <period>` and exits 0 instead of failing
+  with `ENOENT`. Other read errors still fail. The library's `readClaudeUsage` and
+  `readCodexUsage` likewise return empty results for a missing `root`.
+- `skl usage --root <path>` with a path that does not exist exits 1 with
+  `--root <path> does not exist` instead of a raw `ENOENT`.
+
 ## 0.4.3 (2026-10-10)
 
 ### Changed

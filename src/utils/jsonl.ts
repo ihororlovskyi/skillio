@@ -1,15 +1,39 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { type Dirent, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
+// A missing directory or file means no sessions: an agent that never ran has no
+// session dir, and sessions can be deleted mid-scan. Other errors propagate.
 export function* findJsonlFiles(dir: string, since?: Date): Generator<string> {
-  for (const item of readdirSync(dir, { withFileTypes: true })) {
+  let items: Dirent[];
+  try {
+    items = readdirSync(dir, { withFileTypes: true });
+  } catch (e) {
+    if (isNotFound(e)) return;
+    throw e;
+  }
+  for (const item of items) {
     const path = join(dir, item.name);
     if (item.isDirectory()) {
       yield* findJsonlFiles(path, since);
     } else if (item.isFile() && item.name.endsWith('.jsonl')) {
-      if (!since || statSync(path).mtime >= since) yield path;
+      if (!since) {
+        yield path;
+        continue;
+      }
+      let mtime: Date;
+      try {
+        mtime = statSync(path).mtime;
+      } catch (e) {
+        if (isNotFound(e)) continue;
+        throw e;
+      }
+      if (mtime >= since) yield path;
     }
   }
+}
+
+function isNotFound(e: unknown): boolean {
+  return (e as NodeJS.ErrnoException).code === 'ENOENT';
 }
 
 export function readJsonlLines(file: string): unknown[] {

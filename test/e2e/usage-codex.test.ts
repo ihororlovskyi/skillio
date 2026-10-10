@@ -1,5 +1,7 @@
+import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { run } from './helpers';
 
 const FIXTURES = join(process.cwd(), 'test', 'fixtures', 'codex');
@@ -41,5 +43,28 @@ describe('skl usage codex', () => {
     const parsed = JSON.parse(stdout) as { agent: string; skills: unknown[] };
     expect(parsed.agent).toBe('codex');
     expect(parsed.skills.length).toBeGreaterThan(0);
+  });
+});
+
+describe('skl usage codex without session dirs', () => {
+  let home: string;
+  let project: string;
+
+  beforeEach(() => {
+    home = mkdtempSync(join(tmpdir(), 'skl-usg-home-'));
+    project = join(home, 'project');
+    mkdirSync(join(project, '.git'), { recursive: true });
+  });
+  afterEach(() => rmSync(home, { recursive: true, force: true }));
+
+  it.each([[['-a', 'codex']], [['-a', 'codex', '-g']]])('reports no usage for %s', (args) => {
+    const { stdout, stderr, exitCode } = run(
+      ['usg', '-p', '2d', ...args],
+      project,
+      { HOME: home, NO_COLOR: '1' },
+    );
+    expect(stderr).toBe('');
+    expect(exitCode).toBe(0);
+    expect(stdout).toContain('No skill usage by 2d');
   });
 });
