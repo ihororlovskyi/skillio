@@ -117,8 +117,6 @@ is no longer installed is shown in red with `~? tok`.
 | `--since` | - | `yyyy-mm-dd`, overrides `--period` |
 | `--mode` | `merged` (claude) / `activations` (codex) | `merged`, `attributed`, `activations`, `mentions` |
 | `--format` | `text` | `text`, `json` |
-| `--global, -g` | `false` | Global scope |
-| `--root` | - | Agent sessions directory; implies global |
 | `--scan-all-files` | - | Ignore file mtime, read everything |
 
 - **`merged`** - per-session union of `attributed` and `activations` (`max` per skill).
@@ -187,10 +185,11 @@ skl-x completion fish > ~/.config/fish/completions/skl.fish
 
 | Where you run it | Scope |
 |---|---|
-| inside a git repo | that repo |
-| in `$HOME` | global: every repo on this machine |
-| with `--global` / `-g` | global |
-| with `--root <dir>` | that directory, as global |
+| inside a git repo (any subdirectory) | the repo root |
+| anywhere else, `$HOME` included | that directory |
+| `cost`, `ls`, `rm` with `--global` / `-g` | global: `~/.agents/.skill-lock.json`, `~/.claude/skills`, `~/.agents/skills` |
+
+`skl usage` is always project scope. `skl i` installs into the current directory.
 
 ## Global install
 

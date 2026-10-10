@@ -1,9 +1,22 @@
 # Changelog
 
-## Unreleased
+## 0.4.5 (2026-10-10)
+
+### Removed
+
+- **Breaking:** `skl usage --global` / `-g` and `--root`. `skl usage` covers the current project only;
+  the flags exit 1 with `skl usage is project-only: -g and --root were removed in 0.4.5`.
 
 ### Changed
 
+- The project root of `usage`, `cost`, `ls`, `rm` and the picker is the root of the git repo you run in,
+  or the current directory outside a repo. In a subdirectory they all read the repo root's
+  `skills-lock.json` and `.claude`/`.agents` skills; `skl i` still installs into the current directory.
+- `skl usage` in `$HOME` is the project scope of `$HOME`, not global.
+- `skl usage` takes `cost` and missing (red) rows from the same project as the sessions.
+- Codex `--mode mentions` counts only `history.jsonl` entries of the project's sessions; the library's
+  `readCodexUsage({ mode: 'mentions', projectRoot })` filters the same way.
+- The global picker (`skl -g`) has no `usage` entry.
 - CI tests on Node 22 and 24; Node 20 is no longer tested (`engines.node` has been `>=22` since
   0.4.3).
 - Dev tooling: `vitest` and `@vitest/coverage-v8` 5.x, `vite` added as a dev dependency (a
