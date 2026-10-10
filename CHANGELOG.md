@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.7 (2026-10-10)
+
+### Added
+
+- `skl sln <path>` also takes the skills folder itself (`<path>/<name>/SKILL.md`), such as
+  `plugins/devflow/skills`. When `<path>/skills` holds skills, it is used as before; errors name
+  the folder that was searched.
+
 ## 0.4.6 (2026-10-10)
 
 ### Removed

@@ -29,7 +29,7 @@ const PREFIX = 'skl sln';
 
 export interface SymlinkArgs {
   source: string;
-  // null: every skill in <path>/skills
+  // null: every skill in the skills folder of <path>
   skills: string[] | null;
   rejects: string[];
   agents: Agent[];
@@ -142,7 +142,7 @@ function physicalPath(p: string): string {
 
 export function planSymlinks(opts: {
   cwd: string;
-  sourceAbs: string;
+  skillsAbs: string;
   names: string[];
   dirs: string[];
 }): SymlinkStep[] {
@@ -158,7 +158,7 @@ export function planSymlinks(opts: {
       if (seen.has(join(dirPhys, name))) continue;
       seen.add(join(dirPhys, name));
       const linkPath = join(dirAbs, name);
-      const target = relative(dirPhys, join(opts.sourceAbs, 'skills', name));
+      const target = relative(dirPhys, join(opts.skillsAbs, name));
       const base = { dir, name, linkPath, target };
       // lstat so a dangling symlink is seen (and replaced) instead of looking absent
       const stat = lstatSync(linkPath, { throwIfNoEntry: false });
@@ -210,11 +210,11 @@ function walkEntries(p: string, out: Set<string>, depth = 0): string {
 // alias of .agents, would become a self-link) or a replaced folder that holds the source
 export function overlapsSource(
   steps: SymlinkStep[],
-  sourceAbs: string,
+  skillsAbs: string,
   names: string[],
 ): SymlinkStep[] {
   const walked = new Set<string>();
-  for (const n of names) walkEntries(join(sourceAbs, 'skills', n), walked);
+  for (const n of names) walkEntries(join(skillsAbs, n), walked);
   return steps.filter(
     (s) =>
       s.action === 'replace' &&
@@ -231,17 +231,28 @@ export function applySymlinks(steps: SymlinkStep[]): void {
   }
 }
 
-// Every <source>/skills/<name>/SKILL.md, sorted, with metadata.internal read from its frontmatter
-export function listCandidates(sourceAbs: string): { name: string; internal: boolean }[] {
-  const root = join(sourceAbs, 'skills');
-  if (!statSync(root, { throwIfNoEntry: false })?.isDirectory()) return [];
-  return readdirSync(root)
-    .filter((n) => statSync(join(root, n, 'SKILL.md'), { throwIfNoEntry: false })?.isFile())
-    .sort()
-    .map((name) => {
-      const fm = extractFrontmatter(readFileSync(join(root, name, 'SKILL.md'), 'utf8'));
-      return { name, internal: fm !== undefined && parseSkillMeta(fm).internal };
-    });
+// Every <dir>/<name>/SKILL.md, sorted
+function skillNames(dir: string): string[] {
+  if (!statSync(dir, { throwIfNoEntry: false })?.isDirectory()) return [];
+  return readdirSync(dir)
+    .filter((n) => statSync(join(dir, n, 'SKILL.md'), { throwIfNoEntry: false })?.isFile())
+    .sort();
+}
+
+// <source>/skills when it holds skills, else <source> itself when it is a skills folder
+// (e.g. plugins/<p>/skills); otherwise <source>/skills, so errors name the expected path
+export function skillsFolder(sourceAbs: string): string {
+  const nested = join(sourceAbs, 'skills');
+  if (skillNames(nested).length === 0 && skillNames(sourceAbs).length > 0) return sourceAbs;
+  return nested;
+}
+
+// Every <skills>/<name>/SKILL.md, sorted, with metadata.internal read from its frontmatter
+export function listCandidates(skillsAbs: string): { name: string; internal: boolean }[] {
+  return skillNames(skillsAbs).map((name) => {
+    const fm = extractFrontmatter(readFileSync(join(skillsAbs, name, 'SKILL.md'), 'utf8'));
+    return { name, internal: fm !== undefined && parseSkillMeta(fm).internal };
+  });
 }
 
 export interface SymlinkDeps {
@@ -283,14 +294,16 @@ export async function runSymlink(argv: string[], deps: SymlinkDeps = {}): Promis
     console.error(`${PREFIX}: ${source} is not a local directory`);
     return 1;
   }
+  const skillsAbs = skillsFolder(sourceAbs);
+  const skillsShown = skillsAbs === sourceAbs ? source : join(source, 'skills');
   let names: string[];
   if (skills === null) {
-    const candidates = listCandidates(sourceAbs);
+    const candidates = listCandidates(skillsAbs);
     const known = new Set(candidates.map((c) => c.name));
     const unknown = rejects.filter((n) => !known.has(n));
     if (unknown.length > 0) {
       for (const n of unknown)
-        console.error(`${PREFIX}: --reject: "${n}" is not in ${join(source, 'skills')}`);
+        console.error(`${PREFIX}: --reject: "${n}" is not in ${skillsShown}`);
       return 1;
     }
     const rejected = new Set(rejects);
@@ -307,17 +320,17 @@ export async function runSymlink(argv: string[], deps: SymlinkDeps = {}): Promis
     for (const n of skills)
       if (n.startsWith(' ')) skipped.push(`skip ${n.trimStart()} (leading space)`);
     names = [...new Set(skills.filter((n) => !n.startsWith(' ')))];
-    const missing = names.filter((n) => !existsSync(join(sourceAbs, 'skills', n, 'SKILL.md')));
+    const missing = names.filter((n) => !existsSync(join(skillsAbs, n, 'SKILL.md')));
     if (missing.length > 0) {
       for (const n of missing)
-        console.error(`${PREFIX}: ${join(source, 'skills', n, 'SKILL.md')} not found`);
+        console.error(`${PREFIX}: ${join(skillsShown, n, 'SKILL.md')} not found`);
       return 1;
     }
   }
 
   const dirs = agents.map((a) => AGENT_DIRS[a]);
-  const steps = planSymlinks({ cwd, sourceAbs, names, dirs });
-  const unsafe = overlapsSource(steps, sourceAbs, names);
+  const steps = planSymlinks({ cwd, skillsAbs, names, dirs });
+  const unsafe = overlapsSource(steps, skillsAbs, names);
   if (unsafe.length > 0) {
     for (const s of unsafe)
       console.error(`${PREFIX}: ${s.dir}/${s.name} is the source itself, not replacing it`);
@@ -364,6 +377,7 @@ export async function runSymlink(argv: string[], deps: SymlinkDeps = {}): Promis
 
 export const SLN_HELP = [
   'Symlink <path>/skills/<name> into .agents/skills and .claude/skills; skills-lock.json is not changed.',
+  '<path> may also be the skills folder itself (<path>/<name>/SKILL.md), e.g. plugins/<p>/skills.',
   '',
   'USAGE skl-x sln <path> [-s <SKILL...> | -x <SKILL...>] [-a <AGENT...>] [-y] [-m <MODE>]',
   '',
