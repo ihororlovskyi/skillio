@@ -1,4 +1,4 @@
-import { mkdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -11,9 +11,11 @@ vi.mock('node:fs', async (importOriginal) => {
 
 const fsError = (code: string) => Object.assign(new Error(code), { code });
 
-const TMP = join(tmpdir(), `skillum-jsonl-${Date.now()}`);
+let TMP: string;
 
-beforeEach(() => mkdirSync(TMP, { recursive: true }));
+beforeEach(() => {
+  TMP = mkdtempSync(join(tmpdir(), 'skl-jsonl-'));
+});
 afterEach(() => rmSync(TMP, { recursive: true, force: true }));
 
 describe('findJsonlFiles', () => {
