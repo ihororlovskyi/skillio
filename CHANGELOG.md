@@ -8,6 +8,8 @@
   0.4.3).
 - Dev tooling: `vitest` and `@vitest/coverage-v8` 5.x, `vite` added as a dev dependency (a
   required peer of vitest 5).
+- `npm run test:e2e:network` runs a real `skl i sentimony/skills -s cross-review` install
+  (`SKL_X_E2E_NETWORK=1`); the regular e2e suite skips it.
 - Dependabot version updates removed; dependencies and GitHub Actions are bumped by hand.
 
 ## 0.4.4 (2026-10-10)
